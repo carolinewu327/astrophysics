@@ -1,13 +1,15 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from astropy.cosmology import Planck18 as cosmo
 from astropy.io import fits
 
-# h = cosmo.h
 grid_size = 100
 
 
-# --- Catalog loader ---
 def load_catalog(path, weights=True, random_fraction=None):
+    """
+    Load a catalog from a FITS file.
+    """
     with fits.open(path) as hd:
         cat = hd[1].data
     cat = cat[(cat['Z'] > 0) & np.isfinite(cat['RA']) & np.isfinite(cat['DEC'])]
@@ -90,3 +92,29 @@ def symmetrize_map(kappa_map):
     kappa_avg = np.bincount(r_flat, weights=kappa_flat) / np.bincount(r_flat)
     sym_map = kappa_avg[r].reshape(kappa_map.shape)
     return sym_map
+
+
+def radial_profile(arr, sigma = None, title: str = "", zoom: int = 70):
+    y, x = np.indices(arr.shape)
+    r = np.sqrt((x - grid_size/2)**2 + (y - grid_size/2)**2).astype(int)
+    flat = arr.ravel()
+    N = np.bincount(r.ravel())
+    S = np.bincount(r.ravel(), weights=flat)
+    prof = S / N
+    rvals = np.arange(len(prof))[:zoom]
+    if sigma is not None:
+        flat_s = sigma.ravel()
+        S2 = np.bincount(r.ravel(), weights=flat_s**2)
+        err = np.sqrt(S2) / N
+        plt.errorbar(rvals, prof[:zoom], yerr=err[:zoom], fmt='o', capsize=3)
+    else:
+        plt.errorbar(rvals, prof[:zoom], fmt='o', capsize=3)
+        err = None
+
+    plt.title(title)
+    plt.xlabel("Radius (pixels)")
+    plt.ylabel("κ")
+    plt.grid(True)
+    plt.show()
+
+    return prof, err
