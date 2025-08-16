@@ -65,7 +65,7 @@ def fast_icrs_to_galactic(ra_deg, dec_deg):
 
 
 # Preprocessing function for a catalog with RA, DEC, and redshift
-def preprocess_catalog_galactic(data):
+def preprocess_catalog_galactic(data, weights=None):
     z = data['Z']
     ra = data['RA']
     dec = data['DEC']
@@ -77,9 +77,15 @@ def preprocess_catalog_galactic(data):
     dec_valid = dec[valid]
     D_valid = D_hmpc[valid]
 
+    if weights is not None:
+        assert len(weights) == len(data), "Weights must match the length of the data."
+        weights_valid = weights[valid]
+    else:
+        weights_valid = None
+
     l, b = fast_icrs_to_galactic(ra_valid, dec_valid)
 
-    return l, b, D_valid, data[valid]
+    return l, b, D_valid, data[valid], weights_valid
 
 
 # --- Symmetrize map ---
