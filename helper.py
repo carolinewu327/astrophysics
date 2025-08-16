@@ -1,12 +1,20 @@
 import numpy as np
-import healpy as hp
-import matplotlib.pyplot as plt
 from astropy.cosmology import Planck18 as cosmo
 from astropy.io import fits
-from tqdm.notebook import tqdm
-from scipy.ndimage import gaussian_filter
-h = cosmo.h
+
+# h = cosmo.h
 grid_size = 100
+
+
+# --- Catalog loader ---
+def load_catalog(path, weights=True, random_fraction=None):
+    with fits.open(path) as hd:
+        cat = hd[1].data
+    cat = cat[(cat['Z'] > 0) & np.isfinite(cat['RA']) & np.isfinite(cat['DEC'])]
+    if random_fraction:
+        cat = cat[np.random.choice(len(cat), int(random_fraction * len(cat)), replace=False)]
+    w = np.ones(len(cat)) if not weights else cat['WEIGHT_NOZ'] * cat['WEIGHT_SYSTOT']
+    return cat, w
 
 
 def fast_icrs_to_galactic(ra_deg, dec_deg):
@@ -54,15 +62,13 @@ def fast_icrs_to_galactic(ra_deg, dec_deg):
     return l_deg, b_deg
 
 
-
-
 # Preprocessing function for a catalog with RA, DEC, and redshift
 def preprocess_catalog_galactic(data):
     z = data['Z']
     ra = data['RA']
     dec = data['DEC']
-    D_mpc = cosmo.comoving_distance(z).value      # Mpc
-    D_hmpc = D_mpc * h                    # convert to h⁻¹ Mpc
+    D_mpc = cosmo.comoving_distance(z).value    # Mpc
+    D_hmpc = D_mpc * cosmo.h                    # convert to h⁻¹ Mpc
     valid = (D_hmpc > 0) & np.isfinite(D_hmpc)
 
     ra_valid = ra[valid]
@@ -72,7 +78,6 @@ def preprocess_catalog_galactic(data):
     l, b = fast_icrs_to_galactic(ra_valid, dec_valid)
 
     return l, b, D_valid, data[valid]
-
 
 
 # --- Symmetrize map ---
