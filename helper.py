@@ -93,10 +93,11 @@ def symmetrize_map(kappa_map):
     y, x = np.indices(kappa_map.shape)
     cx, cy = grid_size // 2, grid_size // 2
     r = np.sqrt((x - cx)**2 + (y - cy)**2).astype(int)
+    r = ((x - cx) ** 2 + (y - cy) ** 2).astype(int)
     r_flat = r.ravel()
     kappa_flat = kappa_map.ravel()
     kappa_avg = np.bincount(r_flat, weights=kappa_flat) / np.bincount(r_flat)
-    sym_map = kappa_avg[r].reshape(kappa_map.shape)
+    sym_map = kappa_avg[r]
     return sym_map
 
 
