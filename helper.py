@@ -89,11 +89,19 @@ def preprocess_catalog_galactic(data, weights=None):
 
 
 # --- Symmetrize map ---
-def symmetrize_map(kappa_map):
+def symmetrize_map(kappa_map, pwr=2/3):
+    """
+    Symmetrize a 2D map by averaging in radial bins.
+    :param kappa_map:
+    :param pwr: 1/2 means digitize in radius, 1 means digitize in radius squared
+    2/3 means digitize in radius^(4/3)
+    :return:
+    """
     y, x = np.indices(kappa_map.shape)
     cx, cy = grid_size // 2, grid_size // 2
-    r = np.sqrt((x - cx)**2 + (y - cy)**2).astype(int)
-    # r = ((x - cx) ** 2 + (y - cy) ** 2).astype(int)
+    r = (((x - cx)**2 + (y - cy)**2) ** pwr).astype(int)
+    # r = (((x - cx) ** 2 + (y - cy) ** 2) ** 1).astype(int) # digitize in radius squared 0 to 2500
+    # r = (((x - cx) ** 2 + (y - cy) ** 2) ** 0.5).astype(int) # digitize in radius 0 to 50
     r_flat = r.ravel()
     kappa_flat = kappa_map.ravel()
     kappa_avg = np.bincount(r_flat, weights=kappa_flat) / np.bincount(r_flat)
