@@ -6,16 +6,22 @@ from astropy.io import fits
 grid_size = 100
 
 
-def load_catalog(path, weights=True, random_fraction=None):
+def load_catalog(path, weights=True, random_fraction=None, z_min=0, z_max=10000):
     """
     Load a catalog from a FITS file.
     """
     with fits.open(path) as hd:
         cat = hd[1].data
-    cat = cat[(cat['Z'] > 0) & np.isfinite(cat['RA']) & np.isfinite(cat['DEC'])]
+    cat = cat[(cat['Z'] > z_min) & (cat['Z'] < z_max) & np.isfinite(cat['RA']) & np.isfinite(cat['DEC'])]
     if random_fraction:
         cat = cat[np.random.choice(len(cat), int(random_fraction * len(cat)), replace=False)]
-    w = np.ones(len(cat)) if not weights else cat['WEIGHT_NOZ'] * cat['WEIGHT_SYSTOT']
+
+    if weights == "CMASS":
+        w = cat['WEIGHT_SEEING'] * cat['WEIGHT_STAR'] * (cat['WEIGHT_NOZ'] + cat['WEIGHT_CP'] - 1)
+    elif weights:
+        w = cat['WEIGHT_NOZ'] * cat['WEIGHT_SYSTOT']
+    else:
+        w = np.ones(len(cat))
     return cat, w
 
 
