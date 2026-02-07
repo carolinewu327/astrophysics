@@ -1,3 +1,16 @@
-data/paircatalogs/galaxy_pairs_catalog_CMASS_North_20_18_22hmpc.csv
-data/paircatalogs/galaxy_pairs_catalog_CMASS_South_20_18_22hmpc.csv
+# Raw data (FITS catalogs, too large for git)
+data/
+
+# Generated plots (regenerable from scripts)
+output/plots/
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local dev setup
 CLAUDE_DEV_SETUP.md
+.claude/
