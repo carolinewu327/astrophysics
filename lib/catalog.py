@@ -136,6 +136,68 @@ def load_catalog(
     return cat, w
 
 
+def load_catalog_lightweight(
+    path: str,
+    columns: Tuple[str, ...] = ("RA", "DEC", "Z"),
+    fraction: Optional[float] = None,
+    z_min: float = 0,
+    z_max: float = 10000,
+) -> np.ndarray:
+    """Load only selected columns from a FITS catalog, memory-efficiently.
+
+    Reads the full row count but only the requested columns, then applies
+    redshift cuts and optional subsampling.  Much lighter than load_catalog
+    for large random catalogues where only positions are needed.
+
+    Parameters
+    ----------
+    path : str
+        Path to the FITS file.
+    columns : tuple of str
+        Column names to read.
+    fraction : float or None
+        If set, randomly subsample to this fraction *before* reading data.
+    z_min, z_max : float
+        Redshift cuts (applied only if "Z" is in *columns*).
+
+    Returns
+    -------
+    np.ndarray
+        Structured array with the requested columns.
+    """
+    with fits.open(path, memmap=True) as hd:
+        nrows = hd[1].header["NAXIS2"]
+
+        # Subsample row indices first to avoid reading all data
+        if fraction and fraction < 1.0:
+            n_keep = int(fraction * nrows)
+            idx = np.sort(np.random.choice(nrows, n_keep, replace=False))
+        else:
+            idx = np.arange(nrows)
+
+        # Read only the requested columns for the selected rows
+        col_data = {col: hd[1].data.field(col)[idx] for col in columns}
+
+    # Build a structured array
+    dtype = [(col, col_data[col].dtype) for col in columns]
+    cat = np.empty(len(idx), dtype=dtype)
+    for col in columns:
+        cat[col] = col_data[col]
+
+    # Redshift + finite-position cuts
+    valid = np.ones(len(cat), dtype=bool)
+    if "Z" in columns:
+        valid &= (cat["Z"] > z_min) & (cat["Z"] < z_max)
+    if "RA" in columns:
+        valid &= np.isfinite(cat["RA"])
+    if "DEC" in columns:
+        valid &= np.isfinite(cat["DEC"])
+    cat = cat[valid]
+
+    logger.info("Loaded %d rows (%d columns) from %s", len(cat), len(columns), path)
+    return cat
+
+
 # ---------------------------------------------------------------------------
 # Catalog preprocessing
 # ---------------------------------------------------------------------------

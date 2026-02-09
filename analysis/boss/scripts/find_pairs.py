@@ -28,7 +28,10 @@ from astropy.cosmology import Planck18 as cosmo
 from functools import partial
 from multiprocessing import Pool, cpu_count
 
-from catalog import load_catalog, preprocess_catalog_galactic, resolve_catalog_path
+from catalog import (
+    load_catalog, load_catalog_lightweight,
+    preprocess_catalog_galactic, resolve_catalog_path,
+)
 from geometry import angular_separation
 
 logger = logging.getLogger(__name__)
@@ -494,11 +497,20 @@ def main(argv=None):
     # Apply fraction (subsample) -- use random_fraction for values < 1
     random_fraction = args.fraction if args.fraction < 1.0 else None
 
-    data, weights = load_catalog(
-        fits_path, weights=weight_scheme,
-        random_fraction=random_fraction,
-        z_min=z_min, z_max=z_max,
-    )
+    if args.catalog_type == "random":
+        # Lightweight loader: only read RA/DEC/Z, subsample before loading
+        data = load_catalog_lightweight(
+            fits_path, columns=("RA", "DEC", "Z"),
+            fraction=random_fraction,
+            z_min=z_min, z_max=z_max,
+        )
+        weights = np.ones(len(data))
+    else:
+        data, weights = load_catalog(
+            fits_path, weights=weight_scheme,
+            random_fraction=random_fraction,
+            z_min=z_min, z_max=z_max,
+        )
     logger.info(f"Loaded {len(data):,} objects (z in [{z_min}, {z_max}], fraction={args.fraction})")
 
     # ------------------------------------------------------------------
