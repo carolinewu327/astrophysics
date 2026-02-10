@@ -387,13 +387,22 @@ def main(argv=None):
     # ------------------------------------------------------------------
     t0 = time.time()
     logger.info("Loading catalog: %s", catalog_path)
-    data, weights = load_catalog(
-        catalog_path,
-        weights=weight_scheme,
-        random_fraction=random_fraction,
-        z_min=z_min,
-        z_max=z_max,
-    )
+    if args.catalog_type == "random":
+        # Lightweight loader for large random catalogs (memmap + column selection)
+        data = load_catalog_lightweight(
+            catalog_path, columns=("RA", "DEC", "Z"),
+            fraction=random_fraction,
+            z_min=z_min, z_max=z_max,
+        )
+        weights = np.ones(len(data))
+    else:
+        data, weights = load_catalog(
+            catalog_path,
+            weights=weight_scheme,
+            random_fraction=random_fraction,
+            z_min=z_min,
+            z_max=z_max,
+        )
     logger.info("Loaded %d objects in %.1f s", len(data), time.time() - t0)
 
     # ------------------------------------------------------------------
