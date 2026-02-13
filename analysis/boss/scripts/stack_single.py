@@ -7,8 +7,18 @@ Mirrors the stacking logic from the legacy notebook finalMODkmap.ipynb, but
 structured as a command-line tool with argparse, logging, progress bars,
 and jackknife error estimation.
 
+New in this version: Optional Gaussian kernel density estimation (KDE) for
+extracting smooth radial profiles that respect the Planck map resolution limit.
+
 Usage examples:
+    # Standard stacking (2D maps)
     python stack_single.py --dataset BOSS --region North --catalog-type galaxy
+
+    # With kernel smoothing for smooth radial profiles
+    python stack_single.py --dataset BOSS --region North --catalog-type galaxy \
+        --extract-radial-kde --kernel-width 3.5
+
+    # Random catalog
     python stack_single.py --dataset BOSS --region North --catalog-type random --fraction 0.10
 """
 
@@ -148,6 +158,169 @@ def stack_kappa(data, weights, kmap, mask, label="galaxies"):
         kappa_sigma.reshape(GRID_SIZE, GRID_SIZE),
         kappa_sn.reshape(GRID_SIZE, GRID_SIZE),
     )
+
+
+# ===========================================================================
+# Kernel smoothing for radial profiles
+# ===========================================================================
+def extract_radial_profile_kde(kappa_map, kappa_err=None,
+                               kernel_width_hmpc=3.0,
+                               n_radial_bins=500,
+                               r_max=None):
+    """Extract smooth radial profile using Gaussian kernel density estimation.
+
+    This function addresses the fundamental resolution limit of the Planck kappa
+    map (~8 arcmin FWHM ≈ 3-4 Mpc at z~0.5) by applying kernel smoothing to the
+    discrete grid rather than naively increasing grid resolution.
+
+    Parameters
+    ----------
+    kappa_map : 2-D ndarray (GRID_SIZE x GRID_SIZE)
+        Stacked convergence map from stack_kappa().
+    kappa_err : 2-D ndarray, optional
+        Error map (same shape as kappa_map). If provided, errors are propagated
+        through the kernel smoothing.
+    kernel_width_hmpc : float
+        Gaussian kernel width (sigma) in h^-1 Mpc. Should be comparable to or
+        larger than the Planck resolution (~3-4 Mpc). Default: 3.0.
+    n_radial_bins : int
+        Number of radial evaluation points for the smooth profile. Default: 500.
+    r_max : float, optional
+        Maximum radius in h^-1 Mpc. If None, uses half the box size.
+
+    Returns
+    -------
+    r_profile : ndarray (n_radial_bins,)
+        Radial distances in h^-1 Mpc.
+    kappa_profile : ndarray (n_radial_bins,)
+        Smoothed radial convergence profile.
+    kappa_profile_err : ndarray (n_radial_bins,) or None
+        Propagated errors if kappa_err was provided.
+
+    Notes
+    -----
+    The kernel width is in h^-1 Mpc, matching the physical scale of the box.
+    For reference:
+    - Planck FWHM = 8 arcmin
+    - At z=0.5: 8 arcmin ≈ 3.5 h^-1 Mpc
+    - Recommended kernel_width_hmpc >= 3.0
+
+    Examples
+    --------
+    >>> kappa_map, kappa_err, _ = stack_kappa(data, weights, kmap, mask)
+    >>> r, profile, err = extract_radial_profile_kde(kappa_map, kappa_err,
+    ...                                               kernel_width_hmpc=4.0)
+    """
+    if r_max is None:
+        r_max = HALF_BOX_HMPC
+
+    # Create coordinate grids (in h^-1 Mpc from center)
+    x = np.linspace(-HALF_BOX_HMPC, HALF_BOX_HMPC, GRID_SIZE)
+    y = np.linspace(-HALF_BOX_HMPC, HALF_BOX_HMPC, GRID_SIZE)
+    X, Y = np.meshgrid(x, y)
+    R = np.sqrt(X**2 + Y**2)
+
+    # Flatten arrays
+    r_flat = R.ravel()
+    kappa_flat = kappa_map.ravel()
+
+    # Remove NaN/inf values
+    valid = np.isfinite(kappa_flat) & np.isfinite(r_flat)
+    r_flat = r_flat[valid]
+    kappa_flat = kappa_flat[valid]
+
+    if kappa_err is not None:
+        err_flat = kappa_err.ravel()[valid]
+
+    # Sort by radius for efficient binning
+    sort_idx = np.argsort(r_flat)
+    r_sorted = r_flat[sort_idx]
+    kappa_sorted = kappa_flat[sort_idx]
+    if kappa_err is not None:
+        err_sorted = err_flat[sort_idx]
+
+    # Define evaluation radii
+    r_profile = np.linspace(0, r_max, n_radial_bins)
+
+    # Gaussian kernel smoothing
+    # For each evaluation radius, compute weighted average using Gaussian kernel
+    kappa_profile = np.zeros(n_radial_bins)
+    kappa_profile_err = np.zeros(n_radial_bins) if kappa_err is not None else None
+
+    sigma = kernel_width_hmpc  # Kernel width in h^-1 Mpc
+
+    for i, r_eval in enumerate(r_profile):
+        # Gaussian weights: exp(-0.5 * ((r - r_eval) / sigma)^2)
+        dr = r_sorted - r_eval
+        weights = np.exp(-0.5 * (dr / sigma)**2)
+
+        # Normalize weights
+        weight_sum = np.sum(weights)
+        if weight_sum > 0:
+            kappa_profile[i] = np.sum(weights * kappa_sorted) / weight_sum
+
+            if kappa_err is not None:
+                # Error propagation: σ_weighted = sqrt(sum(w^2 * σ^2)) / sum(w)
+                kappa_profile_err[i] = np.sqrt(np.sum((weights * err_sorted)**2)) / weight_sum
+        else:
+            kappa_profile[i] = np.nan
+            if kappa_err is not None:
+                kappa_profile_err[i] = np.nan
+
+    return r_profile, kappa_profile, kappa_profile_err
+
+
+def extract_radial_profile_binned(kappa_map, kappa_err=None, n_bins=50):
+    """Extract traditional binned radial profile (no kernel smoothing).
+
+    This is the standard approach: azimuthally average kappa in radial annuli.
+    Provided for comparison with the kernel-smoothed version.
+
+    Parameters
+    ----------
+    kappa_map : 2-D ndarray
+        Stacked convergence map.
+    kappa_err : 2-D ndarray, optional
+        Error map.
+    n_bins : int
+        Number of radial bins. Default: 50.
+
+    Returns
+    -------
+    r_bins : ndarray
+        Bin center radii in h^-1 Mpc.
+    kappa_profile : ndarray
+        Mean kappa in each radial bin.
+    kappa_profile_err : ndarray or None
+        Errors in each bin.
+    """
+    # Create coordinate grids
+    x = np.linspace(-HALF_BOX_HMPC, HALF_BOX_HMPC, GRID_SIZE)
+    y = np.linspace(-HALF_BOX_HMPC, HALF_BOX_HMPC, GRID_SIZE)
+    X, Y = np.meshgrid(x, y)
+    R = np.sqrt(X**2 + Y**2)
+
+    # Define radial bins
+    r_edges = np.linspace(0, HALF_BOX_HMPC, n_bins + 1)
+    r_bins = 0.5 * (r_edges[:-1] + r_edges[1:])
+
+    kappa_profile = np.zeros(n_bins)
+    kappa_profile_err = np.zeros(n_bins) if kappa_err is not None else None
+
+    for i in range(n_bins):
+        mask = (R >= r_edges[i]) & (R < r_edges[i+1])
+        if np.sum(mask) > 0:
+            kappa_profile[i] = np.nanmean(kappa_map[mask])
+
+            if kappa_err is not None:
+                # Standard error of the mean in this bin
+                kappa_profile_err[i] = np.sqrt(np.nanmean(kappa_err[mask]**2))
+        else:
+            kappa_profile[i] = np.nan
+            if kappa_err is not None:
+                kappa_profile_err[i] = np.nan
+
+    return r_bins, kappa_profile, kappa_profile_err
 
 
 # ===========================================================================
@@ -303,6 +476,19 @@ def parse_args(argv=None):
         "--jackknife-nside", type=int, default=10,
         help="HEALPix nside for jackknife region tessellation (default: 10)."
     )
+    parser.add_argument(
+        "--extract-radial-kde", action="store_true",
+        help="Extract smooth radial profile using Gaussian kernel density estimation."
+    )
+    parser.add_argument(
+        "--kernel-width", type=float, default=3.0,
+        help="Gaussian kernel width (sigma) in h^-1 Mpc for KDE smoothing (default: 3.0). "
+             "Should be >= Planck resolution (~3-4 Mpc at z~0.5)."
+    )
+    parser.add_argument(
+        "--n-radial-bins", type=int, default=500,
+        help="Number of radial evaluation points for smooth KDE profile (default: 500)."
+    )
     return parser.parse_args(argv)
 
 
@@ -327,6 +513,10 @@ def main(argv=None):
     logger.info("Data dir  : %s", args.data_dir)
     logger.info("Overwrite : %s", args.overwrite)
     logger.info("JK nside  : %d", args.jackknife_nside)
+    logger.info("Radial KDE: %s", args.extract_radial_kde)
+    if args.extract_radial_kde:
+        logger.info("  Kernel width   : %.2f h^-1 Mpc", args.kernel_width)
+        logger.info("  Radial bins    : %d", args.n_radial_bins)
 
     # ------------------------------------------------------------------
     # Check output paths early
@@ -442,6 +632,57 @@ def main(argv=None):
     # ------------------------------------------------------------------
     kappa_map = symmetrize_map(kappa_map)
     logger.info("Applied radial symmetrization to kappa map")
+
+    # ------------------------------------------------------------------
+    # Optional: Extract smooth radial profile via kernel smoothing
+    # ------------------------------------------------------------------
+    if args.extract_radial_kde:
+        logger.info("Extracting smooth radial profile with KDE (kernel_width=%.2f Mpc/h) ...",
+                    args.kernel_width)
+
+        r_profile, kappa_profile, kappa_profile_err = extract_radial_profile_kde(
+            kappa_map,
+            kappa_err=kappa_err if args.catalog_type == "galaxy" else None,
+            kernel_width_hmpc=args.kernel_width,
+            n_radial_bins=args.n_radial_bins,
+        )
+
+        # Also extract traditional binned profile for comparison
+        r_binned, kappa_binned, kappa_binned_err = extract_radial_profile_binned(
+            kappa_map,
+            kappa_err=kappa_err if args.catalog_type == "galaxy" else None,
+            n_bins=50,
+        )
+
+        # Save radial profiles
+        radial_kde_path = os.path.join(
+            args.output_dir,
+            f"radial_kde_{args.catalog_type}_{args.dataset}_{args.region}.csv"
+        )
+        radial_binned_path = os.path.join(
+            args.output_dir,
+            f"radial_binned_{args.catalog_type}_{args.dataset}_{args.region}.csv"
+        )
+
+        # Save KDE profile
+        df_kde = pd.DataFrame({
+            'r_hmpc': r_profile,
+            'kappa': kappa_profile,
+        })
+        if kappa_profile_err is not None:
+            df_kde['kappa_err'] = kappa_profile_err
+        df_kde.to_csv(radial_kde_path, index=False)
+        logger.info("Saved KDE radial profile -> %s", radial_kde_path)
+
+        # Save binned profile
+        df_binned = pd.DataFrame({
+            'r_hmpc': r_binned,
+            'kappa': kappa_binned,
+        })
+        if kappa_binned_err is not None:
+            df_binned['kappa_err'] = kappa_binned_err
+        df_binned.to_csv(radial_binned_path, index=False)
+        logger.info("Saved binned radial profile -> %s", radial_binned_path)
 
     # ------------------------------------------------------------------
     # Save outputs
