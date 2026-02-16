@@ -57,10 +57,16 @@ def resolve_catalog_path(
     """
     if dataset == "BOSS":
         if catalog_type == "galaxy":
-            fname = f"galaxy_DR12v5_CMASS_{region}.fits.gz"
+            base = f"galaxy_DR12v5_CMASS_{region}"
         else:
-            fname = f"random0_DR12v5_CMASS_{region}.fits.gz"
-        return os.path.join(data_dir, "BOSS", fname)
+            base = f"random0_DR12v5_CMASS_{region}"
+        # Try .fits.gz first, fall back to .fits
+        for ext in (".fits.gz", ".fits"):
+            path = os.path.join(data_dir, "BOSS", base + ext)
+            if os.path.exists(path):
+                return path
+        # Default to .fits.gz if neither exists (let caller handle the error)
+        return os.path.join(data_dir, "BOSS", base + ".fits.gz")
     elif dataset == "eBOSS":
         if catalog_type == "galaxy":
             fname = f"eBOSS_LRG_clustering_data-{region}-vDR16.fits"
