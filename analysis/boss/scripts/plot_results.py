@@ -164,7 +164,7 @@ def build_control_pair_map(single_map, separation_hmpc):
             shift_pixels, shift_pixels * cell_size,
         )
 
-    return 0.5 * (shifted_right + shifted_left)
+    return shifted_right + shifted_left
 
 
 # ===========================================================================
@@ -362,6 +362,8 @@ def main(argv=None):
     sep = args.separation
     sep_label = f"{sep:g}"  # e.g. "20" or "10.5"
     regions = [r.strip() for r in args.regions.split(",")]
+    region_label = "_".join(regions)  # e.g. "North_South"
+    plot_suffix = f"_{sep_label}_{region_label}"  # e.g. "_20_North_South"
 
     logger.info("=" * 60)
     logger.info("plot_results.py -- Filament Analysis Plots")
@@ -387,7 +389,7 @@ def main(argv=None):
     for reg in regions:
         path = os.path.join(
             args.results_dir,
-            f"kappa_single_galaxy_{args.dataset}_{reg}.csv",
+            f"kappa_single_galaxy_{args.dataset}_{reg}_nojk.csv",
         )
         m = try_load(path, f"Map(1) single galaxy ({reg})")
         if m is not None:
@@ -513,21 +515,21 @@ def main(argv=None):
 
     map_specs = [
         (map1, f"(1) Single Galaxies ({args.dataset})",
-         'viridis', False, "map_1_single_galaxy"),
+         'viridis', False, f"map_1_single_galaxy{plot_suffix}"),
         (map2, f"(2) Galaxy Pairs ({sep_label} Mpc/h)",
-         'viridis', False, "map_2_galaxy_pairs"),
+         'viridis', False, f"map_2_galaxy_pairs{plot_suffix}"),
         (map3, f"(3) Single Randoms ({args.dataset})",
-         'viridis', False, "map_3_single_random"),
+         'viridis', False, f"map_3_single_random{plot_suffix}"),
         (map4, f"(4) Random Pairs ({sep_label} Mpc/h)",
-         'viridis', False, "map_4_random_pairs"),
+         'viridis', False, f"map_4_random_pairs{plot_suffix}"),
         (map5, f"(5) Corrected Single = (1)-(3)",
-         'coolwarm', True, "map_5_corrected_single"),
+         'coolwarm', True, f"map_5_corrected_single{plot_suffix}"),
         (map6, f"(6) Corrected Pairs = (2)-(4)",
-         'coolwarm', True, "map_6_corrected_pairs"),
+         'coolwarm', True, f"map_6_corrected_pairs{plot_suffix}"),
         (map7, f"(7) Control Pair Map ({sep_label} Mpc/h)",
-         'coolwarm', True, "map_7_control_pair"),
+         'coolwarm', True, f"map_7_control_pair{plot_suffix}"),
         (map8, f"(8) Filament = (6)-(7) [{sep_label} Mpc/h]",
-         'coolwarm', True, "map_8_filament"),
+         'coolwarm', True, f"map_8_filament{plot_suffix}"),
     ]
 
     for m, title, cmap, centered, fname in map_specs:
@@ -580,7 +582,7 @@ def main(argv=None):
         plot_profiles(
             profs_a,
             f"Single-Galaxy Profiles ({args.dataset})",
-            os.path.join(args.output_dir, "profile_a_single"),
+            os.path.join(args.output_dir, f"profile_a_single{plot_suffix}"),
             args.fmt,
         )
     else:
@@ -601,7 +603,7 @@ def main(argv=None):
         plot_profiles(
             profs_b,
             f"Pair-Stacked Profiles ({sep_label} Mpc/h, {args.dataset})",
-            os.path.join(args.output_dir, "profile_b_pairs"),
+            os.path.join(args.output_dir, f"profile_b_pairs{plot_suffix}"),
             args.fmt,
         )
     else:
@@ -621,7 +623,7 @@ def main(argv=None):
         plot_profiles(
             profs_c,
             f"Filament Extraction ({sep_label} Mpc/h, {args.dataset})",
-            os.path.join(args.output_dir, "profile_c_filament"),
+            os.path.join(args.output_dir, f"profile_c_filament{plot_suffix}"),
             args.fmt,
         )
     else:

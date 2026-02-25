@@ -1,8 +1,7 @@
 # Raw data (FITS catalogs, too large for git)
 data/
 
-# Generated plots (regenerable from scripts)
-output/plots/
+# Generated plots (keep in git for reference)
 
 # Python
 __pycache__/
