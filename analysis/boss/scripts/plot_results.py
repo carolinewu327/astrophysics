@@ -25,6 +25,7 @@ import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
 from constants import BOX_SIZE_HMPC, GRID_SIZE
+from geometry import symmetrize_map
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 HALF_BOX = BOX_SIZE_HMPC / 2  # 50 Mpc/h
 EXTENT = [-HALF_BOX, HALF_BOX, -HALF_BOX, HALF_BOX]
-PROFILE_HALF_WIDTH = 5.0  # Mpc/h -- band for profile extraction
+PROFILE_HALF_WIDTH = 2.5  # Mpc/h -- band for profile extraction
 
 
 # ===========================================================================
@@ -307,6 +308,21 @@ def save_derived_map(arr, name, results_dir):
     logger.info("Saved derived map: %s", path)
 
 
+def build_labeled_filename(prefix, dataset, region=None, label=None, extra_suffix=None):
+    """Build a CSV filename with an optional analysis label."""
+    parts = [prefix]
+    if label:
+        parts.append(label)
+    if dataset:
+        parts.append(dataset)
+    if region:
+        parts.append(region)
+    fname = "_".join(parts)
+    if extra_suffix:
+        fname = f"{fname}_{extra_suffix}"
+    return f"{fname}.csv"
+
+
 # ===========================================================================
 # Argparse
 # ===========================================================================
@@ -341,6 +357,43 @@ def parse_args(argv=None):
         "--regions", default="North,South",
         help="Comma-separated list of regions to combine (default: North,South).",
     )
+    parser.add_argument(
+        "--pair-label", "--galaxy-pair-label", dest="galaxy_pair_label", default=None,
+        help=(
+            "Override label used in galaxy-pair map filenames "
+            "(e.g. '20_rpar10' to load kappa_pairs_galaxy_20_rpar10_BOSS_*.csv). "
+            "Defaults to the separation value."
+        ),
+    )
+    parser.add_argument(
+        "--random-pair-label", default=None,
+        help=(
+            "Override label used in random-pair map filenames "
+            "(e.g. '20_rpar10_frac10'). Defaults to the galaxy-pair label."
+        ),
+    )
+    parser.add_argument(
+        "--single-random-label", default=None,
+        help=(
+            "Override label used in single-random map filenames "
+            "(e.g. 'frac10' or 'frac100'). By default, load the unsuffixed "
+            "kappa_single_random_{dataset}_{region}.csv files."
+        ),
+    )
+    parser.add_argument(
+        "--output-label", default=None,
+        help=(
+            "Label used for derived-map filenames and plot filenames. "
+            "Defaults to the galaxy-pair label."
+        ),
+    )
+    parser.add_argument(
+        "--profile-half-width", type=float, default=PROFILE_HALF_WIDTH,
+        help=(
+            "Half-width in Mpc/h of the profile-extraction band around Y=0 "
+            f"(default: {PROFILE_HALF_WIDTH})."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -361,15 +414,24 @@ def main(argv=None):
 
     sep = args.separation
     sep_label = f"{sep:g}"  # e.g. "20" or "10.5"
+    galaxy_pair_label = args.galaxy_pair_label if args.galaxy_pair_label else sep_label
+    random_pair_label = args.random_pair_label if args.random_pair_label else galaxy_pair_label
+    single_random_label = args.single_random_label
+    output_label = args.output_label if args.output_label else galaxy_pair_label
     regions = [r.strip() for r in args.regions.split(",")]
     region_label = "_".join(regions)  # e.g. "North_South"
-    plot_suffix = f"_{sep_label}_{region_label}"  # e.g. "_20_North_South"
+    plot_suffix = f"_{output_label}_{region_label}"  # e.g. "_20_rpar10_frac10_North_South"
 
     logger.info("=" * 60)
     logger.info("plot_results.py -- Filament Analysis Plots")
     logger.info("=" * 60)
     logger.info("Dataset     : %s", args.dataset)
     logger.info("Separation  : %s Mpc/h", sep_label)
+    logger.info("Galaxy pair : %s", galaxy_pair_label)
+    logger.info("Random pair : %s", random_pair_label)
+    logger.info("Single rand : %s", single_random_label if single_random_label else "(unsuffixed)")
+    logger.info("Output label: %s", output_label)
+    logger.info("Profile band: +/- %.2f Mpc/h", args.profile_half_width)
     logger.info("Regions     : %s", regions)
     logger.info("Results dir : %s", args.results_dir)
     logger.info("Output dir  : %s", args.output_dir)
@@ -389,7 +451,12 @@ def main(argv=None):
     for reg in regions:
         path = os.path.join(
             args.results_dir,
-            f"kappa_single_galaxy_{args.dataset}_{reg}_nojk.csv",
+            build_labeled_filename(
+                "kappa_single_galaxy",
+                args.dataset,
+                region=reg,
+                extra_suffix="nojk",
+            ),
         )
         m = try_load(path, f"Map(1) single galaxy ({reg})")
         if m is not None:
@@ -401,7 +468,12 @@ def main(argv=None):
     for reg in regions:
         path = os.path.join(
             args.results_dir,
-            f"kappa_pairs_galaxy_{sep_label}_{args.dataset}_{reg}.csv",
+            build_labeled_filename(
+                "kappa_pairs_galaxy",
+                args.dataset,
+                region=reg,
+                label=galaxy_pair_label,
+            ),
         )
         m = try_load(path, f"Map(2) galaxy pairs ({reg})")
         if m is not None:
@@ -413,7 +485,12 @@ def main(argv=None):
     for reg in regions:
         path = os.path.join(
             args.results_dir,
-            f"kappa_single_random_{args.dataset}_{reg}.csv",
+            build_labeled_filename(
+                "kappa_single_random",
+                args.dataset,
+                region=reg,
+                label=single_random_label,
+            ),
         )
         m = try_load(path, f"Map(3) single random ({reg})")
         if m is not None:
@@ -425,7 +502,12 @@ def main(argv=None):
     for reg in regions:
         path = os.path.join(
             args.results_dir,
-            f"kappa_pairs_random_{sep_label}_{args.dataset}_{reg}.csv",
+            build_labeled_filename(
+                "kappa_pairs_random",
+                args.dataset,
+                region=reg,
+                label=random_pair_label,
+            ),
         )
         m = try_load(path, f"Map(4) random pairs ({reg})")
         if m is not None:
@@ -447,7 +529,15 @@ def main(argv=None):
             "Map(5) corrected single: range [%.6e, %.6e]",
             map5.min(), map5.max(),
         )
-        save_derived_map(map5, f"kappa_corrected_single_{args.dataset}", args.results_dir)
+        save_derived_map(
+            map5,
+            build_labeled_filename(
+                "kappa_corrected_single",
+                args.dataset,
+                label=output_label,
+            )[:-4],
+            args.results_dir,
+        )
     elif map1 is not None:
         logger.warning("Map(3) missing -- using Map(1) directly as corrected single")
         map5 = map1.copy()
@@ -465,7 +555,11 @@ def main(argv=None):
         )
         save_derived_map(
             map6,
-            f"kappa_corrected_pairs_{sep_label}_{args.dataset}",
+            build_labeled_filename(
+                "kappa_corrected_pairs",
+                args.dataset,
+                label=output_label,
+            )[:-4],
             args.results_dir,
         )
     elif map2 is not None:
@@ -475,16 +569,31 @@ def main(argv=None):
         logger.warning("Cannot compute Map(6): Map(2) is missing")
 
     # --- Map (7): control pair map from (5) ---
+    # Radially symmetrize the corrected single map before shifting.
+    # Individual single maps are symmetrized in stack_single.py, but
+    # the subtraction (map1 - map3) re-introduces noise that breaks
+    # radial symmetry, causing an asymmetric control-pair profile.
     map7 = None
     if map5 is not None:
-        map7 = build_control_pair_map(map5, sep)
+        map5_sym = symmetrize_map(map5)
+        map7 = build_control_pair_map(map5_sym, sep)
+        # Enforce left-right symmetry: the control pair map is symmetric
+        # about x=0 by construction (two identical halos at ±sep/2).
+        # Residual asymmetry comes from the even-grid center offset
+        # (symmetrize_map centers on pixel index N//2, which is half a
+        # pixel off from the physical center for even-sized grids).
+        map7 = (map7 + map7[:, ::-1]) / 2.0
         logger.info(
             "Map(7) control pair: range [%.6e, %.6e]",
             map7.min(), map7.max(),
         )
         save_derived_map(
             map7,
-            f"kappa_control_pair_{sep_label}_{args.dataset}",
+            build_labeled_filename(
+                "kappa_control_pair",
+                args.dataset,
+                label=output_label,
+            )[:-4],
             args.results_dir,
         )
     else:
@@ -501,7 +610,11 @@ def main(argv=None):
         )
         save_derived_map(
             map8,
-            f"kappa_filament_{sep_label}_{args.dataset}",
+            build_labeled_filename(
+                "kappa_filament",
+                args.dataset,
+                label=output_label,
+            )[:-4],
             args.results_dir,
         )
     else:
@@ -565,7 +678,7 @@ def main(argv=None):
         if kappa_map is None:
             logger.warning("Profile skipped for %s -- map not available", label)
             return None
-        return extract_profile(kappa_map)
+        return extract_profile(kappa_map, half_width=args.profile_half_width)
 
     # --- Profile (a): maps (1), (3), (5) ---
     p1 = safe_profile(map1, "Map(1)")

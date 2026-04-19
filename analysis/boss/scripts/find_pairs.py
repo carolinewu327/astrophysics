@@ -283,6 +283,7 @@ def build_pair_catalog(data, weights, catalog_type, dataset, region,
 
     all_pairs = []
     global_start = time.time()
+    last_checkpoint_chunk = None
 
     if n_processes > 1:
         logger.info(
@@ -306,7 +307,8 @@ def build_pair_catalog(data, weights, catalog_type, dataset, region,
 
                 # Checkpoint save every 10 chunks
                 if (i + 1) % 10 == 0:
-                    _save_checkpoint(all_pairs, output_file, i + 1)
+                    _save_checkpoint(all_pairs, output_file, i + 1, last_checkpoint_chunk)
+                    last_checkpoint_chunk = i + 1
 
                 chunk_start_time = time.time()
     else:
@@ -329,7 +331,8 @@ def build_pair_catalog(data, weights, catalog_type, dataset, region,
 
             # Checkpoint save every 10 chunks
             if (i + 1) % 10 == 0:
-                _save_checkpoint(all_pairs, output_file, i + 1)
+                _save_checkpoint(all_pairs, output_file, i + 1, last_checkpoint_chunk)
+                last_checkpoint_chunk = i + 1
 
     elapsed = time.time() - global_start
     logger.info(f"Pair finding complete: {len(all_pairs):,} total pairs in {elapsed:.1f}s")
@@ -347,17 +350,30 @@ def build_pair_catalog(data, weights, catalog_type, dataset, region,
     pairs_df.to_csv(output_file, index=False)
     logger.info(f"Saved {len(pairs_df):,} pairs to {output_file}")
 
+    # Remove last checkpoint now that the final file is written
+    if last_checkpoint_chunk is not None:
+        last_cp = output_file.replace('.csv', f'_checkpoint_{last_checkpoint_chunk}.csv')
+        if os.path.isfile(last_cp):
+            os.remove(last_cp)
+            logger.info(f"Removed final checkpoint: {last_cp}")
+
     return pairs_df
 
 
-def _save_checkpoint(all_pairs, output_file, chunk_num):
-    """Save an intermediate checkpoint CSV."""
+def _save_checkpoint(all_pairs, output_file, chunk_num, prev_chunk_num=None):
+    """Save an intermediate checkpoint CSV, removing the previous one."""
     if len(all_pairs) == 0:
         return
     temp_df = pd.DataFrame(all_pairs)
     temp_file = output_file.replace('.csv', f'_checkpoint_{chunk_num}.csv')
     temp_df.to_csv(temp_file, index=False)
     logger.info(f"Checkpoint: saved {len(temp_df):,} pairs to {temp_file}")
+    # Remove previous checkpoint to avoid filling disk
+    if prev_chunk_num is not None:
+        prev_file = output_file.replace('.csv', f'_checkpoint_{prev_chunk_num}.csv')
+        if os.path.isfile(prev_file):
+            os.remove(prev_file)
+            logger.info(f"Removed previous checkpoint: {prev_file}")
 
 
 # ---------------------------------------------------------------------------
