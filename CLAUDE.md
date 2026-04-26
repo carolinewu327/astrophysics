@@ -40,8 +40,8 @@ This is an astrophysics research project analyzing gravitational lensing converg
   - `setup_logging()` — Configure root logger with timestamps
   - `resolve_catalog_path(data_dir, dataset, region, catalog_type)` — Auto-resolve FITS file paths
   - `resolve_planck_paths(data_dir)` — Return (alm_path, mask_path) for Planck data
-  - `load_catalog(path, weights, random_fraction, z_min, z_max)` — Full catalog loader with weighting
-  - `load_catalog_lightweight(path, columns, fraction, z_min, z_max)` — Memory-efficient loader for large random catalogs (memmap + column selection)
+  - `load_catalog(path, weights, random_fraction, z_min, z_max, seed)` — Full catalog loader with weighting; `seed` makes subsampling reproducible (None = legacy unseeded)
+  - `load_catalog_lightweight(path, columns, fraction, z_min, z_max, seed)` — Memory-efficient loader for large random catalogs (memmap + column selection); `seed` controls reproducibility
   - `preprocess_catalog_galactic(data, weights)` — Convert RA/Dec/Z to Galactic coords + comoving distances
   - `load_kappa_map(alm_file, mask_file, nside, fwhm_arcmin)` — Load Planck ALM, smooth, synthesize HEALPix map
 
@@ -49,9 +49,10 @@ This is an astrophysics research project analyzing gravitational lensing converg
 
 All scripts accept `--help` for full argument documentation. Legacy Jupyter notebooks are preserved in `legacy/`.
 
-- **`find_pairs.py`** — Find galaxy or random-point pairs by separation criteria
+- **`find_pairs.py`** — Find galaxy or random-point pairs by separation criteria; writes a pair catalog CSV
 - **`stack_single.py`** — Stack single galaxies/randoms against the Planck κ map (with jackknife errors)
 - **`stack_pairs.py`** — Stack galaxy pairs from a pair catalog against the Planck κ map
+- **`find_and_stack_pairs.py`** — Combined find-and-stack pipeline that never materializes a pair catalog. Used for full random catalogs where the pair list would be too large to write to disk (~2B pairs / hundreds of GB). Workers stack pairs inline and return per-chunk accumulator grids, which the main process reduces into the final stacked map. Multiprocess mode requires Linux `fork()` for kappa-map sharing via copy-on-write; local serial validation works with `--n-processes 1` on any platform.
 - **`plot_results.py`** — Load stacked κ CSVs, compute derived maps, generate analysis plots
 
 ## Analysis Pipeline
@@ -81,8 +82,10 @@ python find_pairs.py --dataset BOSS --region South --catalog-type galaxy --rpar 
 **Key parameters:**
 - `--rpar`: Maximum parallel (line-of-sight) distance in Mpc/h (default: 20)
 - `--rperp-min` / `--rperp-max`: Perpendicular distance range in Mpc/h (default: 18–22)
-- `--n-processes`: Parallel workers (default: auto = 75% of cores, capped at 12)
+- `--n-processes`: Parallel workers (default: auto = 75% of cores)
 - `--chunk-size`: Galaxies per chunk (default: 10000)
+
+The script uses `imap_unordered` for load balancing (chunks complete in arbitrary order) and a vectorized `Dmid` computation. Output rows therefore appear in completion order, not chunk order — sort by full pair coordinates if you need a canonical ordering.
 
 **Output:** `data/paircatalogs/{dataset}/{type}_pairs_{dataset}_{region}_{r_par}_{r_perp_min}_{r_perp_max}hmpc.csv`
 Columns: l1, b1, z1, w1, Dc1, ID1, l2, b2, z2, w2, Dc2, ID2, Dmid
@@ -97,6 +100,26 @@ python stack_pairs.py \
 ```
 
 **Output:** `analysis/boss/results/kappa_pairs_{label}_{dataset}_{region}.csv`
+
+### 3b. Combined find-and-stack for full randoms (`find_and_stack_pairs.py`)
+For runs where the pair catalog would be too large to materialize on disk (full random catalogs at `--fraction 1.0`), use this script instead of steps 2 + 3. It runs the same pair-finding logic in a worker pool but stacks each pair into per-chunk accumulator grids inline, returning ~hundreds of KB per chunk instead of millions of pair rows. Pairs are never written anywhere.
+
+```bash
+python find_and_stack_pairs.py --dataset BOSS --region South --catalog-type random \
+    --fraction 1.0 --rpar 5 --rperp-min 4 --rperp-max 6 \
+    --label random_5_frac100 \
+    --checkpoint-path analysis/boss/results/checkpoints/random_5_frac100_BOSS_South.npz \
+    --n-processes 24 --chunk-size 5000
+```
+
+**Key behaviors:**
+- Loads the kappa map and mask as module globals *before* `Pool()` creation. Multiprocess mode explicitly requests `fork()` (via `mp.get_context("fork")`) so workers can inherit the kappa map via copy-on-write. This is the intended production mode on Linux. Local validation should use `--n-processes 1`; multiprocess macOS may work but is not the production target.
+- Atomic checkpoint writes (`os.replace()`); resume via `--resume-checkpoint`. The checkpoint stores the set of completed chunk IDs (not just a "last chunk"), which is required for `imap_unordered`.
+- `--seed` controls catalog subsampling for `--fraction < 1.0`. If omitted, a fresh seed is auto-generated and saved in the checkpoint so resume uses the *same* subset. Resume across `--fraction < 1` runs without a seed would silently mix accumulator state from different subsamples.
+- Z is upgraded to float64 inside this script (vs the float32 from BOSS FITS). This produces ~5e-6 differences in the final 101×101 kappa map vs the legacy two-step pipeline (well below physical noise ~1e-3). The new script is more accurate; the old reference is the artifact.
+- Sidecar `.meta.json` written next to the output CSV with full run provenance (timing, chunk counts, seed, all CLI args).
+
+**Output:** `analysis/boss/results/kappa_pairs_{label}_{dataset}_{region}.csv` (same naming as `stack_pairs.py`)
 
 ### 4. Generate plots and analysis (`plot_results.py`)
 Loads all stacked CSV maps, computes derived maps, and generates 8 map plots + 3 profile plots. Works entirely from CSV files (no FITS data needed).

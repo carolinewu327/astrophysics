@@ -94,6 +94,7 @@ def load_catalog(
     random_fraction: Optional[float] = None,
     z_min: float = 0,
     z_max: float = 10000,
+    seed: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Load a catalog from a FITS file.
 
@@ -108,6 +109,10 @@ def load_catalog(
         If set, randomly subsample to this fraction of the catalog.
     z_min, z_max : float
         Redshift cuts.
+    seed : int or None
+        Seed for the subsampling RNG. ``None`` preserves the legacy unseeded
+        behavior. Pass an integer to make the subsample reproducible (required
+        for checkpoint resume to be safe with ``random_fraction < 1``).
 
     Returns
     -------
@@ -123,8 +128,9 @@ def load_catalog(
         & np.isfinite(cat["DEC"])
     ]
     if random_fraction:
+        rng = np.random.default_rng(seed) if seed is not None else np.random
         cat = cat[
-            np.random.choice(len(cat), int(random_fraction * len(cat)), replace=False)
+            rng.choice(len(cat), int(random_fraction * len(cat)), replace=False)
         ]
 
     if weights == "CMASS":
@@ -148,6 +154,7 @@ def load_catalog_lightweight(
     fraction: Optional[float] = None,
     z_min: float = 0,
     z_max: float = 10000,
+    seed: Optional[int] = None,
 ) -> np.ndarray:
     """Load only selected columns from a FITS catalog, memory-efficiently.
 
@@ -165,6 +172,10 @@ def load_catalog_lightweight(
         If set, randomly subsample to this fraction *before* reading data.
     z_min, z_max : float
         Redshift cuts (applied only if "Z" is in *columns*).
+    seed : int or None
+        Seed for the subsampling RNG. ``None`` preserves the legacy unseeded
+        behavior. Pass an integer to make the subsample reproducible (required
+        for checkpoint resume to be safe with ``fraction < 1``).
 
     Returns
     -------
@@ -177,7 +188,8 @@ def load_catalog_lightweight(
         # Subsample row indices first to avoid reading all data
         if fraction and fraction < 1.0:
             n_keep = int(fraction * nrows)
-            idx = np.sort(np.random.choice(nrows, n_keep, replace=False))
+            rng = np.random.default_rng(seed) if seed is not None else np.random
+            idx = np.sort(rng.choice(nrows, n_keep, replace=False))
         else:
             idx = np.arange(nrows)
 

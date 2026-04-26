@@ -36,11 +36,16 @@ from geometry import angular_separation
 
 logger = logging.getLogger(__name__)
 
+PAIR_COLUMNS = [
+    'l1', 'b1', 'z1', 'w1', 'Dc1', 'ID1',
+    'l2', 'b2', 'z2', 'w2', 'Dc2', 'ID2', 'Dmid',
+]
+
 
 # ---------------------------------------------------------------------------
 # Module-level function (required for multiprocessing pickle)
 # ---------------------------------------------------------------------------
-def process_chunk_optimized(chunk_start_end, l, b, D, z, weights_valid, ids,
+def process_chunk_optimized(chunk_meta, l, b, D, z, weights_valid, ids,
                             r_par_max, r_perp_min, r_perp_max,
                             sorted_indices, sorted_D):
     """
@@ -50,8 +55,9 @@ def process_chunk_optimized(chunk_start_end, l, b, D, z, weights_valid, ids,
 
     Parameters
     ----------
-    chunk_start_end : tuple of (int, int)
-        Start and end indices into the sorted_indices array for this chunk.
+    chunk_meta : tuple
+        Either (start, end) or (chunk_id, start, end), where start/end are
+        indices into the sorted_indices array.
     l, b : ndarray
         Galactic longitude and latitude (degrees) for all galaxies.
     D : ndarray
@@ -75,10 +81,15 @@ def process_chunk_optimized(chunk_start_end, l, b, D, z, weights_valid, ids,
 
     Returns
     -------
-    pairs : list of dict
-        Each dict has keys: l1, b1, z1, w1, Dc1, ID1, l2, b2, z2, w2, Dc2, ID2, Dmid
+    result : dict
+        Contains chunk metadata and a DataFrame with columns:
+        l1, b1, z1, w1, Dc1, ID1, l2, b2, z2, w2, Dc2, ID2, Dmid.
     """
-    chunk_start, chunk_end = chunk_start_end
+    if len(chunk_meta) == 2:
+        chunk_id = None
+        chunk_start, chunk_end = chunk_meta
+    else:
+        chunk_id, chunk_start, chunk_end = chunk_meta
 
     # Collect candidate pairs (first pass: rough angular filter)
     i_list = []
@@ -151,7 +162,11 @@ def process_chunk_optimized(chunk_start_end, l, b, D, z, weights_valid, ids,
             f"  Chunk [{chunk_start}-{chunk_end}] COMPLETE: "
             f"{chunk_end - chunk_start} galaxies in {total_time:.1f}s, found 0 pairs"
         )
-        return []
+        return _make_chunk_result(
+            chunk_id, chunk_start, chunk_end,
+            pd.DataFrame(columns=PAIR_COLUMNS),
+            total_time,
+        )
 
     # --- Second pass: precise angular separation ---
     i_arr = np.array(i_list)
@@ -169,26 +184,44 @@ def process_chunk_optimized(chunk_start_end, l, b, D, z, weights_valid, ids,
     i_final = i_arr[final_mask]
     j_final = j_arr[final_mask]
 
-    # Build output pairs
-    pairs = []
-    for k in range(len(i_final)):
-        ii = i_final[k]
-        jj = j_final[k]
-        Dmid = cosmo.comoving_distance((z[ii] + z[jj]) / 2.0).value * cosmo.h
-        pairs.append({
-            'l1': l[ii], 'b1': b[ii], 'z1': z[ii],
-            'w1': weights_valid[ii], 'Dc1': D[ii], 'ID1': ids[ii],
-            'l2': l[jj], 'b2': b[jj], 'z2': z[jj],
-            'w2': weights_valid[jj], 'Dc2': D[jj], 'ID2': ids[jj],
-            'Dmid': Dmid,
-        })
+    # Build output pairs with vectorized Dmid calculation. Keep z's existing
+    # dtype so historical BOSS outputs remain reproducible.
+    z_mid = (z[i_final] + z[j_final]) / 2.0
+    dmid = cosmo.comoving_distance(z_mid).value * cosmo.h
+    pairs_df = pd.DataFrame({
+        'l1': l[i_final],
+        'b1': b[i_final],
+        'z1': z[i_final],
+        'w1': weights_valid[i_final],
+        'Dc1': D[i_final],
+        'ID1': ids[i_final],
+        'l2': l[j_final],
+        'b2': b[j_final],
+        'z2': z[j_final],
+        'w2': weights_valid[j_final],
+        'Dc2': D[j_final],
+        'ID2': ids[j_final],
+        'Dmid': dmid,
+    }, columns=PAIR_COLUMNS)
 
     total_time = time.time() - start_time
     print(
         f"  Chunk [{chunk_start}-{chunk_end}] COMPLETE: "
-        f"{chunk_end - chunk_start} galaxies in {total_time:.1f}s, found {len(pairs)} pairs"
+        f"{chunk_end - chunk_start} galaxies in {total_time:.1f}s, found {len(pairs_df)} pairs"
     )
-    return pairs
+    return _make_chunk_result(chunk_id, chunk_start, chunk_end, pairs_df, total_time)
+
+
+def _make_chunk_result(chunk_id, chunk_start, chunk_end, pairs_df, elapsed):
+    """Return a uniform chunk result for ordered and unordered execution."""
+    return {
+        'chunk_id': chunk_id,
+        'chunk_start': chunk_start,
+        'chunk_end': chunk_end,
+        'pairs': pairs_df,
+        'n_pairs': len(pairs_df),
+        'elapsed': elapsed,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -260,7 +293,7 @@ def build_pair_catalog(data, weights, catalog_type, dataset, region,
     # Split into chunks
     n_chunks = int(np.ceil(n_galaxies / chunk_size))
     chunk_ranges = [
-        (i * chunk_size, min((i + 1) * chunk_size, n_galaxies))
+        (i, i * chunk_size, min((i + 1) * chunk_size, n_galaxies))
         for i in range(n_chunks)
     ]
     logger.info(f"Processing {n_chunks} chunks of size {chunk_size} using {n_processes} process(es)")
@@ -281,71 +314,44 @@ def build_pair_catalog(data, weights, catalog_type, dataset, region,
         sorted_indices=sorted_indices, sorted_D=sorted_D,
     )
 
-    all_pairs = []
+    pair_frames = []
     global_start = time.time()
     last_checkpoint_chunk = None
+    completed_chunks = 0
 
     if n_processes > 1:
         logger.info(
             f"Starting multiprocessing pool with {n_processes} workers..."
         )
-        chunk_start_time = time.time()
         with Pool(processes=n_processes) as pool:
-            for i, result in enumerate(pool.imap(process_func, chunk_ranges)):
-                chunk_time = time.time() - chunk_start_time
-                all_pairs.extend(result)
+            for result in pool.imap_unordered(process_func, chunk_ranges):
+                completed_chunks += 1
+                _record_chunk_result(result, pair_frames, completed_chunks, n_chunks)
 
-                chunk_s, chunk_e = chunk_ranges[i]
-                n_in_chunk = len(result)
-                total_so_far = len(all_pairs)
-                gal_per_sec = (chunk_e - chunk_s) / chunk_time if chunk_time > 0 else 0
-                logger.info(
-                    f"Chunk {i + 1}/{n_chunks} [{chunk_s}-{chunk_e}]: "
-                    f"{n_in_chunk:,} pairs in {chunk_time:.1f}s "
-                    f"({gal_per_sec:.1f} gal/s) | Total: {total_so_far:,} pairs"
-                )
-
-                # Checkpoint save every 10 chunks
-                if (i + 1) % 10 == 0:
-                    _save_checkpoint(all_pairs, output_file, i + 1, last_checkpoint_chunk)
-                    last_checkpoint_chunk = i + 1
-
-                chunk_start_time = time.time()
+                if completed_chunks % 10 == 0:
+                    _save_checkpoint(pair_frames, output_file, completed_chunks, last_checkpoint_chunk)
+                    last_checkpoint_chunk = completed_chunks
     else:
         logger.info("Running in single-process mode...")
-        for i, chunk in enumerate(chunk_ranges):
-            chunk_start_time = time.time()
+        for chunk in chunk_ranges:
             result = process_func(chunk)
-            chunk_time = time.time() - chunk_start_time
-            all_pairs.extend(result)
+            completed_chunks += 1
+            _record_chunk_result(result, pair_frames, completed_chunks, n_chunks)
 
-            chunk_s, chunk_e = chunk
-            n_in_chunk = len(result)
-            total_so_far = len(all_pairs)
-            gal_per_sec = (chunk_e - chunk_s) / chunk_time if chunk_time > 0 else 0
-            logger.info(
-                f"Chunk {i + 1}/{n_chunks} [{chunk_s}-{chunk_e}]: "
-                f"{n_in_chunk:,} pairs in {chunk_time:.1f}s "
-                f"({gal_per_sec:.1f} gal/s) | Total: {total_so_far:,} pairs"
-            )
-
-            # Checkpoint save every 10 chunks
-            if (i + 1) % 10 == 0:
-                _save_checkpoint(all_pairs, output_file, i + 1, last_checkpoint_chunk)
-                last_checkpoint_chunk = i + 1
+            if completed_chunks % 10 == 0:
+                _save_checkpoint(pair_frames, output_file, completed_chunks, last_checkpoint_chunk)
+                last_checkpoint_chunk = completed_chunks
 
     elapsed = time.time() - global_start
-    logger.info(f"Pair finding complete: {len(all_pairs):,} total pairs in {elapsed:.1f}s")
+    total_pairs = sum(len(frame) for frame in pair_frames)
+    logger.info(f"Pair finding complete: {total_pairs:,} total pairs in {elapsed:.1f}s")
 
     # Save final output
-    if len(all_pairs) == 0:
+    if total_pairs == 0:
         logger.warning("No pairs found. Writing empty CSV with header only.")
-        pairs_df = pd.DataFrame(
-            columns=['l1', 'b1', 'z1', 'w1', 'Dc1', 'ID1',
-                     'l2', 'b2', 'z2', 'w2', 'Dc2', 'ID2', 'Dmid']
-        )
+        pairs_df = pd.DataFrame(columns=PAIR_COLUMNS)
     else:
-        pairs_df = pd.DataFrame(all_pairs)
+        pairs_df = pd.concat(pair_frames, ignore_index=True)
 
     pairs_df.to_csv(output_file, index=False)
     logger.info(f"Saved {len(pairs_df):,} pairs to {output_file}")
@@ -360,11 +366,33 @@ def build_pair_catalog(data, weights, catalog_type, dataset, region,
     return pairs_df
 
 
-def _save_checkpoint(all_pairs, output_file, chunk_num, prev_chunk_num=None):
+def _record_chunk_result(result, pair_frames, completed_chunks, n_chunks):
+    """Append one chunk result and log progress."""
+    pairs_df = result['pairs']
+    pair_frames.append(pairs_df)
+    chunk_s = result['chunk_start']
+    chunk_e = result['chunk_end']
+    chunk_time = result['elapsed']
+    n_in_chunk = result['n_pairs']
+    total_so_far = sum(len(frame) for frame in pair_frames)
+    gal_per_sec = (chunk_e - chunk_s) / chunk_time if chunk_time > 0 else 0
+    chunk_id = result['chunk_id']
+    chunk_label = chunk_id + 1 if chunk_id is not None else completed_chunks
+    logger.info(
+        f"Chunk {completed_chunks}/{n_chunks} complete "
+        f"(id={chunk_label} [{chunk_s}-{chunk_e}]): "
+        f"{n_in_chunk:,} pairs in {chunk_time:.1f}s "
+        f"({gal_per_sec:.1f} gal/s) | Total: {total_so_far:,} pairs"
+    )
+
+
+def _save_checkpoint(pair_frames, output_file, chunk_num, prev_chunk_num=None):
     """Save an intermediate checkpoint CSV, removing the previous one."""
-    if len(all_pairs) == 0:
+    if not pair_frames:
         return
-    temp_df = pd.DataFrame(all_pairs)
+    temp_df = pd.concat(pair_frames, ignore_index=True)
+    if len(temp_df) == 0:
+        return
     temp_file = output_file.replace('.csv', f'_checkpoint_{chunk_num}.csv')
     temp_df.to_csv(temp_file, index=False)
     logger.info(f"Checkpoint: saved {len(temp_df):,} pairs to {temp_file}")
@@ -413,7 +441,7 @@ def parse_args(argv=None):
     )
     parser.add_argument(
         "--n-processes", type=int, default=None,
-        help="Number of parallel processes (default: auto = 75%% of cores, capped at 12)"
+        help="Number of parallel processes (default: auto = 75%% of cores)"
     )
     parser.add_argument(
         "--chunk-size", type=int, default=10000,
@@ -470,7 +498,6 @@ def main(argv=None):
         n_processes = args.n_processes
     else:
         n_processes = max(1, int(cpu_count() * 0.75))
-        n_processes = min(n_processes, 12)
     logger.info(f"Processes:    {n_processes}")
     logger.info(f"Chunk size:   {args.chunk_size}")
 
