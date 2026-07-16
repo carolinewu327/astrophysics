@@ -31,9 +31,29 @@ consequence of the choice.
 - **Completeness target**: `>= 90%` of truth pairs retained.
 - **Interloper ceiling**: `<= 10%` of selected pairs failing the primary
   criterion.
-- **Decision rule**: the smallest candidate cut satisfying both. If no
-  candidate satisfies both, do not choose; report the table and revisit the
-  targets together before any further analysis.
+- **Decision rule (amended 2026-07-13, see log below)**: among candidate
+  cuts satisfying both the completeness target and the interloper ceiling,
+  choose the one with the highest simulated bridge signal-to-noise, where
+  noise is the spatial-jackknife uncertainty of the residual bridge excess
+  (5x5 = 25 leave-one-out blocks by pair-center position in the box). If no
+  candidate satisfies both constraints, do not choose; report the table and
+  revisit the targets together before any further analysis.
+- **Transverse bin width** (same discipline, same S/N selector): candidates
+  are half-widths `0.5, 1.0, 2.0 h^-1 Mpc` around each separation center;
+  choose the width with the highest jackknife S/N of the residual bridge
+  excess, subject to the qualitative check that the wider bin does not
+  visibly distort the residual shape (separation mixing).
+
+## Amendment log
+
+- **2026-07-13**: Decision rule changed from "smallest cut satisfying the
+  purity constraints" to "highest simulated jackknife S/N among cuts
+  satisfying the purity constraints", and the transverse bin-width decision
+  added under the same rule. Prompted by advisor feedback (Z. Zheng,
+  2026-07-13): wider selections gain pair counts and may win in
+  signal-to-noise; jackknife uncertainties in the simulation should guide
+  both the `r_perp` bin width and the `r_par` cut. Amended before any sweep
+  results were produced.
 
 ## Measurement design
 
