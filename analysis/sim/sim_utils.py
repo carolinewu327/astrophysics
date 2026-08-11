@@ -24,12 +24,16 @@ OBS_BOX_SIZE_HMPC = 100.0
 OBS_SINGLE_GRID_SIZE = 100
 OBS_PAIR_GRID_SIZE = 101
 
-SMOOTHING_HMPC = {
+# FWHM equivalents (D_l x theta at z=0.547) of the observational smoothing.
+# The Planck map is smoothed with hp.smoothalm(fwhm=...), so these are FWHM,
+# not Gaussian sigma; convert by FWHM_TO_SIGMA before use as a filter sigma.
+SMOOTHING_FWHM_HMPC = {
     "none": 0.0,
     "2arcmin": 0.83,
     "4arcmin": 1.66,
     "8arcmin": 3.31,
 }
+FWHM_TO_SIGMA = 1.0 / (2.0 * np.sqrt(2.0 * np.log(2.0)))
 
 
 @dataclass(frozen=True)
@@ -190,6 +194,50 @@ def pair_stack_offsets(
     return vals, x_grid, y_grid
 
 
+def symmetrized_radial_interpolator(single_map: np.ndarray):
+    """1D radius -> kappa function from a radially symmetrized single stack.
+
+    The symmetrized map is a function of distance from its symmetrization
+    physical center ((N-1)/2 in pixel-index coordinates), so a radial profile
+    represents it exactly — and
+    extends to the map corners (r ~ 70 px), unlike 2D interpolation, which is
+    limited to the -N/2..N/2-1 axis range of the even grid and picks up
+    center/edge asymmetries. Radii beyond the corners return 0.
+    """
+    n = single_map.shape[0]
+    center = 0.5 * (n - 1)
+    yy, xx = np.indices((n, n))
+    r = np.hypot(xx - center, yy - center).ravel()
+    v = single_map.ravel()
+    bins = np.arange(0.0, r.max() + 1.0, 0.5)
+    idx = np.clip(np.digitize(r, bins) - 1, 0, len(bins) - 2)
+    sums = np.bincount(idx, weights=v, minlength=len(bins) - 1)
+    counts = np.bincount(idx, minlength=len(bins) - 1)
+    good = counts > 0
+    centers = 0.5 * (bins[:-1] + bins[1:])[good]
+    means = sums[good] / counts[good]
+
+    def profile(radius: np.ndarray) -> np.ndarray:
+        return np.interp(radius, centers, means, left=means[0], right=0.0)
+
+    return profile
+
+
+def make_two_halo_template(
+    single_map: np.ndarray,
+    x_grid: np.ndarray,
+    y_grid: np.ndarray,
+    rperp_center: float,
+) -> np.ndarray:
+    """Two copies of the symmetrized single-stack profile at +/- rperp/2.
+
+    Grids are in the single map's physical units (1 h^-1 Mpc per pixel).
+    """
+    profile = symmetrized_radial_interpolator(single_map)
+    offset = 0.5 * rperp_center
+    return profile(np.hypot(x_grid + offset, y_grid)) + profile(np.hypot(x_grid - offset, y_grid))
+
+
 def reflect_symmetrize_map(kappa_map: np.ndarray) -> np.ndarray:
     return 0.25 * (
         kappa_map
@@ -197,6 +245,22 @@ def reflect_symmetrize_map(kappa_map: np.ndarray) -> np.ndarray:
         + np.flip(kappa_map, axis=1)
         + np.flip(np.flip(kappa_map, axis=0), axis=1)
     )
+
+
+def radial_symmetrize_map(kappa_map: np.ndarray, pwr: float = 2 / 3) -> np.ndarray:
+    """Match the BOSS single-halo radial symmetrization."""
+
+    grid_size = kappa_map.shape[0]
+    y, x = np.indices(kappa_map.shape)
+    cx = grid_size // 2
+    cy = grid_size // 2
+    radial_bin = (((x - cx) ** 2 + (y - cy) ** 2) ** pwr).astype(np.int64)
+    flat_bin = radial_bin.ravel()
+    flat_val = kappa_map.ravel()
+    sums = np.bincount(flat_bin, weights=flat_val)
+    counts = np.bincount(flat_bin)
+    radial_avg = sums / np.maximum(counts, 1)
+    return radial_avg[radial_bin].astype(kappa_map.dtype, copy=False)
 
 
 def radial_profile_from_map(
@@ -271,7 +335,7 @@ def apply_periodic_gaussian_smoothing(
 ) -> np.ndarray:
     if smoothing == "none":
         return kappa_map
-    if smoothing not in SMOOTHING_HMPC:
+    if smoothing not in SMOOTHING_FWHM_HMPC:
         raise ValueError(f"Unknown smoothing option {smoothing!r}")
 
     try:
@@ -279,7 +343,7 @@ def apply_periodic_gaussian_smoothing(
     except ImportError as exc:
         raise RuntimeError("scipy is required for smoothing") from exc
 
-    sigma_pix = SMOOTHING_HMPC[smoothing] / pixel_size_hmpc
+    sigma_pix = SMOOTHING_FWHM_HMPC[smoothing] * FWHM_TO_SIGMA / pixel_size_hmpc
     return gaussian_filter(kappa_map, sigma=sigma_pix, mode="wrap")
 
 

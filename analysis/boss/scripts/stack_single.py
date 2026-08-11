@@ -28,6 +28,7 @@ from catalog import (
     load_catalog, load_catalog_lightweight, load_kappa_map,
     preprocess_catalog_galactic,
     resolve_catalog_path, resolve_planck_paths,
+    sigma_crit_weights,
 )
 from constants import BOX_SIZE_HMPC, GRID_SIZE, NSIDE
 from geometry import symmetrize_map
@@ -256,12 +257,12 @@ def jackknife_stack_healpix(data, weights, rand_cat, kmap, mask,
 # ===========================================================================
 # Output helpers
 # ===========================================================================
-def output_kappa_path(output_dir, catalog_type, dataset, region):
-    return os.path.join(output_dir, f"kappa_single_{catalog_type}_{dataset}_{region}.csv")
+def output_kappa_path(output_dir, catalog_type, dataset, region, tag=""):
+    return os.path.join(output_dir, f"kappa_single_{catalog_type}{tag}_{dataset}_{region}.csv")
 
 
-def output_error_path(output_dir, dataset, region):
-    return os.path.join(output_dir, f"error_single_{dataset}_{region}.csv")
+def output_error_path(output_dir, dataset, region, tag=""):
+    return os.path.join(output_dir, f"error_single{tag}_{dataset}_{region}.csv")
 
 
 # ===========================================================================
@@ -303,6 +304,19 @@ def parse_args(argv=None):
         "--jackknife-nside", type=int, default=10,
         help="HEALPix nside for jackknife region tessellation (default: 10)."
     )
+    parser.add_argument(
+        "--sigma-crit-weight", dest="sigma_crit_weight", action="store_true",
+        default=True,
+        help="Multiply weights by 1/Sigma_crit^2 (CMB source plane) for "
+             "inverse-variance stacking; outputs get an '_scw' tag. This is "
+             "the default estimator (on by default)."
+    )
+    parser.add_argument(
+        "--no-sigma-crit-weight", dest="sigma_crit_weight", action="store_false",
+        help="Stack with survey weights only. Retained for the unweighted "
+             "null test; outputs drop the '_scw' tag and therefore do not "
+             "overwrite the default-estimator products."
+    )
     return parser.parse_args(argv)
 
 
@@ -333,9 +347,10 @@ def main(argv=None):
     # ------------------------------------------------------------------
     os.makedirs(args.output_dir, exist_ok=True)
 
+    tag = "_scw" if args.sigma_crit_weight else ""
     kappa_out = output_kappa_path(args.output_dir, args.catalog_type,
-                                  args.dataset, args.region)
-    error_out = output_error_path(args.output_dir, args.dataset, args.region)
+                                  args.dataset, args.region, tag=tag)
+    error_out = output_error_path(args.output_dir, args.dataset, args.region, tag=tag)
 
     if not args.overwrite:
         # For galaxy stacks we also produce the error map; for randoms we
@@ -404,6 +419,14 @@ def main(argv=None):
             z_max=z_max,
         )
     logger.info("Loaded %d objects in %.1f s", len(data), time.time() - t0)
+
+    if args.sigma_crit_weight:
+        scw = sigma_crit_weights(np.asarray(data["Z"], dtype=np.float64))
+        weights = weights * scw
+        logger.info(
+            "Applied 1/Sigma_crit^2 weights (relative range %.3f-%.3f across the sample)",
+            scw.min() / scw.mean(), scw.max() / scw.mean(),
+        )
 
     # ------------------------------------------------------------------
     # Stack

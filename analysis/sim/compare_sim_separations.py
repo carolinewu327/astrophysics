@@ -18,6 +18,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
+from sim_utils import make_two_halo_template, radial_symmetrize_map
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,24 +54,9 @@ def make_single_template(
     y_grid: np.ndarray,
     rperp_center: float,
 ) -> np.ndarray:
-    try:
-        from scipy.interpolate import RegularGridInterpolator
-    except ImportError as exc:
-        raise RuntimeError("scipy is required to interpolate the single-halo template") from exc
-
-    single_axis = np.linspace(-49.5, 49.5, single.shape[0])
-    interpolator = RegularGridInterpolator(
-        (single_axis, single_axis),
-        single,
-        bounds_error=False,
-        fill_value=0.0,
-    )
-
-    halo_offset = 0.5 * rperp_center
-    left_points = np.column_stack([y_grid.ravel(), (x_grid + halo_offset).ravel()])
-    right_points = np.column_stack([y_grid.ravel(), (x_grid - halo_offset).ravel()])
-    template = interpolator(left_points) + interpolator(right_points)
-    return template.reshape(x_grid.shape)
+    # radial-profile construction: exact for the symmetrized single map,
+    # symmetric by construction, and covers radii out to the map corners
+    return make_two_halo_template(single, x_grid, y_grid, rperp_center)
 
 
 def bridge_masks(axis: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -123,9 +110,9 @@ def common_norm(arrays: list[np.ndarray], diverging: bool = False):
 
     vmin = float(min(np.nanmin(arr) for arr in arrays))
     vmax = float(max(np.nanpercentile(arr, 99.8) for arr in arrays))
-    if vmin < 0.0:
-        return TwoSlopeNorm(vmin=vmin, vcenter=0.0, vmax=vmax), "RdBu_r"
-    return None, "magma"
+    # always use the white-centered diverging palette so smoothed (all-positive)
+    # and unsmoothed maps render on a consistent scale
+    return TwoSlopeNorm(vmin=min(vmin, -1e-12), vcenter=0.0, vmax=vmax), "RdBu_r"
 
 
 def save_residual_csv(path: Path, residual: np.ndarray, axis: np.ndarray) -> None:
@@ -311,7 +298,7 @@ def main(argv: list[str] | None = None) -> None:
     setup_logging()
     results = Path(args.results_dir)
 
-    single = load_map(results / f"kappa_single_sim_{args.mass_label}.csv")
+    single = radial_symmetrize_map(load_map(results / f"kappa_single_sim_{args.mass_label}.csv"))
     fixed_axis = np.linspace(-50.0, 50.0, 101)
     norm_axis = np.linspace(-2.5, 2.5, 101)
     norm_x, norm_y = np.meshgrid(norm_axis, norm_axis)

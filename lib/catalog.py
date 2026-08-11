@@ -219,6 +219,23 @@ def load_catalog_lightweight(
 # ---------------------------------------------------------------------------
 # Catalog preprocessing
 # ---------------------------------------------------------------------------
+def sigma_crit_weights(z, z_source: float = 1089.8) -> np.ndarray:
+    """Inverse-variance lensing weights 1/Sigma_crit^2 (relative units).
+
+    Sigma_crit = c^2 D_s / (4 pi G D_l D_ls) with the CMB as the source plane;
+    the constant prefactor cancels in weighted means, so only the distance
+    ratio is kept. Evaluated on a redshift grid and interpolated so large
+    catalogs are cheap.
+    """
+    z = np.asarray(z, dtype=np.float64)
+    grid = np.linspace(max(z.min() - 0.01, 0.01), z.max() + 0.01, 512)
+    d_s = cosmo.angular_diameter_distance(z_source).value
+    d_l = cosmo.angular_diameter_distance(grid).value
+    d_ls = cosmo.angular_diameter_distance_z1z2(grid, z_source).value
+    inv_sigma_crit_rel = d_l * d_ls / d_s
+    return np.interp(z, grid, inv_sigma_crit_rel**2)
+
+
 def preprocess_catalog_galactic(
     data: np.ndarray, weights: Optional[np.ndarray] = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Optional[np.ndarray]]:
