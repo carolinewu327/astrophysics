@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -24,6 +26,7 @@ from sim_utils import (
     open_kappa_memmap,
     periodic_bilinear_sample,
     radial_profile_from_map,
+    radial_symmetrize_map,
     save_map_csv,
     save_profile_csv,
     setup_logging,
@@ -106,20 +109,34 @@ def direct_annular_profile(
     chunksize: int,
     max_particles: int | None,
     max_halos: int | None,
+    n_subsets: int = 1,
+    subset_seed: int = 0,
 ) -> None:
-    """Independent validator from direct particle counts in transverse annuli."""
+    """Independent validator from direct particle counts in transverse annuli.
+
+    With ``n_subsets > 1``, draws ``n_subsets`` disjoint random subsets of
+    ``max_halos`` halos each and accumulates a separate profile per subset in
+    the same single pass over the particle file. The subset scatter around
+    the map profile tests whether a small-sample offset is sample variance
+    (subsets straddle the map profile) or a systematic bias (all subsets on
+    one side).
+    """
 
     try:
         from scipy.spatial import cKDTree
     except ImportError as exc:
         raise RuntimeError("scipy is required for the direct-annular validator") from exc
 
-    if max_halos is not None and len(halos) > max_halos:
-        halos = halos.sample(n=max_halos, random_state=0).reset_index(drop=True)
+    per_subset = max_halos if max_halos is not None else len(halos)
+    n_draw = min(len(halos), per_subset * n_subsets)
+    if n_draw < len(halos):
+        halos = halos.sample(n=n_draw, random_state=subset_seed).reset_index(drop=True)
+    subset_of = np.arange(len(halos)) // per_subset
+    halos_per_subset = np.bincount(subset_of, minlength=n_subsets).astype(np.float64)
 
     halo_xy = halos[["x", "y"]].to_numpy(dtype=np.float64)
     bins = np.linspace(0.0, r_max_hmpc, n_bins + 1)
-    counts = np.zeros(n_bins, dtype=np.float64)
+    counts = np.zeros((n_subsets, n_bins), dtype=np.float64)
     total_particles = 0
     tree_query_halos = halo_xy
 
@@ -141,27 +158,51 @@ def direct_annular_profile(
             dy = (pts[:, 1] - halo_xy[h_idx, 1] + 0.5 * box_size_hmpc) % box_size_hmpc
             dy -= 0.5 * box_size_hmpc
             radii = np.hypot(dx, dy)
-            counts += np.histogram(radii, bins=bins)[0]
+            counts[subset_of[h_idx]] += np.histogram(radii, bins=bins)[0]
 
         if chunk_id == 1 or chunk_id % 10 == 0:
             logger.info("Direct-annular profile processed %.3g particles", total_particles)
 
     annulus_area = np.pi * (bins[1:] ** 2 - bins[:-1] ** 2)
     mean_count_density = total_particles / box_size_hmpc**2
-    mean_count_annulus = counts / max(len(halos), 1) / annulus_area
     mp_eff = BIGMDPL_DOWNSAMPLE_FACTOR * BIGMDPL_PARTICLE_MASS_HMSUN
-    kappa = mp_eff * (mean_count_annulus - mean_count_density) / SIGMA_C_HMSUN_PER_MPC2
     radius = 0.5 * (bins[:-1] + bins[1:])
+
+    combined_counts = counts.sum(axis=0)
+    mean_count_annulus = combined_counts / max(len(halos), 1) / annulus_area
+    kappa = mp_eff * (mean_count_annulus - mean_count_density) / SIGMA_C_HMSUN_PER_MPC2
     save_profile_csv(
         output,
         radius,
         kappa,
         extra_columns={
-            "particle_count": counts,
+            "particle_count": combined_counts,
             "annulus_area_hmpc2": annulus_area,
+            "halo_count": np.full(len(radius), len(halos)),
         },
     )
-    logger.info("Saved direct-annular profile -> %s", output)
+    logger.info("Saved direct-annular profile (%d halos) -> %s", len(halos), output)
+
+    if n_subsets > 1:
+        rows = []
+        for k in range(n_subsets):
+            sub_annulus = counts[k] / max(halos_per_subset[k], 1.0) / annulus_area
+            sub_kappa = mp_eff * (sub_annulus - mean_count_density) / SIGMA_C_HMSUN_PER_MPC2
+            for r, kap, cnt in zip(radius, sub_kappa, counts[k]):
+                rows.append({
+                    "subset": k,
+                    "n_halos": int(halos_per_subset[k]),
+                    "radius_hmpc": r,
+                    "kappa": kap,
+                    "particle_count": cnt,
+                })
+        subset_path = str(output).replace(".csv", "_subsets.csv")
+        ensure_parent(subset_path)
+        pd.DataFrame(rows).to_csv(subset_path, index=False)
+        logger.info(
+            "Saved %d per-subset direct profiles (seed %d) -> %s",
+            n_subsets, subset_seed, subset_path,
+        )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -170,6 +211,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--kappa-map", default="analysis/sim/results/kappa_map_l0p5.float32")
     parser.add_argument("--output", default="analysis/sim/results/kappa_single_sim_mass13.csv")
     parser.add_argument("--profile-output", default="analysis/sim/results/radial_profile_single_sim_mass13.csv")
+    parser.add_argument(
+        "--raw-output",
+        default=None,
+        help="Optional unsymmetrized stack CSV. By default, writes next to "
+             "--output with an _unsymmetrized suffix so a radial-binning change "
+             "does not require repeating the expensive stack.",
+    )
     parser.add_argument(
         "--direct-profile-output",
         default="analysis/sim/results/radial_profile_single_direct_annuli_mass13.csv",
@@ -186,6 +234,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--direct-rmax", type=float, default=50.0)
     parser.add_argument("--direct-bins", type=int, default=50)
     parser.add_argument("--direct-max-halos", type=int, default=500)
+    parser.add_argument("--direct-subsets", type=int, default=1,
+                        help="Number of disjoint random halo subsets (of --direct-max-halos each) "
+                             "profiled in one particle pass; >1 writes a *_subsets.csv sidecar.")
+    parser.add_argument("--direct-seed", type=int, default=0,
+                        help="Random seed for the halo subset draw.")
     parser.add_argument("--direct-max-particles", type=int, default=None)
     parser.add_argument("--particle-x-col", type=int, default=0)
     parser.add_argument("--particle-y-col", type=int, default=1)
@@ -220,12 +273,52 @@ def main(argv: list[str] | None = None) -> None:
         stack_box_size_hmpc=args.box_size,
         grid_size=args.grid_size,
     )
+    raw_output = args.raw_output
+    if raw_output is None:
+        output_path = Path(args.output)
+        raw_output = str(output_path.with_name(
+            f"{output_path.stem}_unsymmetrized{output_path.suffix}"
+        ))
+    save_map_csv(raw_output, stack)
+    logger.info("Saved unsymmetrized single stack -> %s", raw_output)
+
+    stack = radial_symmetrize_map(stack)
+    center_pixel = 0.5 * (args.grid_size - 1)
+    logger.info(
+        "Applied physical-center radial symmetrization (center index %.1f)",
+        center_pixel,
+    )
 
     save_map_csv(args.output, stack)
     radius, profile = radial_profile_from_map(stack, args.box_size)
     save_profile_csv(args.profile_output, radius, profile)
     logger.info("Saved single stack -> %s", args.output)
     logger.info("Saved radial profile -> %s", args.profile_output)
+
+    metadata_output = str(Path(args.output).with_suffix(".meta.json"))
+    ensure_parent(metadata_output)
+    with open(metadata_output, "w", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "box_size_hmpc": args.box_size,
+                "center_convention": "physical_(N-1)/2",
+                "center_pixel_index": center_pixel,
+                "grid_size": args.grid_size,
+                "halos": args.halos,
+                "kappa_map": args.kappa_map,
+                "n_halos": len(halos),
+                "output": args.output,
+                "profile_output": args.profile_output,
+                "radial_bin_power": 2.0 / 3.0,
+                "raw_output": raw_output,
+                "smooth": args.smooth,
+            },
+            handle,
+            indent=2,
+            sort_keys=True,
+        )
+        handle.write("\n")
+    logger.info("Saved single-stack metadata -> %s", metadata_output)
 
     if args.direct_particles:
         if os.path.exists(args.direct_profile_output) and not args.overwrite:
@@ -243,6 +336,8 @@ def main(argv: list[str] | None = None) -> None:
                 chunksize=args.particle_chunksize,
                 max_particles=args.direct_max_particles,
                 max_halos=args.direct_max_halos,
+                n_subsets=args.direct_subsets,
+                subset_seed=args.direct_seed,
             )
 
     elapsed = time.time() - t0
@@ -251,4 +346,3 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-

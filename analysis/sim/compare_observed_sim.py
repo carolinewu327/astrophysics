@@ -18,6 +18,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
+from sim_utils import make_two_halo_template
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,24 +73,11 @@ def interpolate_single_template(
     target_axis: np.ndarray,
     rperp_center: float,
 ) -> np.ndarray:
-    try:
-        from scipy.interpolate import RegularGridInterpolator
-    except ImportError as exc:
-        raise RuntimeError("scipy is required to interpolate the single-halo template") from exc
-
-    source_axis = axis_for_map(single)
+    # Radial-profile construction (sim_utils.make_two_halo_template), centered
+    # on the physical (N-1)/2 origin.  The previous N//2 convention landed an
+    # even-grid template half a pixel off and left spurious residual features.
     target_x, target_y = np.meshgrid(target_axis, target_axis)
-    interpolator = RegularGridInterpolator(
-        (source_axis, source_axis),
-        single,
-        bounds_error=False,
-        fill_value=0.0,
-    )
-    halo_offset = 0.5 * rperp_center
-    left_points = np.column_stack([target_y.ravel(), (target_x + halo_offset).ravel()])
-    right_points = np.column_stack([target_y.ravel(), (target_x - halo_offset).ravel()])
-    template = interpolator(left_points) + interpolator(right_points)
-    return template.reshape(target_x.shape)
+    return make_two_halo_template(single, target_x, target_y, rperp_center)
 
 
 def resample_map(

@@ -1,5 +1,19 @@
 #!/usr/bin/env python
-"""Find BigMDPL host-halo pairs with RSD applied only to LOS selection."""
+"""Find BigMDPL host-halo pairs with a line-of-sight cut in redshift or real space.
+
+``--rpar-space redshift`` (default, the production/BOSS-like mode) applies the
+``--rpar-max`` cut to the RSD-displaced LOS separation; ``--rpar-space real``
+applies it to the true LOS separation (used to build the truth catalog for the
+Phase 3 completeness/contamination analysis).
+
+Every output catalog records both quantities explicitly, regardless of which
+one was used for selection:
+
+- ``r_parallel_real``: true (real-space) LOS separation,
+- ``r_parallel_rsd``: redshift-space LOS separation,
+- ``r_parallel``: deprecated legacy column, always equal to ``r_parallel_rsd``
+  (its historical meaning); do not use in new code.
+"""
 
 from __future__ import annotations
 
@@ -40,6 +54,8 @@ PAIR_COLUMNS = [
     "M2",
     "r_perp",
     "r_parallel",
+    "r_parallel_real",
+    "r_parallel_rsd",
     "pair_center_x",
     "pair_center_y",
     "cos_theta",
@@ -58,7 +74,8 @@ def make_pair_frame(
     dx: np.ndarray,
     dy: np.ndarray,
     rperp: np.ndarray,
-    rpar: np.ndarray,
+    rpar_real: np.ndarray,
+    rpar_rsd: np.ndarray,
     box_size_hmpc: float,
 ) -> pd.DataFrame:
     center_x = (x[i1] + 0.5 * dx) % box_size_hmpc
@@ -79,7 +96,9 @@ def make_pair_frame(
             "M1": halos["Mvir"].to_numpy()[i1],
             "M2": halos["Mvir"].to_numpy()[i2],
             "r_perp": rperp,
-            "r_parallel": rpar,
+            "r_parallel": rpar_rsd,
+            "r_parallel_real": rpar_real,
+            "r_parallel_rsd": rpar_rsd,
             "pair_center_x": center_x,
             "pair_center_y": center_y,
             "cos_theta": dx / rperp,
@@ -98,6 +117,7 @@ def find_pairs(
     z_snapshot: float,
     omega_m: float,
     max_pairs: int | None,
+    rpar_space: str = "redshift",
 ) -> pd.DataFrame:
     try:
         from scipy.spatial import cKDTree
@@ -123,15 +143,18 @@ def find_pairs(
     dx = minimal_periodic_delta(x[i], x[j], box_size_hmpc)
     dy = minimal_periodic_delta(y[i], y[j], box_size_hmpc)
     rperp = np.hypot(dx, dy)
-    rpar = np.abs(minimal_periodic_delta(z_rsd[i], z_rsd[j], box_size_hmpc))
+    rpar_real = np.abs(minimal_periodic_delta(z[i], z[j], box_size_hmpc))
+    rpar_rsd = np.abs(minimal_periodic_delta(z_rsd[i], z_rsd[j], box_size_hmpc))
+    rpar_sel = rpar_rsd if rpar_space == "redshift" else rpar_real
 
-    mask = (rperp >= rperp_min) & (rperp <= rperp_max) & (rpar <= rpar_max) & (rperp > 0)
+    mask = (rperp >= rperp_min) & (rperp <= rperp_max) & (rpar_sel <= rpar_max) & (rperp > 0)
     i = i[mask]
     j = j[mask]
     dx = dx[mask]
     dy = dy[mask]
     rperp = rperp[mask]
-    rpar = rpar[mask]
+    rpar_real = rpar_real[mask]
+    rpar_rsd = rpar_rsd[mask]
 
     swap = (dx < 0) | ((dx == 0) & (dy < 0))
     i1 = np.where(swap, j, i)
@@ -145,7 +168,8 @@ def find_pairs(
         dx = dx[:max_pairs]
         dy = dy[:max_pairs]
         rperp = rperp[:max_pairs]
-        rpar = rpar[:max_pairs]
+        rpar_real = rpar_real[:max_pairs]
+        rpar_rsd = rpar_rsd[:max_pairs]
 
     pairs = make_pair_frame(
         halos=halos,
@@ -158,7 +182,8 @@ def find_pairs(
         dx=dx,
         dy=dy,
         rperp=rperp,
-        rpar=rpar,
+        rpar_real=rpar_real,
+        rpar_rsd=rpar_rsd,
         box_size_hmpc=box_size_hmpc,
     )
     return pairs
@@ -176,13 +201,15 @@ def filter_neighbor_chunk(
     rperp_max: float,
     rpar_max: float,
     box_size_hmpc: float,
+    rpar_space: str = "redshift",
 ) -> tuple[pd.DataFrame, int]:
     i1_parts = []
     i2_parts = []
     dx_parts = []
     dy_parts = []
     rperp_parts = []
-    rpar_parts = []
+    rpar_real_parts = []
+    rpar_rsd_parts = []
     projected_candidates = 0
 
     for local_i, neighbors in enumerate(neighbor_lists):
@@ -196,9 +223,11 @@ def filter_neighbor_chunk(
         dx = minimal_periodic_delta(x[i], x[j], box_size_hmpc)
         dy = minimal_periodic_delta(y[i], y[j], box_size_hmpc)
         rperp = np.hypot(dx, dy)
-        rpar = np.abs(minimal_periodic_delta(z_rsd[i], z_rsd[j], box_size_hmpc))
+        rpar_real = np.abs(minimal_periodic_delta(z[i], z[j], box_size_hmpc))
+        rpar_rsd = np.abs(minimal_periodic_delta(z_rsd[i], z_rsd[j], box_size_hmpc))
+        rpar_sel = rpar_rsd if rpar_space == "redshift" else rpar_real
 
-        mask = (rperp >= rperp_min) & (rperp <= rperp_max) & (rpar <= rpar_max) & (rperp > 0)
+        mask = (rperp >= rperp_min) & (rperp <= rperp_max) & (rpar_sel <= rpar_max) & (rperp > 0)
         if not np.any(mask):
             continue
 
@@ -206,7 +235,8 @@ def filter_neighbor_chunk(
         dx = dx[mask]
         dy = dy[mask]
         rperp = rperp[mask]
-        rpar = rpar[mask]
+        rpar_real = rpar_real[mask]
+        rpar_rsd = rpar_rsd[mask]
 
         swap = (dx < 0) | ((dx == 0) & (dy < 0))
         i_arr = np.full(len(j), i, dtype=np.int64)
@@ -220,7 +250,8 @@ def filter_neighbor_chunk(
         dx_parts.append(dx)
         dy_parts.append(dy)
         rperp_parts.append(rperp)
-        rpar_parts.append(rpar)
+        rpar_real_parts.append(rpar_real)
+        rpar_rsd_parts.append(rpar_rsd)
 
     if not i1_parts:
         return pd.DataFrame(columns=PAIR_COLUMNS), projected_candidates
@@ -230,7 +261,8 @@ def filter_neighbor_chunk(
     dx = np.concatenate(dx_parts)
     dy = np.concatenate(dy_parts)
     rperp = np.concatenate(rperp_parts)
-    rpar = np.concatenate(rpar_parts)
+    rpar_real = np.concatenate(rpar_real_parts)
+    rpar_rsd = np.concatenate(rpar_rsd_parts)
 
     return (
         make_pair_frame(
@@ -244,7 +276,8 @@ def filter_neighbor_chunk(
             dx=dx,
             dy=dy,
             rperp=rperp,
-            rpar=rpar,
+            rpar_real=rpar_real,
+            rpar_rsd=rpar_rsd,
             box_size_hmpc=box_size_hmpc,
         ),
         projected_candidates,
@@ -262,6 +295,7 @@ def write_pairs_streaming(
     omega_m: float,
     max_pairs: int | None,
     candidate_chunk_size: int,
+    rpar_space: str = "redshift",
 ) -> int:
     try:
         from scipy.spatial import cKDTree
@@ -301,6 +335,7 @@ def write_pairs_streaming(
             rperp_max=rperp_max,
             rpar_max=rpar_max,
             box_size_hmpc=box_size_hmpc,
+            rpar_space=rpar_space,
         )
         total_candidates += chunk_candidates
 
@@ -345,6 +380,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--rperp-min", type=float, default=4.0)
     parser.add_argument("--rperp-max", type=float, default=6.0)
     parser.add_argument("--rpar-max", type=float, default=22.0)
+    parser.add_argument(
+        "--rpar-space",
+        choices=["redshift", "real"],
+        default="redshift",
+        help=(
+            "Coordinate used for the --rpar-max selection cut: 'redshift' (RSD-displaced, "
+            "production/BOSS-like) or 'real' (true LOS, for the Phase 3 truth catalog). "
+            "Both separations are always written to the output."
+        ),
+    )
     parser.add_argument("--box-size", type=float, default=BIGMDPL_BOX_SIZE_HMPC)
     parser.add_argument("--z-snapshot", type=float, default=BIGMDPL_Z_SNAPSHOT)
     parser.add_argument("--omega-m", type=float, default=BIGMDPL_OMEGA_M)
@@ -392,6 +437,7 @@ def main(argv: list[str] | None = None) -> None:
             omega_m=args.omega_m,
             max_pairs=args.max_pairs,
             candidate_chunk_size=args.candidate_chunk_size,
+            rpar_space=args.rpar_space,
         )
     else:
         pairs = find_pairs(
@@ -403,6 +449,7 @@ def main(argv: list[str] | None = None) -> None:
             z_snapshot=args.z_snapshot,
             omega_m=args.omega_m,
             max_pairs=args.max_pairs,
+            rpar_space=args.rpar_space,
         )
         pairs.to_csv(args.output, index=False)
         n_pairs = len(pairs)
