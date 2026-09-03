@@ -36,6 +36,11 @@ This is an astrophysics research project analyzing gravitational lensing converg
   - `reflect_symmetrize_map(kappa_map)` — Reflection symmetry across Y-axis (for pair stacking)
   - `radial_profile(arr, sigma, zoom)` — Extract 1D radial profile from 2D map
 
+- **`lib/jackknife.py`** — Equal-area HEALPix jackknife regions over a joint footprint:
+  - `build_jackknife_regions(ra, dec, nside, min_fill)` — Tessellate a footprint traced by randoms. Cells above `min_fill` of the mean occupancy become region cores; partially covered edge cells are **merged into the lightest of their 4 nearest cores** (not dropped), so no object falls outside the tessellation. At `nside=10` (34.4 deg² cells) the joint CMASS footprint gives **287 regions** with ~11% RMS size scatter.
+  - `JackknifeRegions` — dataclass with `assign(ra, dec)`, `save`/`load`, and a `digest` that lets the combiner reject accumulators built on different tessellations.
+  - `jackknife_error(loo)` / `jackknife_covariance(loo)` — delete-one error and covariance with the (K-1)/K factor.
+
 - **`lib/catalog.py`** — Data I/O, catalog loading, Planck map loading:
   - `setup_logging()` — Configure root logger with timestamps
   - `resolve_catalog_path(data_dir, dataset, region, catalog_type)` — Auto-resolve FITS file paths
@@ -53,6 +58,9 @@ All scripts accept `--help` for full argument documentation. Legacy Jupyter note
 - **`stack_single.py`** — Stack single galaxies/randoms against the Planck κ map (with jackknife errors)
 - **`stack_pairs.py`** — Stack galaxy pairs from a pair catalog against the Planck κ map
 - **`find_and_stack_pairs.py`** — Combined find-and-stack pipeline that never materializes a pair catalog. Used for full random catalogs where the pair list would be too large to write to disk (~2B pairs / hundreds of GB). Workers stack pairs inline and return per-chunk accumulator grids, which the main process reduces into the final stacked map. Multiprocess mode requires Linux `fork()` for kappa-map sharing via copy-on-write; local serial validation works with `--n-processes 1` on any platform.
+- **`stack_single_jk.py`** — **Preferred single-object stacker for anything needing error bars.** Stacks all survey regions as one joint sample and accumulates `sum(w*κ)` / `sum(w)` *per jackknife region* in a single pass, so every leave-one-out estimate is a subtraction rather than a re-stack (287 regions at ~1× the cost of one stack, vs ~287×).
+- **`combine_jackknife.py`** — Combine galaxy + random accumulators into the corrected map, per-pixel jackknife errors, and radial profiles with a **full bin-to-bin covariance**. Supports linear, log, or explicit `--bin-edges` binning.
+- **`region_split_check.py`** — Diagnostic: re-derives North-only, South-only, unweighted-average, count-weighted, and joint profiles from the same accumulators to isolate the effect of the region-combination rule.
 - **`plot_results.py`** — Load stacked κ CSVs, compute derived maps, generate analysis plots
 
 ## Analysis Pipeline
@@ -69,6 +77,28 @@ python stack_single.py --dataset BOSS --region North --catalog-type random --fra
 
 **Output:** `analysis/boss/results/kappa_single_{catalog_type}_{dataset}_{region}.csv`
 Galaxy runs also produce: `analysis/boss/results/error_single_{dataset}_{region}.csv`
+
+### 1b. Joint-footprint single stack with jackknife errors (`stack_single_jk.py` + `combine_jackknife.py`)
+
+**This is the default path for the single-galaxy measurement.** North and South are stacked as one joint sample, so there is no per-region averaging step — the relative weighting of the two footprints follows from the objects themselves. Galaxies and randoms are stacked separately but share one tessellation, so the combiner can delete the same patch of sky from both and put the error on the *subtracted* map.
+
+```bash
+PYTHONPATH=lib python analysis/boss/scripts/stack_single_jk.py \
+    --dataset BOSS --regions North,South --catalog-type galaxy --n-processes 6
+PYTHONPATH=lib python analysis/boss/scripts/stack_single_jk.py \
+    --dataset BOSS --regions North,South --catalog-type random \
+    --fraction 1.0 --label frac100 --n-processes 24 --chunk-size 20000
+PYTHONPATH=lib python analysis/boss/scripts/combine_jackknife.py \
+    --dataset BOSS --regions North,South --tag _scw --random-tag _scw_frac100
+```
+
+**Outputs:** per-region accumulators in `analysis/boss/results/jk/acc_single_*.npz` (the reusable product — any rebinning or hemisphere split follows from these without re-stacking), plus corrected maps, `error_single_*_joint.csv`, `profile_corrected_*.csv`, `profile_cov_corrected_*.csv`, and `profile_bands_corrected_*.csv`.
+
+**Two estimator points that matter:**
+- **Never collapse per-pixel errors into a profile error by assuming pixels are independent.** The 8 arcmin Planck beam is ~3.3 h⁻¹ Mpc at z = 0.55, over 3× the 1 h⁻¹ Mpc pixel. Measured on the joint stack, the independent-bin approximation understates band errors by **2.2–2.6×**. `combine_jackknife.py` reports both so the gap stays visible.
+- **1/Σ_crit² inverse-variance weighting is the default estimator** (`--no-sigma-crit-weight` for the unweighted null test). Unweighted outputs drop the `_scw` tag and so never overwrite the default products.
+
+**Known cost:** preprocessing the 40.9M-row full random catalog spent ~110 min before stacking began on an 8 GB machine — `fast_icrs_to_galactic` allocates two ~1 GB temporaries for a catalog that size and the machine swapped. Stacking itself was ~60 min on 5 cores. Chunk the coordinate transform if this becomes a bottleneck.
 
 ### 2. Find galaxy/random pairs (`find_pairs.py`)
 Identifies pairs based on parallel and perpendicular separation criteria using vectorized distance calculations with multiprocessing.
@@ -161,7 +191,7 @@ When stacking galaxy pairs, the coordinate system is oriented such that:
 
 ### Symmetrization Methods
 Two approaches are used:
-1. **Radial symmetry** (`symmetrize_map()` in `lib/geometry.py`): Averages in radial bins from center — used for single-galaxy stacks
+1. **Radial symmetry** (`symmetrize_map()` in `lib/geometry.py`): Averages in radial bins about the physical `(N-1)/2` center — between pixels 49/50 for a 100×100 single stack and on pixel 50 for a 101×101 stack. Never use `N//2` for an even grid; archived simulation singles made with that convention must be regenerated, not re-symmetrized.
 2. **Reflection symmetry** (`reflect_symmetrize_map()` in `lib/geometry.py`): Averages across Y-axis — used for pair stacks to preserve asymmetry along the pair axis
 
 ### Weighting Schemes

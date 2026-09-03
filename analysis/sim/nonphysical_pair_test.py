@@ -81,11 +81,19 @@ def main(argv=None):
     rows = []
     for band in args.bands.split(","):
         lo, hi = (float(v) for v in band.split(":"))
+        stem = out_dir / f"nonphys_{label}_rpar{int(lo)}_{int(hi)}"
         stack_args = Namespace(
             pairs=args.pairs, kappa_map=args.kappa_map, single=args.single,
             rperp_center=args.rperp_center, rpar_min=lo, rpar_max=hi,
             rpar_space="real", blocks_per_side=args.blocks_per_side,
-            grid_size=101, box_size=100.0, max_pairs=None, stack_output=None,
+            grid_size=101, box_size=100.0, max_pairs=None, seed=0,
+            rpar_half_open=True,
+            stack_output=f"{stem}_map.csv",
+            # The per-block accumulators are the point of re-running this: the
+            # scalar stats below apply only to the built-in field-single
+            # template, so the recursive estimator would otherwise have no
+            # uncertainty of its own.
+            blocks_output=f"{stem}_blocks.npz",
         )
         logger.info("=== LOS band %.0f-%.0f h^-1 Mpc (real space) ===", lo, hi)
         result = run(stack_args)

@@ -114,9 +114,44 @@ The observable is the **excess surface mass density** Delta Sigma (in M_sun h / 
 | Epps & Hudson 2017 | BOSS LOWZ+CMASS | ~0.42 | CFHTLenS | 6-10 h^-1 Mpc, Dz<0.002 | 5 sigma | Used "control" convergence map subtraction |
 | He+2018 | CMASS filament catalogue | ~0.55 | Planck CMB kappa | Different method (density ridges) | 5 sigma | Filaments where galaxies reside, not between pairs |
 | de Graaff+2019 | CMASS pairs | ~0.55 | Planck CMB kappa | 6-14 h^-1 Mpc, Pi<5 | 1.9 sigma (lensing) | Focus was tSZ; entire CMASS sample, larger area but CMB lensing less sensitive |
-| **This paper** | CMASS pairs | ~0.55 | HSC (~21.8/arcmin^2) | 6-14 h^-1 Mpc, Pi<6 | **3.9 sigma** | Small area (140 deg^2) but deep imaging |
+| **Kondo+2019 (this section)** | CMASS pairs | ~0.55 | HSC (~21.8/arcmin^2) | 6-14 h^-1 Mpc, Pi<6 | **3.9 sigma** | Small area (140 deg^2) but deep imaging |
+
+Note on reading this table: it is reproduced from Kondo+2019, so their "this paper" row is
+**Kondo**, not us. Our own row is in the separate table below -- our source is Planck CMB
+kappa, not HSC.
 
 Key insight: de Graaff+2019 used the full CMASS sample (much larger area) with Planck CMB lensing and only got 1.9 sigma on the lensing signal. This paper achieves 3.9 sigma with only 140 deg^2 because HSC galaxy shapes have much better lensing sensitivity at z ~ 0.55 than Planck CMB lensing. The galaxy lensing kernel peaks near the lens redshift, while the CMB kernel peaks at z ~ 2.
+
+### Where Our Measurement Sits (2026-08-01)
+
+Our row, in the same columns as the table above. Sorted by lensing source, because that --
+not the filaments -- is what sets the significance.
+
+| Study | Lens sample | z_lens | Source | Separation cuts | S/N | Notes |
+|-------|-------------|--------|--------|-----------------|-----|-------|
+| Epps & Hudson 2017 | BOSS LOWZ+CMASS | ~0.42 | CFHTLenS **galaxy shapes** | 6-10 h^-1 Mpc | 5 sigma | pair bridge |
+| He+2018 | CMASS filament catalogue | ~0.55 | Planck CMB kappa | density ridges | 5 sigma | **different observable** -- filament spines, not pair bridges |
+| Clampitt+2016 | SDSS LRGs | ~0.25 | SDSS **galaxy shapes** | 6-14 h^-1 Mpc, Pi<6 | 4.5 sigma | pair bridge |
+| Kondo+2019 | CMASS pairs | ~0.55 | HSC **galaxy shapes** | 6-14 h^-1 Mpc, Pi<6 | 3.9 sigma | pair bridge, 140 deg^2 |
+| de Graaff+2019 | CMASS pairs | ~0.55 | **Planck CMB kappa** | 6-14 h^-1 Mpc, Pi<5 | 1.9 sigma | pair bridge; lensing was a byproduct of a tSZ analysis |
+| **This work** | CMASS pairs, N+S (792,294 galaxies; 459,051 pairs at r_perp 9-11) | ~0.55 | **Planck CMB kappa** (MV, 8' smoothing) | 9-11 h^-1 Mpc, Pi<10 | **2.2 sigma** | pair bridge, ~9,500 deg^2; joint N+S stack, 287-cell jackknife, control validated against non-physical pairs |
+
+Two readings of this table:
+
+1. **Every high-significance pair-bridge result uses galaxy shapes.** The only configuration
+   directly comparable to ours is de Graaff+2019 -- CMASS pairs x Planck kappa -- and two
+   independent analyses now agree at ~2 sigma (1.9 and 2.2). That brackets the sensitivity of
+   this combination and shows the 4-5 sigma results depend on the lensing source, not on
+   whether the filaments are there.
+2. **He+2018 is not a counterexample.** It reaches 5 sigma with Planck kappa but stacks
+   filament *spines* from a density-ridge catalogue -- a longer, higher-contrast target than
+   the bridge between one pair.
+
+Our full-sample bridge excess at all three separations is 0.7 / 2.2 / -1.1 sigma at
+r_perp = 5 / 10 / 20 h^-1 Mpc. An empirical check of the estimator (widening the bridge
+integration region) gains ~9% in S/N and then loses ground, so the measurement is limited by
+Planck map noise over a fixed footprint rather than by the statistic or the pair count --
+consistent with the kernel argument above.
 
 ### Contrast with Our Approach
 
@@ -128,10 +163,10 @@ Key insight: de Graaff+2019 used the full CMASS sample (much larger area) with P
 | **Pair selection** | |Pi| < 6 h^-1 Mpc, 6 < R < 14 h^-1 Mpc | r_par < 20 Mpc/h (currently; 5 under discussion), various r_perp |
 | **Coordinate stretching** | Yes -- all pairs rescaled to unit separation | No -- fixed physical grid (101x101, 100 Mpc/h box), pairs at different separations produce galaxies at different pixel locations |
 | **Symmetrization** | Line symmetry (mirror across pair axis) + translational symmetry (sum along pair axis) -- both built into the estimator | Reflection symmetry across Y-axis (perpendicular to pair axis) |
-| **Covariance** | From 108 mock realisations (ray-tracing + HOD) | Jackknife (for single stacks); no formal covariance for pair stacks yet |
+| **Covariance** | From 108 mock realisations (ray-tracing + HOD) | Jackknife over 287 equal-area HEALPix cells on the joint N+S footprint, for single *and* pair stacks; full bin-to-bin covariance on radial profiles (updated 2026-08-01) |
 | **Random pair handling** | Subtract random pair signal to remove observational systematics | Subtract random-point stacked kappa map |
-| **Weighting** | Per lens-source pair weight including Sigma_cr, shape noise, CMASS weights | Equal weight per pair (pair stacking); CMASS weights for single galaxy stacking |
-| **Galaxy sample** | CMASS only (14,422 galaxies in HSC overlap) | CMASS North+South (full BOSS footprint, ~500k+ galaxies) |
+| **Weighting** | Per lens-source pair weight including Sigma_cr, shape noise, CMASS weights | 1/Sigma_crit^2 inverse-variance weighting is now the default for single stacking (CMB source plane); pair stacking uses w1*w2 to stay consistent with the archived random-pair maps |
+| **Galaxy sample** | CMASS only (14,422 galaxies in HSC overlap) | CMASS North+South stacked jointly (792,294 galaxies after 0.4 < z < 0.7, ~9,500 deg^2) |
 | **Cosmology** | Planck 2015 (Omega_m = 0.307) | Planck 2018 (via astropy) |
 
 ### Key Differences and Implications

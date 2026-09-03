@@ -25,7 +25,21 @@ import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
 from constants import BOX_SIZE_HMPC, GRID_SIZE
-from geometry import symmetrize_map
+from geometry import symmetrize_map, two_halo_template
+
+
+def axis_for_grid(n: int) -> np.ndarray:
+    """Physical coordinate of each pixel center, in h^-1 Mpc.
+
+    Odd grids sit on integers with a pixel at 0; even grids sit on half-integer
+    cell centers with the origin between the four central pixels.  Matches
+    weighting_sensitivity.axis_for_map.
+    """
+    if n % 2 == 1:
+        return np.linspace(-0.5 * BOX_SIZE_HMPC, 0.5 * BOX_SIZE_HMPC, n)
+    cell = BOX_SIZE_HMPC / n
+    return np.linspace(-0.5 * BOX_SIZE_HMPC + 0.5 * cell,
+                       0.5 * BOX_SIZE_HMPC - 0.5 * cell, n)
 
 logger = logging.getLogger(__name__)
 
@@ -117,55 +131,32 @@ def reconcile_shapes(map_a, map_b):
 
 
 def build_control_pair_map(single_map, separation_hmpc):
-    """Construct a control pair map by shifting the single-galaxy map.
+    """Superposed-singles control: two copies of the single stack at +/- sep/2.
 
-    The control pair map places two copies of the single-galaxy halo at
-    +/-(separation/2) along the X axis and averages them, emulating what
-    a pair stack would look like if there were *no* filament connecting
-    the galaxies.
+    Delegates to :func:`geometry.two_halo_template`, which evaluates the single
+    stack's radial profile on the target grid's own coordinates.
 
-    For sub-pixel shifts we use ``scipy.ndimage.shift``; for integer
-    shifts we use ``numpy.roll`` (faster).
+    This used to shift the pixel array with ``np.roll`` / ``ndimage.shift`` and
+    sum the two copies.  That is the construction the July 2026 half-pixel fix
+    replaced everywhere else, because shifting and trimming misaligns a
+    100-pixel single grid (centers on half-integers) against a 101-pixel pair
+    grid (centers on integers), producing false residuals at the halo peaks
+    where the gradient is steepest.  This module kept its own copy and so kept
+    the old behaviour, leaving two control builders in the tree with only one of
+    them fixed -- which is why its archived plots cannot be cross-read against
+    the current chain.  It also never passed through the symmetry validation, so
+    a centering regression here would have stayed silent.
 
-    Parameters
-    ----------
-    single_map : ndarray
-        Corrected single-galaxy kappa map.
-    separation_hmpc : float
-        Pair separation in h^-1 Mpc.
-
-    Returns
-    -------
-    ndarray
-        Control pair map (same shape as *single_map*).
+    Note this returns the *sum* of the two copies, not their average.  The old
+    docstring said "averages them" while the code summed; the sum is correct --
+    a pair stack sees the mass of both galaxies -- and is what the production
+    builder does.
     """
-    grid_size = single_map.shape[1]
-    cell_size = BOX_SIZE_HMPC / grid_size
-    shift_pixels = separation_hmpc / 2.0 / cell_size
-
-    if np.isclose(shift_pixels, np.round(shift_pixels)):
-        # Integer shift -- use numpy.roll (wraps around, which is fine
-        # because the map edges are ~zero for well-centred stacks).
-        shift_int = int(np.round(shift_pixels))
-        shifted_right = np.roll(single_map, +shift_int, axis=1)
-        shifted_left = np.roll(single_map, -shift_int, axis=1)
-        logger.info(
-            "Control pair map: integer shift of %d pixels (%.2f Mpc/h)",
-            shift_int, shift_int * cell_size,
-        )
-    else:
-        # Sub-pixel shift -- use scipy for interpolation
-        from scipy.ndimage import shift as ndimage_shift
-        shifted_right = ndimage_shift(single_map, [0, +shift_pixels],
-                                      order=3, mode='wrap')
-        shifted_left = ndimage_shift(single_map, [0, -shift_pixels],
-                                     order=3, mode='wrap')
-        logger.info(
-            "Control pair map: sub-pixel shift of %.2f pixels (%.2f Mpc/h)",
-            shift_pixels, shift_pixels * cell_size,
-        )
-
-    return shifted_right + shifted_left
+    axis = axis_for_grid(single_map.shape[0])
+    x_grid, y_grid = np.meshgrid(axis, axis)
+    logger.info("Control pair map: radial-profile template at +/-%.2f Mpc/h",
+                0.5 * separation_hmpc)
+    return two_halo_template(single_map, x_grid, y_grid, separation_hmpc)
 
 
 # ===========================================================================
@@ -577,12 +568,9 @@ def main(argv=None):
     if map5 is not None:
         map5_sym = symmetrize_map(map5)
         map7 = build_control_pair_map(map5_sym, sep)
-        # Enforce left-right symmetry: the control pair map is symmetric
-        # about x=0 by construction (two identical halos at ±sep/2).
-        # Residual asymmetry comes from the even-grid center offset
-        # (symmetrize_map centers on pixel index N//2, which is half a
-        # pixel off from the physical center for even-sized grids).
-        map7 = (map7 + map7[:, ::-1]) / 2.0
+        # The physical-center radial profile and the two copies at +/-sep/2
+        # make this map left-right symmetric by construction.  Do not apply a
+        # final averaging operation that could hide a centering regression.
         logger.info(
             "Map(7) control pair: range [%.6e, %.6e]",
             map7.min(), map7.max(),

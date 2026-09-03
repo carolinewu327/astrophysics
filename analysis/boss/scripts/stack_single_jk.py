@@ -54,25 +54,39 @@ from catalog import (
     sigma_crit_weights,
 )
 from constants import BOX_SIZE_HMPC, FWHM_ARCMIN, GRID_SIZE, NSIDE
-from geometry import fast_icrs_to_galactic, symmetrize_map
+from geometry import (assert_unit_pixel_scale, fast_icrs_to_galactic,
+                      stack_axis, symmetrize_map)
 from jackknife import JackknifeRegions, build_jackknife_regions
 
 logger = logging.getLogger(__name__)
 
-CELL_SIZE_HMPC = BOX_SIZE_HMPC / GRID_SIZE
 HALF_BOX_HMPC = BOX_SIZE_HMPC / 2.0
 DEG_PER_RAD = 180.0 / np.pi
 
-# Physical offsets of the stacking grid, identical to stack_single.py so the
-# two pipelines produce directly comparable maps.
-OFFSETS = np.linspace(
-    -HALF_BOX_HMPC + CELL_SIZE_HMPC / 2,
-    HALF_BOX_HMPC - CELL_SIZE_HMPC / 2,
-    GRID_SIZE,
-)
+# Grid geometry is a *runtime* choice, not a module constant: the single stack
+# has to land on the same axis as the pair stack it will be subtracted from,
+# and that is 101 pixels, not the 100 this pipeline defaulted to.  GRID and the
+# offset arrays are set by set_grid() in the parent before Pool(), so forked
+# workers inherit them the same way they inherit the kappa map.  Everything
+# downstream -- accumulator width, reshape, metadata, checkpoint -- reads GRID
+# rather than the imported GRID_SIZE, which is now only the default.
+GRID: int = GRID_SIZE
+OFFSETS, _CELL = stack_axis(BOX_SIZE_HMPC, GRID)
 OFF_X, OFF_Y = (arr.ravel() for arr in np.meshgrid(OFFSETS, OFFSETS))
 
-# Objects per vectorized ang2pix call.  Each object costs GRID_SIZE**2 sky
+
+def set_grid(grid_size: int) -> None:
+    """Point the stacking grid at *grid_size* pixels across the same box."""
+    global GRID, OFFSETS, _CELL, OFF_X, OFF_Y
+    assert_unit_pixel_scale(grid_size, BOX_SIZE_HMPC)
+    GRID = int(grid_size)
+    OFFSETS, _CELL = stack_axis(BOX_SIZE_HMPC, GRID)
+    OFF_X, OFF_Y = (arr.ravel() for arr in np.meshgrid(OFFSETS, OFFSETS))
+    logger.info("Stacking grid: %d x %d, %.4f .. %.4f h^-1 Mpc, cell %.4f",
+                GRID, GRID, OFFSETS[0], OFFSETS[-1], _CELL)
+
+
+# Objects per vectorized ang2pix call.  Each object costs GRID**2 sky
 # lookups, so a batch of 64 holds ~640k pixels -- large enough to amortize
 # Python overhead, small enough that 28 concurrent workers stay under ~1 GB
 # of transient batch memory between them.
@@ -110,11 +124,11 @@ def _set_runtime_globals(
 def stack_index_range(start: int, stop: int) -> tuple[np.ndarray, np.ndarray, int]:
     """Accumulate weighted kappa sums over objects ``[start, stop)``.
 
-    Returns ``(sum_wk, sum_w, n_used)`` flattened to GRID_SIZE**2, where
+    Returns ``(sum_wk, sum_w, n_used)`` flattened to GRID**2, where
     ``n_used`` counts objects with at least one unmasked grid pixel.
     """
-    sum_wk = np.zeros(GRID_SIZE**2, dtype=np.float64)
-    sum_w = np.zeros(GRID_SIZE**2, dtype=np.float64)
+    sum_wk = np.zeros(GRID**2, dtype=np.float64)
+    sum_w = np.zeros(GRID**2, dtype=np.float64)
     n_used = 0
 
     for lo in range(start, stop, STACK_BATCH):
@@ -290,8 +304,8 @@ def get_regions(args: argparse.Namespace, regions_path: str) -> JackknifeRegions
 # ===========================================================================
 def init_reducer(n_regions: int, n_chunks: int) -> dict[str, object]:
     return {
-        "sum_wk": np.zeros((n_regions, GRID_SIZE**2), dtype=np.float64),
-        "sum_w": np.zeros((n_regions, GRID_SIZE**2), dtype=np.float64),
+        "sum_wk": np.zeros((n_regions, GRID**2), dtype=np.float64),
+        "sum_w": np.zeros((n_regions, GRID**2), dtype=np.float64),
         "n_used": np.zeros(n_regions, dtype=np.int64),
         "n_objects": np.zeros(n_regions, dtype=np.int64),
         "completed_chunks": set(),
@@ -396,7 +410,7 @@ def mean_map(sum_wk: np.ndarray, sum_w: np.ndarray) -> np.ndarray:
     out = np.zeros_like(sum_wk)
     good = sum_w > 0
     out[good] = sum_wk[good] / sum_w[good]
-    return out.reshape(GRID_SIZE, GRID_SIZE)
+    return out.reshape(GRID, GRID)
 
 
 # ===========================================================================
@@ -469,6 +483,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
              f"(default: {FWHM_ARCMIN}). Lower values keep more small-scale "
              "signal but admit more reconstruction noise. Outputs are NOT "
              "auto-tagged -- pass --label to keep products separate.")
+    parser.add_argument(
+        "--grid-size", type=int, default=GRID_SIZE,
+        help="Pixels across the stacking box. 100 (default) puts the object "
+             "between the four central pixels; 101 puts it on the centre "
+             "pixel and matches the pair-stack axis exactly.")
     parser.add_argument("--overwrite", action="store_true")
 
     args = parser.parse_args(argv)
@@ -512,7 +531,7 @@ def serialize_config(args: argparse.Namespace, regions: JackknifeRegions) -> str
                             "checkpoint_interval", "rebuild_regions"}}
     payload["jk_digest"] = regions.digest
     payload["n_regions"] = regions.n_regions
-    payload["grid_size"] = GRID_SIZE
+    payload["grid_size"] = GRID
     return json.dumps(payload, sort_keys=True)
 
 
@@ -522,12 +541,25 @@ def main(argv: list[str] | None = None) -> None:
     t0 = time.time()
     started_at = time.strftime("%Y-%m-%dT%H:%M:%S%z")
 
+    # Before anything allocates: the grid size decides accumulator width, the
+    # offsets the workers inherit, and the shape of every checkpointed array.
+    set_grid(args.grid_size)
+
     paths = output_paths(args)
     os.makedirs(os.path.join(args.output_dir, "jk"), exist_ok=True)
 
     if args.resume_checkpoint:
         if not os.path.exists(paths["checkpoint"]):
             raise FileNotFoundError(f"Checkpoint not found: {paths['checkpoint']}")
+        # Resuming a 100-grid run under --grid-size 101 would add arrays of two
+        # different widths into one accumulator.  Numpy would broadcast some of
+        # those silently, so check before touching the state.
+        saved_grid = json.loads(
+            load_checkpoint(paths["checkpoint"])["args_json"]).get("grid_size")
+        if saved_grid is not None and int(saved_grid) != GRID:
+            raise ValueError(
+                f"Checkpoint was built on a {saved_grid}-pixel grid but this run "
+                f"asks for {GRID}. Start a fresh run under a different --label.")
     elif os.path.exists(paths["acc_npz"]) and not args.overwrite:
         logger.info("Output exists: %s (use --overwrite). Skipping.", paths["acc_npz"])
         return
@@ -682,7 +714,7 @@ def main(argv: list[str] | None = None) -> None:
         seed_pix=jk_regions.seed_pix,
         jk_digest=np.array(jk_regions.digest),
         jk_nside=np.int32(jk_regions.nside),
-        grid_size=np.int32(GRID_SIZE),
+        grid_size=np.int32(GRID),
         box_size_hmpc=np.float64(BOX_SIZE_HMPC),
         args_json=np.array(config_json),
     )

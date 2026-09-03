@@ -131,6 +131,61 @@ def angular_separation(
 
 
 # ---------------------------------------------------------------------------
+# Stacking grid geometry
+# ---------------------------------------------------------------------------
+def stack_axis(box_size_hmpc: float, grid_size: int) -> Tuple[np.ndarray, float]:
+    """Physical coordinates of a square stacking grid, and its pixel spacing.
+
+    Two conventions, picked by parity, so that both give a spacing of exactly
+    1 h^-1 Mpc on the 100 h^-1 Mpc box this pipeline uses:
+
+        even N   cell-centred: -L/2 + c/2 ... +L/2 - c/2 with c = L/N.
+                 N = 100 -> -49.5 ... +49.5, spacing 1.0.  No pixel sits on
+                 zero, so the origin falls between the four central pixels.
+        odd  N   endpoint-inclusive: -L/2 ... +L/2.
+                 N = 101 -> -50 ... +50, spacing 1.0.  The centre pixel sits
+                 exactly on the origin.
+
+    Applying the even rule to an odd grid is what went wrong before: it gives
+    c = 100/101 = 0.990, so a 101-pixel single stack came out on a scale 1%
+    smaller than the 101-pixel pair stack it was subtracted from.  The two
+    conventions were duplicated across sim_utils, stack_single_jk and
+    combine_jackknife, which is why the mismatch survived.  Everything that
+    needs a stacking axis must come through here.
+
+    Several downstream routines -- notably
+    :func:`symmetrized_radial_interpolator`, which measures radius in pixel
+    units and is then handed coordinates in h^-1 Mpc -- assume the spacing is
+    exactly 1.  :func:`assert_unit_pixel_scale` makes that check explicit.
+    """
+    if grid_size < 2:
+        raise ValueError(f"grid_size must be at least 2, got {grid_size}")
+    half = 0.5 * float(box_size_hmpc)
+    if grid_size % 2 == 1:
+        axis = np.linspace(-half, half, grid_size)
+    else:
+        cell = float(box_size_hmpc) / grid_size
+        axis = np.linspace(-half + 0.5 * cell, half - 0.5 * cell, grid_size)
+    return axis, float(axis[1] - axis[0])
+
+
+def assert_unit_pixel_scale(grid_size: int, box_size_hmpc: float = 100.0,
+                            tol: float = 1e-9) -> float:
+    """Fail loudly when a grid's pixel is not 1 h^-1 Mpc.
+
+    Radial interpolation over a stacked map indexes pixels and then evaluates
+    the result at physical coordinates, which is only valid at unit spacing.
+    """
+    _, spacing = stack_axis(box_size_hmpc, grid_size)
+    if abs(spacing - 1.0) > tol:
+        raise ValueError(
+            f"grid {grid_size} on a {box_size_hmpc:g} h^-1 Mpc box has pixel "
+            f"spacing {spacing:.6f}, not 1.0; radial interpolation over this "
+            "map would be off by that factor.")
+    return spacing
+
+
+# ---------------------------------------------------------------------------
 # Map symmetrization
 # ---------------------------------------------------------------------------
 def symmetrize_map(kappa_map: np.ndarray, pwr: float = 2 / 3) -> np.ndarray:
@@ -167,9 +222,17 @@ def symmetrize_map(kappa_map: np.ndarray, pwr: float = 2 / 3) -> np.ndarray:
 def reflect_symmetrize_map(kappa_map: np.ndarray) -> np.ndarray:
     """Apply reflection symmetry: average (+x,+y), (-x,+y), (+x,-y), (-x,-y).
 
-    Preserves asymmetry along the pair axis (X) while enhancing the signal
-    perpendicular to it.  Assumes *kappa_map* is square with odd dimensions
-    so the center pixel is well-defined.
+    Averaging all four quadrants imposes symmetry in *both* axes, so it does
+    NOT preserve asymmetry along the pair axis -- any difference between the
+    two galaxies of a pair is averaged away.  That is intended: the pairs are
+    ordered arbitrarily, so no physical asymmetry along X survives stacking
+    anyway, and folding gains a factor of 2 in each direction.  The
+    consequence for downstream code is that columns at +X and -X hold the
+    same numbers, so a fit or profile must use one half only -- using both is
+    exact double counting with no added information.
+
+    Assumes *kappa_map* is square with odd dimensions so the center pixel is
+    well-defined.
     """
     sym_map = np.copy(kappa_map)
     n = kappa_map.shape[0]
@@ -198,7 +261,55 @@ def reflect_symmetrize_map(kappa_map: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Two-halo control template
 # ---------------------------------------------------------------------------
-def symmetrized_radial_interpolator(single_map: np.ndarray):
+def validate_radially_symmetrized_map(single_map: np.ndarray) -> None:
+    """Reject a single stack that is not centered on the physical map origin.
+
+    A radially symmetrized map is symmetric under both flips, because index
+    ``i -> N-1-i`` preserves ``|i - (N-1)/2|``.  Archived even-grid stacks built
+    with the old ``N // 2`` convention are symmetric about pixel 50 instead, and
+    re-symmetrizing them cannot recover values already averaged into the wrong
+    radial bins -- hence a hard failure rather than a silent repair.
+
+    The message names both possible causes -- never symmetrized, or symmetrized
+    about the wrong center -- and reports the measured asymmetry, but does not
+    guess between them.  Magnitude cannot separate the cases: the archived
+    mis-centered simulation single is 20.5% asymmetric and the mis-centered
+    product in the regression test is 18.1%, both squarely in the range a raw
+    stack occupies.  An earlier draft of this check branched on a 10% threshold
+    and would have mislabeled every real instance.  A caller passing a raw map
+    on purpose should use ``validate=False`` rather than read the message.
+
+    ``analysis/sim/sim_utils.py`` carries a byte-identical copy: the simulation
+    tree is run with ``PYTHONPATH=analysis/sim`` and cannot import ``lib``.
+    ``tests/test_sim_centering.py`` asserts the two agree; change both together.
+    """
+    if single_map.ndim != 2 or single_map.shape[0] != single_map.shape[1]:
+        raise ValueError(f"Expected a square 2D single stack, got {single_map.shape}.")
+    if not np.isfinite(single_map).all():
+        raise ValueError("Single stack contains non-finite values.")
+    scale = max(float(np.max(np.abs(single_map))), 1.0e-12)
+    atol = max(1.0e-12, 1.0e-8 * scale)
+    residual = max(
+        float(np.max(np.abs(single_map - np.flip(single_map, axis=0)))),
+        float(np.max(np.abs(single_map - np.flip(single_map, axis=1)))),
+    )
+    if not (
+        np.allclose(single_map, np.flip(single_map, axis=0), rtol=1.0e-7, atol=atol)
+        and np.allclose(single_map, np.flip(single_map, axis=1), rtol=1.0e-7, atol=atol)
+    ):
+        raise ValueError(
+            f"Single stack is not reflection-symmetric about its physical "
+            f"center (asymmetry {residual / scale:.1%} of peak). Either it was "
+            "never radially symmetrized, or it is an archived even-grid product "
+            "built with the old N//2 centering -- re-symmetrizing that cannot "
+            "recover the lost radial bins, so regenerate it with "
+            "stack_single_sim.py. Magnitude does not separate the two cases "
+            "(both run ~20% of peak); check how the file was produced. If you "
+            "are passing a raw map on purpose, call with validate=False."
+        )
+
+
+def symmetrized_radial_interpolator(single_map: np.ndarray, validate: bool = True):
     """Build a 1D radius -> kappa function from a radially symmetrized stack.
 
     After :func:`symmetrize_map`, the map is *by construction* a function of
@@ -208,7 +319,18 @@ def symmetrized_radial_interpolator(single_map: np.ndarray):
 
     Radius is in pixels, which equals h^-1 Mpc on the standard 100-pixel /
     100 h^-1 Mpc stacking grid.
+
+    *validate* guards against archived mis-centered stacks.  Pass ``False`` only
+    when handing in an unsymmetrized map on purpose -- the radial average taken
+    here is then the symmetrization, which is exactly what
+    ``combine_filament_jackknife.py --no-symmetrize-single`` is testing.
     """
+    if validate:
+        validate_radially_symmetrized_map(single_map)
+    # Radius below is measured in PIXELS and the returned function is then
+    # evaluated at physical h^-1 Mpc coordinates, so this is only valid when
+    # one pixel is one h^-1 Mpc.  Assert it rather than assume it.
+    assert_unit_pixel_scale(single_map.shape[0])
     n = single_map.shape[0]
     center = 0.5 * (n - 1)
     yy, xx = np.indices((n, n))
@@ -234,6 +356,7 @@ def two_halo_template(
     x_grid: np.ndarray,
     y_grid: np.ndarray,
     separation_hmpc: float,
+    validate: bool = True,
 ) -> np.ndarray:
     """Superposed-singles control: two copies of the single stack at +/- sep/2.
 
@@ -251,7 +374,7 @@ def two_halo_template(
     has used this profile-based construction since July 2026; the observational
     chain did not.
     """
-    profile = symmetrized_radial_interpolator(single_map)
+    profile = symmetrized_radial_interpolator(single_map, validate=validate)
     offset = 0.5 * separation_hmpc
     return profile(np.hypot(x_grid + offset, y_grid)) + profile(
         np.hypot(x_grid - offset, y_grid)
@@ -316,6 +439,48 @@ def band_profiles(arr: np.ndarray, axis: np.ndarray) -> Tuple[np.ndarray, np.nda
     return arr[central, :].mean(axis=0), arr[far, :].mean(axis=0)
 
 
+def band_row_weights(axis: np.ndarray, lo: float, hi: float) -> np.ndarray:
+    """Fractional overlap of each row with the physical shell ``lo <= |Y| <= hi``.
+
+    :func:`band_masks` can only take whole rows, so it needs the band edges to
+    fall between row centres.  That holds on the 101-pixel pair grid (centres on
+    integers) and fails on the 100-pixel single grid (centres on half-integers,
+    so |Y| = 1.5 *is* a row centre and the two bands overlap -- band_masks
+    raises).  Weighting the boundary rows by how much of them lies inside the
+    shell gives the same physical band on either grid:
+
+        100-grid central   rows +/-0.5 (w = 1), +/-1.5 (w = 0.5)   -> width 3
+        101-grid central   rows 0, +/-1        (w = 1)             -> width 3
+
+    The overlap is computed in *signed* Y and then folded.  Doing it in |Y|
+    halves the row straddling Y = 0 and silently returns a width of 2.5 on the
+    101 grid.
+    """
+    axis = np.asarray(axis, dtype=float)
+    cell = float(np.diff(axis).mean())
+    edge_lo, edge_hi = axis - 0.5 * cell, axis + 0.5 * cell
+
+    def overlap(a: float, b: float) -> np.ndarray:
+        return np.clip(np.minimum(edge_hi, b) - np.maximum(edge_lo, a), 0.0, None)
+
+    return (overlap(lo, hi) + overlap(-hi, -lo)) / cell
+
+
+def band_profiles_fractional(arr: np.ndarray,
+                             axis: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """:func:`band_profiles` with fractional boundary rows; works on any grid.
+
+    Returns ``(central, off_centre)``.  On the 101-pixel grid this reproduces
+    :func:`band_profiles` exactly, because every weight there is 0 or 1.
+    """
+    w_cen = band_row_weights(axis, 0.0, CENTRAL_HALF_Y_HMPC)
+    w_off = band_row_weights(axis, OFF_LO_Y_HMPC, OFF_HI_Y_HMPC)
+    if w_cen.sum() <= 0 or w_off.sum() <= 0:
+        raise ValueError("Empty band: the grid is too coarse for the fixed Y bands.")
+    return ((arr * w_cen[:, None]).sum(axis=0) / w_cen.sum(),
+            (arr * w_off[:, None]).sum(axis=0) / w_off.sum())
+
+
 def band_profile(arr: np.ndarray, axis: np.ndarray) -> np.ndarray:
     """Central-band mean minus off-centre-band mean, along the pair axis.
 
@@ -356,14 +521,21 @@ def x_bin_edges(axis: np.ndarray, x_max: float, x_bin: float) -> np.ndarray:
     Only X >= 0 is kept: the maps are reflection-symmetrized, so the profile is
     even in X and the negative half carries no independent information.
 
-    The final bin is closed on the right so that X = x_max is retained rather
-    than dropped -- with 1 h^-1 Mpc columns and x_bin = 4 that leaves one bin
-    holding 5 columns instead of 4.  Bin centres are reported as the mean X of
-    the columns actually in each bin, so the asymmetry stays visible.
+    Bin i spans [i*x_bin, (i+1)*x_bin), and X = x_max gets its own bin rather
+    than being folded into the previous one.  That matters for the *unbinned*
+    case: at x_bin = 1 on a 1 h^-1 Mpc grid, X = 0..20 must give 21 components,
+    one per native column, so the vector is 42 long.  An earlier version used
+    ceil(x_max/x_bin) bins, which merged X = 19 and X = 20 and silently returned
+    40 -- i.e. it applied a residual binning to a configuration that was
+    supposed to have none.
+
+    The cost is that a coarse binning leaves a short final bin: at x_bin = 4,
+    x_max = 40 the last bin holds only X = 40.  Bin centres are reported as the
+    mean X of the columns actually in each bin, so that stays visible.
     """
     if x_bin <= 0 or x_max <= 0:
         raise ValueError(f"Need positive x_max and x_bin, got {x_max}, {x_bin}.")
-    n_bins = max(int(np.ceil(x_max / x_bin)), 1)
+    n_bins = int(np.floor(x_max / x_bin)) + 1
     idx = np.full(axis.shape, -1, dtype=int)
     inside = (axis >= 0) & (axis <= x_max)
     idx[inside] = np.clip((axis[inside] // x_bin).astype(int), 0, n_bins - 1)

@@ -46,7 +46,7 @@ import pandas as pd
 
 from catalog import setup_logging
 from constants import BOX_SIZE_HMPC, GRID_SIZE
-from geometry import symmetrize_map
+from geometry import stack_axis, symmetrize_map
 from jackknife import jackknife_covariance, jackknife_error
 
 logger = logging.getLogger(__name__)
@@ -61,15 +61,13 @@ DEFAULT_BANDS = ((10.0, 20.0), (15.0, 25.0), (20.0, 40.0))
 def grid_radius_hmpc(grid_size: int = GRID_SIZE) -> np.ndarray:
     """Physical radius of every grid pixel, measured from the stack center.
 
-    The stacking grid places pixel centers at +/-(0.5, 1.5, ... ) h^-1 Mpc, so
-    the object sits exactly between the two central pixels.  Working in
-    physical offsets rather than pixel indices sidesteps the question of which
-    index "the center" is.
+    Working in physical offsets rather than pixel indices sidesteps the
+    question of which index "the center" is.  The offsets come from
+    geometry.stack_axis, so an even grid puts the object between the two
+    central pixels (+/-0.5, 1.5, ...) and an odd grid puts it on the middle
+    pixel -- the same rule the pair stacks and the simulation use.
     """
-    cell = BOX_SIZE_HMPC / grid_size
-    offsets = np.linspace(
-        -HALF_BOX_HMPC + cell / 2, HALF_BOX_HMPC - cell / 2, grid_size
-    )
+    offsets, _ = stack_axis(BOX_SIZE_HMPC, grid_size)
     off_x, off_y = np.meshgrid(offsets, offsets)
     return np.sqrt(off_x**2 + off_y**2).ravel()
 

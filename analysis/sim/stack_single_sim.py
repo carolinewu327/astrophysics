@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -210,6 +212,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output", default="analysis/sim/results/kappa_single_sim_mass13.csv")
     parser.add_argument("--profile-output", default="analysis/sim/results/radial_profile_single_sim_mass13.csv")
     parser.add_argument(
+        "--raw-output",
+        default=None,
+        help="Optional unsymmetrized stack CSV. By default, writes next to "
+             "--output with an _unsymmetrized suffix so a radial-binning change "
+             "does not require repeating the expensive stack.",
+    )
+    parser.add_argument(
         "--direct-profile-output",
         default="analysis/sim/results/radial_profile_single_direct_annuli_mass13.csv",
     )
@@ -264,14 +273,52 @@ def main(argv: list[str] | None = None) -> None:
         stack_box_size_hmpc=args.box_size,
         grid_size=args.grid_size,
     )
+    raw_output = args.raw_output
+    if raw_output is None:
+        output_path = Path(args.output)
+        raw_output = str(output_path.with_name(
+            f"{output_path.stem}_unsymmetrized{output_path.suffix}"
+        ))
+    save_map_csv(raw_output, stack)
+    logger.info("Saved unsymmetrized single stack -> %s", raw_output)
+
     stack = radial_symmetrize_map(stack)
-    logger.info("Applied BOSS-style radial symmetrization to single-halo stack")
+    center_pixel = 0.5 * (args.grid_size - 1)
+    logger.info(
+        "Applied physical-center radial symmetrization (center index %.1f)",
+        center_pixel,
+    )
 
     save_map_csv(args.output, stack)
     radius, profile = radial_profile_from_map(stack, args.box_size)
     save_profile_csv(args.profile_output, radius, profile)
     logger.info("Saved single stack -> %s", args.output)
     logger.info("Saved radial profile -> %s", args.profile_output)
+
+    metadata_output = str(Path(args.output).with_suffix(".meta.json"))
+    ensure_parent(metadata_output)
+    with open(metadata_output, "w", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "box_size_hmpc": args.box_size,
+                "center_convention": "physical_(N-1)/2",
+                "center_pixel_index": center_pixel,
+                "grid_size": args.grid_size,
+                "halos": args.halos,
+                "kappa_map": args.kappa_map,
+                "n_halos": len(halos),
+                "output": args.output,
+                "profile_output": args.profile_output,
+                "radial_bin_power": 2.0 / 3.0,
+                "raw_output": raw_output,
+                "smooth": args.smooth,
+            },
+            handle,
+            indent=2,
+            sort_keys=True,
+        )
+        handle.write("\n")
+    logger.info("Saved single-stack metadata -> %s", metadata_output)
 
     if args.direct_particles:
         if os.path.exists(args.direct_profile_output) and not args.overwrite:

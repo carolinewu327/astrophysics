@@ -46,7 +46,7 @@ import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
 from catalog import setup_logging
-from geometry import symmetrize_map, two_halo_template
+from geometry import two_halo_template
 from jackknife import jackknife_error
 from plot_separation_summary import (
     BRIDGE_X_FRAC,
@@ -83,7 +83,10 @@ def sim_filament(sim_dir: str, sep_key: str, single_name: str) -> tuple[np.ndarr
             "with jackknife_pair_stack.py before running this script.")
 
     pair_stack = load_map(stack_path)
-    single = symmetrize_map(load_map(os.path.join(sim_dir, single_name)))
+    # Simulation singles are symmetrized when produced.  Loading them verbatim
+    # lets two_halo_template reject archived half-pixel-centered products rather
+    # than silently re-symmetrizing already-corrupted radial bins.
+    single = load_map(os.path.join(sim_dir, single_name))
     axis = axis_for_map(pair_stack)
     gx, gy = np.meshgrid(axis, axis)
     control = two_halo_template(single, gx, gy, sep)

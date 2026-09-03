@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
-from sim_utils import make_two_halo_template, radial_symmetrize_map
+from sim_utils import make_two_halo_template
 
 
 logger = logging.getLogger(__name__)
@@ -73,10 +73,9 @@ def interpolate_single_template(
     target_axis: np.ndarray,
     rperp_center: float,
 ) -> np.ndarray:
-    # radial-profile construction (sim_utils.make_two_halo_template): exact for
-    # the symmetrized single map and centered on its N//2 symmetrization pixel.
-    # The previous 2D interpolation assumed the geometric center, landing the
-    # template half a pixel off and leaving spurious residual features.
+    # Radial-profile construction (sim_utils.make_two_halo_template), centered
+    # on the physical (N-1)/2 origin.  The previous N//2 convention landed an
+    # even-grid template half a pixel off and left spurious residual features.
     target_x, target_y = np.meshgrid(target_axis, target_axis)
     return make_two_halo_template(single, target_x, target_y, rperp_center)
 
@@ -245,7 +244,7 @@ def main(argv: list[str] | None = None) -> None:
     sim_dir = Path(args.sim_results_dir)
     out_dir = Path(args.output_dir)
 
-    sim_single = radial_symmetrize_map(load_map(sim_dir / f"kappa_single_sim_{args.mass_label}.csv"))
+    sim_single = load_map(sim_dir / f"kappa_single_sim_{args.mass_label}.csv")
 
     rows = []
     stats_rows = []

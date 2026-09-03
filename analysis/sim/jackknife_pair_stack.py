@@ -30,7 +30,6 @@ import pandas as pd
 from sim_utils import (
     make_two_halo_template,
     open_kappa_memmap,
-    radial_symmetrize_map,
     reflect_symmetrize_map,
     save_map_csv,
     setup_logging,
@@ -64,10 +63,20 @@ def run(args: argparse.Namespace) -> dict:
         if args.rpar_min is not None:
             keep &= values >= args.rpar_min
         if args.rpar_max is not None:
-            keep &= values <= args.rpar_max
+            # Half-open [lo, hi) when requested, so adjacent LOS bands cannot
+            # both claim a pair sitting exactly on the boundary.
+            if getattr(args, "rpar_half_open", False):
+                keep &= values < args.rpar_max
+            else:
+                keep &= values <= args.rpar_max
         pairs = pairs[keep]
     if args.max_pairs is not None:
-        pairs = pairs.iloc[: args.max_pairs]
+        # .iloc[:n] would take the FIRST n rows, which are ordered by the
+        # pair-finder and are therefore spatially correlated -- not a random
+        # subsample.  Sample explicitly, with a recorded seed.
+        if len(pairs) > args.max_pairs:
+            pairs = pairs.sample(n=args.max_pairs,
+                                 random_state=getattr(args, "seed", 0))
     logger.info("Pairs: %d of %d after cuts (%s in [%s, %s])", len(pairs), n_total,
                 rpar_col, args.rpar_min, args.rpar_max)
 
@@ -102,7 +111,11 @@ def run(args: argparse.Namespace) -> dict:
     k = len(counts)
     logger.info("Stacked %d non-empty blocks (%d pairs)", k, int(counts.sum()))
 
-    single = radial_symmetrize_map(load_map(Path(args.single)))
+    # stack_single_sim.py already writes a radially symmetrized map.  Do not
+    # re-symmetrize it here: doing so used to hide archived products centered
+    # on N//2 instead of the physical (N-1)/2 origin.  The template builder
+    # validates the saved product and rejects the old convention.
+    single = load_map(Path(args.single))
     axis = np.linspace(-0.5 * args.box_size, 0.5 * args.box_size, grid)
     x_grid, y_grid = np.meshgrid(axis, axis)
     template = make_two_halo_template(single, x_grid, y_grid, args.rperp_center)
@@ -146,6 +159,24 @@ def run(args: argparse.Namespace) -> dict:
 
     if args.stack_output:
         save_map_csv(args.stack_output, reflect_symmetrize_map(full_map.astype(np.float32)))
+
+    # Persist the per-block accumulators, not just the collapsed map.  Any
+    # control, band definition or extrapolation can then be recomputed on the
+    # full map *and* on every leave-one-out map without re-stacking -- which is
+    # what an estimator other than the built-in template needs in order to have
+    # a jackknife error at all.  25 blocks x 101 x 101 float64 is ~2 MB.
+    if getattr(args, "blocks_output", None):
+        np.savez_compressed(
+            args.blocks_output,
+            sums=sums, counts=counts,
+            grid_size=grid, box_size=args.box_size,
+            rperp_center=args.rperp_center,
+            rpar_min=np.nan if args.rpar_min is None else args.rpar_min,
+            rpar_max=np.nan if args.rpar_max is None else args.rpar_max,
+            rpar_space=str(args.rpar_space),
+            n_pairs=int(counts.sum()),
+        )
+        logger.info("Per-block accumulators -> %s (%d blocks)", args.blocks_output, k)
     return result
 
 
@@ -174,6 +205,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-pairs", type=int, default=None, help="Pilot cap.")
     parser.add_argument("--output", required=True, help="Output JSON with stats +/- jackknife errors.")
     parser.add_argument("--stack-output", default=None, help="Optional full stacked-map CSV.")
+    parser.add_argument("--blocks-output", default=None,
+                        help="Optional .npz of per-block sum maps and counts. Required "
+                             "to give any non-built-in estimator a jackknife error.")
+    parser.add_argument("--rpar-half-open", action="store_true",
+                        help="Treat the LOS cut as [min, max) instead of [min, max].")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="Seed for --max-pairs subsampling.")
     return parser.parse_args(argv)
 
 

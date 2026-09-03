@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
-from sim_utils import make_two_halo_template, radial_symmetrize_map
+from sim_utils import make_two_halo_template
 
 
 logger = logging.getLogger(__name__)
@@ -298,7 +298,7 @@ def main(argv: list[str] | None = None) -> None:
     setup_logging()
     results = Path(args.results_dir)
 
-    single = radial_symmetrize_map(load_map(results / f"kappa_single_sim_{args.mass_label}.csv"))
+    single = load_map(results / f"kappa_single_sim_{args.mass_label}.csv")
     fixed_axis = np.linspace(-50.0, 50.0, 101)
     norm_axis = np.linspace(-2.5, 2.5, 101)
     norm_x, norm_y = np.meshgrid(norm_axis, norm_axis)

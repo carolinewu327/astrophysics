@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from sim_utils import make_two_halo_template, radial_symmetrize_map
+from sim_utils import make_two_halo_template
 
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ def summarize_variant(variant: dict) -> list[dict]:
         logger.warning("Skipping %s: missing %s", variant["name"], single_path)
         return []
 
-    single = radial_symmetrize_map(load_map(single_path))
+    single = load_map(single_path)
     rows = []
     for rperp_label, pair_cfg in variant["pairs"].items():
         normalized_path = Path(pair_cfg["normalized_path"])

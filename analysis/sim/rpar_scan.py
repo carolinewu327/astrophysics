@@ -53,7 +53,6 @@ from geometry import band_profile, bridge_excess
 from sim_utils import (
     make_two_halo_template,
     open_kappa_memmap,
-    radial_symmetrize_map,
     reflect_symmetrize_map,
     setup_logging,
 )
@@ -131,7 +130,7 @@ def scan_catalog(rperp_center: float, path: Path, cuts: list[float], args) -> li
     kappa_map, info = open_kappa_memmap(args.kappa_map)
     axis = np.linspace(-0.5 * args.box_size, 0.5 * args.box_size, args.grid_size)
     x_grid, y_grid = np.meshgrid(axis, axis)
-    single = radial_symmetrize_map(load_map(Path(args.single)))
+    single = load_map(Path(args.single))
     template = make_two_halo_template(single, x_grid, y_grid, rperp_center)
 
     # A cut at or beyond the catalog depth is meaningful -- it simply means "no

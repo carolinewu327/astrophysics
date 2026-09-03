@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from sim_utils import make_two_halo_template, radial_symmetrize_map, setup_logging
+from sim_utils import make_two_halo_template, setup_logging
 from summarize_sim_sensitivity import count_pairs, load_map, map_stats
 
 
@@ -51,7 +51,7 @@ def summarize(manifest_path: Path) -> pd.DataFrame:
             continue
         label = stack_cfg["smoothing_label"]
         if label not in singles:
-            singles[label] = radial_symmetrize_map(load_map(Path(stack_cfg["single_path"])))
+            singles[label] = load_map(Path(stack_cfg["single_path"]))
 
         pair_map = load_map(stack_path)
         n = pair_map.shape[0]

@@ -1,6 +1,33 @@
 # Direct-Annular Validation of the Single-Halo Kappa Stack
 
-Status: PASSED (qualitative, 500-halo run), 2026-07-10.
+Status: PASSED (quantitative, 10x500-subset run vs the final 0.1 map),
+2026-07-15. Original qualitative 500-halo pass: 2026-07-10.
+
+2026-08-10 centering correction: the archived even-grid map profile used the
+old `N // 2` radial center and is invalid at small radius.  The direct-annular
+estimator remains valid, but the map-stack side of this comparison must be
+regenerated with the physical `(N - 1) / 2` center before the inner-profile
+validation is considered closed again.  Downstream template builders now
+reject the archived product.
+
+## 2026-07-15 update: subset test and 5000-halo rerun
+
+Advisor test (Z. Zheng): if the outer-radius offset of the original single
+500-halo run was sample variance, independent 500-halo subsets should
+scatter to both sides of the map profile. Ran 10 disjoint random subsets
+(seed 1) in one particle pass (`--direct-subsets 10 --direct-max-halos
+500`), against the map profile from all 1,436,465 halos on the final
+0.1 h^-1 Mpc map.
+
+Result: **confirmed as sample variance.** At r_p > 30 h^-1 Mpc, 7/10
+subsets sit mostly above the map profile and 3/10 mostly below; subset
+outer means span -3.1e-4 to +3.6e-4 around the map's ~1.2e-4. The combined
+5000-halo direct profile agrees with the map profile quantitatively
+(outer mean 1.09e-4 vs 1.20e-4, tracking bin-by-bin; see
+`analysis/sim/results/validation_direct_subsets_mass13.png`). Outputs:
+`radial_profile_single_direct_annuli_mass13_10x500.csv` (+ `_subsets.csv`),
+halo counts now recorded in the CSV. This closes the three open caveats
+below (>=5000-halo rerun, 0.1-map spot check, halo-count recording).
 
 ## Purpose
 
@@ -72,12 +99,14 @@ Figure: `analysis/sim/results/validation_single_profile_map_vs_direct.png`
 ## Symmetrization Consistency (Phase 1, item 4)
 
 `stack_single_sim.py` applies `radial_symmetrize_map` (in
-`analysis/sim/sim_utils.py`), which is an exact port of the observational
-`symmetrize_map` in `lib/geometry.py`: same `pwr = 2/3` radial binning and the
-same `N // 2` center convention, including its half-pixel offset on even
-grids. The simulation single-halo template therefore matches the
-observational control-map construction quirk-for-quirk. Current single-stack
-outputs were regenerated after this change.
+`analysis/sim/sim_utils.py`), which matches the observational `symmetrize_map`
+in `lib/geometry.py`: both use the same `pwr = 2/3` radial binning and the true
+physical center `(N - 1) / 2`.  On a 100-pixel grid that center lies between
+pixels 49 and 50; on a 101-pixel grid it is pixel 50.  The previous `N // 2`
+convention shifted even-grid singles by half a pixel and those archived maps
+must be regenerated because their original pixels were already mixed into the
+wrong radial bins.  Template builders now reject such products instead of
+silently re-symmetrizing them.
 
 ## Reproduce
 

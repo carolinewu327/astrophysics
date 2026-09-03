@@ -82,7 +82,7 @@ import pandas as pd
 from scipy.linalg import cho_factor, cho_solve
 
 from catalog import setup_logging
-from geometry import band_response_zones, kappa_band
+from geometry import BRIDGE_HALF_X_FRAC, band_response_zones, kappa_band
 from plot_obs_vs_sim_filament import sim_filament
 from plot_separation_summary import build_terms
 from weighting_sensitivity import SEPARATIONS
@@ -371,7 +371,7 @@ def main(argv=None):
     setup_logging()
     os.makedirs(args.output_dir, exist_ok=True)
 
-    primary, scan = [], []
+    primary, scan, bridge = [], [], []
     for key in [s.strip() for s in args.separations.split(",")]:
         sep = SEPARATIONS[key]["center"]
         logger.info("=== separation %g h^-1 Mpc ===", sep)
@@ -426,6 +426,19 @@ def main(argv=None):
         make_plot(x, d, s, cov, fit["A"], sep, args.x_max, args.x_bin,
                   os.path.join(args.output_dir, f"band_fit_sep{key}"))
 
+        # Bridge-only fit.  Zheng's question is whether restricting the fit to
+        # the bridge beats fitting the whole profile, given how much of the
+        # response the halo bin takes.  Same machinery, fit range truncated to
+        # the bridge window -- so the comparison is like-for-like.
+        bridge_x_max = BRIDGE_HALF_X_FRAC * sep
+        try:
+            fb, _ = run_fit(obs, loo_maps, sim, axis, bridge_x_max, args.x_bin, sep)
+            bridge.append({"separation_hmpc": sep, "x_max_bridge": bridge_x_max, **fb})
+            logger.info("  bridge-only (X <= %.2f, d=%d): A = %+.3f +/- %.3f (%.2f sigma)",
+                        bridge_x_max, fb["dim"], fb["A"], fb["sigma_A"], fb["significance"])
+        except (ValueError, np.linalg.LinAlgError) as exc:
+            logger.warning("  bridge-only fit at sep=%g skipped: %s", sep, exc)
+
         for xb in [float(v) for v in args.scan_x_bins.split(",")]:
             for xm in [float(v) for v in args.scan_x_max.split(",")]:
                 try:
@@ -440,6 +453,9 @@ def main(argv=None):
         os.path.join(R, f"band_fit_{args.dataset}.csv"), index=False)
     pd.DataFrame(scan).to_csv(
         os.path.join(R, f"band_fit_scan_{args.dataset}.csv"), index=False)
+    if bridge:
+        pd.DataFrame(bridge).to_csv(
+            os.path.join(R, f"band_fit_bridge_only_{args.dataset}.csv"), index=False)
 
     logger.info("\nPrimary fit (%g h^-1 Mpc bins, X = 0-%g):", args.x_bin, args.x_max)
     logger.info("  sep    d      A     sigma_A   sigma   chi2(0)   dchi2   chi2/dof   cond")
@@ -448,6 +464,14 @@ def main(argv=None):
                     r["separation_hmpc"], r["dim"], r["A"], r["sigma_A"],
                     r["significance"], r["chi2_A0"], r["delta_chi2"],
                     r["chi2_min_per_dof"], r["cond"])
+
+    if bridge:
+        logger.info("\nBridge-only fit (fit range truncated to the bridge window):")
+        logger.info("  sep  X<=      d      A     sigma_A   sigma")
+        for r in bridge:
+            logger.info("  %3.0f  %5.2f  %3d  %+6.3f  %8.3f  %6.2f",
+                        r["separation_hmpc"], r["x_max_bridge"], r["dim"],
+                        r["A"], r["sigma_A"], r["significance"])
 
     logger.info("\nStability scan (A +/- sigma_A, significance, response split):")
     logger.info("  sep  x_bin  x_max   d      A     sigma_A   sigma   bridge%%   halo%%"

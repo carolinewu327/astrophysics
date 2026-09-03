@@ -176,7 +176,11 @@ def main(argv=None):
             # false residuals at the halo peaks. See geometry.two_halo_template.
             pair_axis = axis_for_map(corrected_pairs)
             gx, gy = np.meshgrid(pair_axis, pair_axis)
-            control = two_halo_template(single_map, gx, gy, center)
+            # The symmetry check exists to catch archived mis-centered stacks.
+            # Under --no-symmetrize-single the caller is handing in a raw map on
+            # purpose, so the check would reject the very thing being tested.
+            control = two_halo_template(single_map, gx, gy, center,
+                                        validate=not args.no_symmetrize_single)
             return corrected_pairs - control, corrected_pairs, control
 
         fil_total, cpairs_total, control_total = filament_from(single_total, pair_total)
