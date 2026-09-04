@@ -14,14 +14,14 @@ __pycache__/
 CLAUDE_DEV_SETUP.md
 .claude/
 
-# LaTeX build products (paper/)
-*.aux
-*.bbl
-*.blg
-*.fdb_latexmk
-*.fls
-*.log
-*.out
-*.synctex.gz
-*.toc
+# LaTeX build products and rasters under paper/
+paper/**/*.aux
+paper/**/*.bbl
+paper/**/*.blg
+paper/**/*.fdb_latexmk
+paper/**/*.fls
+paper/**/*.log
+paper/**/*.out
+paper/**/*.synctex.gz
+paper/**/*.toc
 paper/**/*.png
