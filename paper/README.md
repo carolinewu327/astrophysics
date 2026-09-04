@@ -1,0 +1,72 @@
+# Paper: Filaments between Dark Matter Halos from CMB Lensing
+
+Manuscript sources, final figures, and the record of which script makes
+which figure. Prose is edited in Overleaf (project
+`Filaments_from_CMB_Lensing`); this directory holds the snapshots that are
+committed, the figures the scripts produce, and the bibliography.
+
+## Layout
+
+```
+paper/
+  README.md                 this file
+  styau/
+    main.tex                aastex701 preamble; \input's the numbered sections
+    0_abstract_draft.tex
+    1_intro_draft.tex
+    2_data_draft.tex
+    3_methods_results_draft.tex   Sections 3 (Methods), 4 (Expected signal), 5 (Results)
+    4_summary_draft.tex
+    5_acknowledgments_draft.tex
+    refs.bib
+    Figure/                 final PDFs, referenced via \graphicspath{{Figure/}}
+```
+
+Compile locally with `latexmk -pdf main.tex` from `paper/styau/`. On
+Overleaf, upload the section files and `Figure/` and set `main.tex` as the
+main document.
+
+## Conventions inside the .tex files
+
+- `% CHECK` -- a number recorded in the repo (notes, docstrings, figures) but
+  not reproducible from a checked-in result file. Verify before submission.
+- `% TODO` -- a quantity the pipeline produces but whose value is not in the
+  repo. Fill from the run outputs.
+- `% UNVERIFIED` -- describes code that is not in the repo.
+
+## Figure manifest
+
+Every figure in the paper should have a row here: the file, the script that
+writes it, its inputs, and the exact command. Run commands from the repo
+root in the WSL `astro` environment. Regenerate figures before each
+Overleaf upload.
+
+| Figure file (`styau/Figure/`) | Section | Script | Inputs | Command |
+|---|---|---|---|---|
+| `footprint.pdf` | 2, Fig. 1 left | `analysis/boss/scripts/plot_footprint.py` | `data/BOSS/galaxy_DR12v5_CMASS_{North,South}.fits.gz`, `data/planck/COM_Lensing_4096_R3.00/mask.fits` | `python analysis/boss/scripts/plot_footprint.py --output-dir paper/styau/Figure` |
+| `zdist.pdf` | 2, Fig. 1 right | same run as above | same | same |
+| `footprint_stats.txt` | 2 (numbers in text) | same run as above | same | same; not a figure, the counts and redshift statistics quoted in the Data section |
+| `sim_pair_vs_control_maps_sep10.pdf` | 4 | not yet committed | mock pair stack and two-halo template at sep 10 | -- |
+| `sim_quadrupole_diff_maps.pdf` | 4 | not yet committed | mock filament maps, sep 5/10/20 | -- |
+| `sim_band_profiles_all_seps.pdf` | 4 | not yet committed | mock band profiles | -- |
+| `boss_single_and_pair_maps.pdf` | 5.1 | not yet committed | corrected single and pair stacks | -- |
+| `obs_vs_sim_quadrupole_maps.pdf` | 5.1 | not yet committed (closest: `analysis/boss/scripts/plot_obs_vs_sim_filament.py`) | BOSS and mock filament maps | -- |
+| `band_profiles_obs_vs_sim.pdf` | 5.2 | not yet committed | BOSS band profile with jackknife errors, mock band profile with box-jackknife band | -- |
+| `smoothing_scan.pdf` | 5.4 | not yet committed (closest: `analysis/boss/scripts/plot_smoothing_scan.py`) | bridge excess vs FWHM | -- |
+
+Paper figures should carry no explanatory text inside the image: no
+`fig.suptitle` notes and no in-panel annotation paragraphs. Panel titles are
+labels only, for example `(a) Mock pair stack`, and the explanation goes in
+the caption. Diagnostic versions of the same plots can keep their notes;
+give the plotting script a `--paper` flag that switches them off.
+
+## Numbers quoted in the text
+
+`Figure/footprint_stats.txt` is the source for the galaxy counts, median and
+weighted-mean redshift, Planck mask sky fraction, and unmasked fractions in
+Section 2. The bridge values, jackknife errors, template amplitudes,
+line-of-sight sweep numbers, and mock predictions in Sections 4 to 6 are not
+yet backed by committed result files; see the `% CHECK` and `% TODO`
+markers. The intended fix is a generated `numbers.tex` of macros written by
+the pipeline and `\input` by `main.tex`, so that text numbers cannot drift
+from the results.

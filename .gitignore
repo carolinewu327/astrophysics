@@ -13,3 +13,15 @@ __pycache__/
 # Local dev setup
 CLAUDE_DEV_SETUP.md
 .claude/
+
+# LaTeX build products (paper/)
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+paper/**/*.png
