@@ -104,6 +104,11 @@ def main(argv=None):
     parser.add_argument("--single-random-tag", default="_scw_frac100")
     parser.add_argument("--results-dir", default="analysis/boss/results")
     parser.add_argument("--output-dir", default="output/plots")
+    parser.add_argument("--paper", action="store_true",
+                        help="Drop the explanatory paragraph above the figure. "
+                             "Paper figures carry no text inside the image -- "
+                             "the wording lives in the LaTeX caption instead. "
+                             "Panel titles are labels and are kept either way.")
     args = parser.parse_args(argv)
     regions = [r.strip() for r in args.regions.split(",")]
     setup_logging()
@@ -114,9 +119,28 @@ def main(argv=None):
         raise SystemExit("No smoothing runs found.")
     logger.info("Comparing: %s", ", ".join(s[0] for s in smoothings))
 
-    keys = list(SEPARATIONS)
     fig, axes = plt.subplots(2, 2, figsize=(9.6, 7.6), constrained_layout=True)
     panels = [axes[0, 0], axes[0, 1], axes[1, 0]]
+
+    # SEPARATIONS also carries "5_rpar10" -- a different line-of-sight cut at
+    # the same 5 h^-1 Mpc separation -- so two keys share one centre.  Taking
+    # every key drew a fourth bar group in the S/N panel that was a verbatim
+    # copy of the first: that panel looks values up by *centre*, and 5_rpar10's
+    # centre is 5.0, so it re-read the r_par <= 5 numbers under a second "5"
+    # label.  The profile loop hid the mismatch because zip() against three
+    # panels drops the fourth key without a word.  One key per centre, and a
+    # hard check that the count still matches the layout.
+    seen, keys = set(), []
+    for k in SEPARATIONS:
+        centre = SEPARATIONS[k]["center"]
+        if centre not in seen:
+            seen.add(centre)
+            keys.append(k)
+    if len(keys) != len(panels):
+        raise ValueError(
+            f"{len(keys)} separations ({', '.join(keys)}) but {len(panels)} "
+            "profile panels. Add a panel or narrow the selection -- do not let "
+            "zip() drop one silently.")
     rows = []
 
     for ax, key in zip(panels, keys):
@@ -182,11 +206,15 @@ def main(argv=None):
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
 
-    fig.suptitle(
-        "Does loosening the Planck smoothing help? — BOSS filament, joint N+S\n"
-        "Shaded bands are jackknife errors over 287 cells; grey window is the bridge "
-        "region averaged for the S/N panel.",
-        fontsize=10.5, color=INK, ha="left", x=0.01)
+    # Diagnostic runs keep this so the figure explains itself when read on its
+    # own; --paper drops it because the paper carries the same wording in the
+    # LaTeX caption.  See paper/README.md.
+    if not args.paper:
+        fig.suptitle(
+            "Does loosening the Planck smoothing help? — BOSS filament, joint N+S\n"
+            "Shaded bands are jackknife errors over 287 cells; grey window is the bridge "
+            "region averaged for the S/N panel.",
+            fontsize=10.5, color=INK, ha="left", x=0.01)
 
     base = os.path.join(args.output_dir, "filament_snr_vs_smoothing")
     for ext in ("png", "pdf"):
