@@ -1,0 +1,41 @@
+% Assembles the numbered section files in order. Mirrors the preamble of the
+% Overleaf project so this compiles locally with the same class.
+% Figures are expected under Figure/ (see \graphicspath).
+
+%\documentclass[linenumbers,trackchanges]{aastex701}
+\documentclass[preprint]{aastex701}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{todonotes}   % switch to \usepackage[disable]{todonotes} for submission
+\usepackage{comment}
+\usepackage{url}
+
+\graphicspath{{Figure/}}
+
+\newcommand{\hinvMpc}{h^{-1}\,{\rm Mpc}}
+
+\begin{document}
+
+\title{Studying Filaments between Dark Matter Halos from Cosmic Microwave Background Lensing}
+
+\author[]{Caroline Wu}
+\affiliation{Scarsdale High School}
+\email[show]{carolinewu327@gmail.com}
+
+\begin{abstract}
+\input{0_abstract_draft}
+\end{abstract}
+
+\keywords{Cosmic web (330) --- Weak gravitational lensing (1797) --- Cosmic microwave background radiation (322) --- Large-scale structure of the universe (902)}
+
+\input{1_intro_draft}
+\input{2_data_draft}
+\input{3_methods_results_draft}
+\input{4_summary_draft}
+\input{5_acknowledgments_draft}
+
+\bibliographystyle{aasjournalv7}
+\bibliography{refs}
+
+\end{document}

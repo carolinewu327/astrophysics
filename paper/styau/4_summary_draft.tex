@@ -1,0 +1,135 @@
+% ---------------------------------------------------------------------------
+% Summary and Discussion draft -- written to close the argument opened in
+% notes/intro_draft.tex and carried through notes/methods_results_draft.tex.
+% Same conventions: % CHECK / % TODO / % UNVERIFIED (see methods draft header).
+%
+% Each bold lead below answers one of the four "differences from de Graaff"
+% promised in the introduction, in the same order, then discusses what the
+% mock comparison taught us and what comes next.
+% ---------------------------------------------------------------------------
+
+\section{Summary and Discussion}
+\label{sec:discussion}
+
+We have stacked the Planck 2018 lensing convergence map on $217{,}702$,
+$459{,}051$, and $1{,}282{,}969$ BOSS CMASS galaxy pairs at transverse
+separations of $5$, $10$, and $20\,\hinvMpc$, % CHECK: 20 hMpc count
+subtracted a control built from the galaxies' own single-galaxy stack, and
+measured the convergence left between the pair members. The same pipeline
+was run on a CMASS-like mock built from the BigMDPL simulation, which
+supplies the $\Lambda$CDM expectation for every quantity we measure.
+
+\textbf{We do not detect a filament, and the data cannot yet test the
+$\Lambda$CDM prediction.} The bridge excess is consistent with zero at all
+three separations, at $0.7\sigma$, $2.2\sigma$, and $-1.1\sigma$. % CHECK
+Testing the compressed profile against zero with the full covariance gives
+the same conclusion. The mock predicts a bridge of roughly $6$, $3.4$, and
+$1.5\times10^{-4}$ in the same statistic, % CHECK
+below our errors at every separation, so the observations are consistent
+with the prediction and equally consistent with no bridge at all. The
+$95$ per cent upper limits correspond to % TODO: Sigma and linear mass density limits
+The $2.2\sigma$ excess at $10\,\hinvMpc$ is at the level of the
+$1.9\sigma$ signal that \citet{deGraaff2019} found in the same data with a
+different estimator, and we regard the two as the same marginal hint.
+
+\textbf{Resolving the measurement in separation costs sensitivity that
+Planck cannot afford.} The first change we made relative to
+\citet{deGraaff2019} was to bin pairs by separation on a fixed comoving grid
+rather than rescaling and pooling them. The mock shows why this is worth
+doing: the predicted bridge falls by a factor of four from $5$ to
+$20\,\hinvMpc$, so the pooled measurement mixes structures of very
+different amplitude. But dividing the sample raises the error in each bin,
+and at Planck noise none of the bins is individually informative. Pooling
+our three bins with inverse-variance weights gives % TODO
+which is the number to compare with theirs.
+
+\textbf{The limit is the map, not the method.} Removing the control
+entirely and measuring the same window on the raw band changes the error by
+% TODO: quote from the committed pipeline (the 7% figure came from the fitted-control analysis)
+so the error budget is set by the Planck reconstruction noise within the
+bridge window and not by the uncertainty of the control. No refinement of
+the template can shrink the error bar; only more pairs or a less noisy
+convergence map can. Treating pixels as independent would have understated
+the error by a factor of $2.2$ to $2.6$, % CHECK
+which is the single largest source of over-optimism in a measurement of
+this kind.
+
+\textbf{The unit-amplitude control is the right choice, and the mock says
+why.} The third change was to use a control with no fitted parameters. On
+the mock, the unit-amplitude control recovers a clear bridge with the
+expected decline in separation, whereas a control whose core and tail
+amplitudes are fitted to the region outside the pair drives the residual to
+zero at every separation. % UNVERIFIED: fitted-control code not in the repo
+The pair axis is aligned with the surrounding large-scale structure on both
+sides of the pair, so any region along the axis is correlated with the
+bridge and a fit there absorbs it. This is the weakness of profile fitting
+that we anticipated in Section~\ref{sec:intro}, now measured on a
+simulation with known content. The non-physical mock pairs, with
+line-of-sight separations of $20$--$120\,\hinvMpc$, show no bridge with the
+unit-amplitude control, % TODO: values
+so the control does not manufacture a ridge on its own.
+
+\textbf{The control is not perfect, and the imperfection is informative.}
+The observed filament map retains a residual of about $2\times10^{-3}$ at
+the galaxy positions against $0.9\times10^{-3}$ in the mock. % CHECK
+Galaxies with a close companion live in more massive haloes than the
+average CMASS galaxy, and this selection is stronger in the data than in a
+central-only mock with a soft mass threshold. Independently, the BOSS
+single-galaxy profile falls below the mock at large radius. % CHECK
+Both discrepancies affect the isotropic residual, which the band difference
+removes to first order, but they set the size of the halo signal that leaks
+toward the bridge window, and they mean the mock does not reproduce the
+data's leakage exactly. Two improvements to the mock follow directly. The
+HOD should include satellites, which contribute the close pairs at
+$5\,\hinvMpc$ and raise the mass selection in pairs, and it should be tuned
+on the measured single-galaxy lensing profile rather than on the number
+density alone.
+
+\textbf{The bridge window must clear the beam.} The window
+$|X|\leq0.35\,d$ ends $0.15\,d$ from each halo centre: $0.75\,\hinvMpc$ at
+$d=5$, $1.5$ at $d=10$, and $3\,\hinvMpc$ at $d=20$, against a smoothed halo
+profile of $3.3\,\hinvMpc$ at half maximum. Because the central band at a
+given $X$ lies closer to the halo than the off-centre band, an isotropic
+halo residual leaks into the band difference with a positive sign. In an
+earlier version of this analysis, excluding only $\pm1\,\hinvMpc$ around
+each halo produced an apparent $2.4\sigma$ bridge that vanished once the
+exclusion reached a full beam width. % CHECK: from the earlier (uncommitted) analysis; confirm the numbers or drop the sentence
+At $5\,\hinvMpc$ a beam-wide exclusion leaves no window at all, which is
+why we treat that bin as a consistency check on the two larger ones rather
+than as an independent measurement, and why the $5\,\hinvMpc$ mock bridge
+should be read as bridge plus halo leakage. % TODO: quote the mock leakage estimate (B(X) with the filament removed, or with randomised pair orientations)
+The general lesson is that any pair-stacking bridge statistic needs an
+exclusion of at least one smoothing scale, or an explicit leakage
+calibration from a simulation with the same smoothing and the same halo
+selection.
+
+\textbf{Varying the line-of-sight cut trades completeness against
+contamination without a clear optimum at Planck noise.} The fourth change
+was to test the line-of-sight cut on the mock rather than adopt the
+$5$--$6\,\hinvMpc$ value used previously. The redshift-space sweep gives
+completeness and interloper fractions of % TODO
+at cuts of $5$, $10$, $20$, and $30\,\hinvMpc$, and the mock
+signal-to-noise selects $5\,\hinvMpc$ for the closest pairs and
+$10\,\hinvMpc$ for the others. The gain over a uniform $5\,\hinvMpc$ cut is
+% TODO
+which is real in the mock but well below what would be needed to change the
+observational conclusion. Adopting a single cut across all bins would make
+the samples directly comparable at little cost, and we recommend it for
+future work.
+
+\textbf{Prospects.} Because the error is dominated by map noise it falls as
+the number of pairs grows, so the most direct gain with Planck is a wider
+separation bin, at the cost of some smearing of the bridge. The larger step
+is a less noisy convergence map. The ACT DR6 reconstruction already overlaps
+a large part of the CMASS footprint with several times lower noise on the
+relevant scales, % CHECK: quote overlap area and noise ratio
+and the Simons Observatory and CMB-S4 will extend this further; the SPT-3G
+field lies largely outside the CMASS footprint. Scaling our errors by the
+noise ratio, the mock bridge at $10\,\hinvMpc$ would be detected at
+% TODO: forecast S/N
+with the present pair sample. Combining the convergence stack with the
+thermal Sunyaev--Zel'dovich stack of the same pairs, as \citet{deGraaff2019}
+did, would then constrain the gas temperature of the bridge as well as its
+mass. Finally, the same pairs are covered by the HSC, DES, and KiDS shape
+catalogues over smaller areas, and a joint galaxy-shape and CMB-lensing
+measurement would test the bridge with two independent source planes.
