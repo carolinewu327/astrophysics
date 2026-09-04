@@ -42,11 +42,15 @@ import numpy as np
 
 from catalog import setup_logging
 from combine_jackknife import load_accumulator, total_map
-from geometry import symmetrize_map, two_halo_template
+from geometry import (BRIDGE_HALF_X_FRAC, band_profile,
+                      reflect_symmetrize_map, symmetrize_map,
+                      two_halo_template)
+from jackknife import jackknife_error
 from plot_separation_summary import build_terms
 from weighting_sensitivity import SEPARATIONS
 
-from deconvolve_pair_profile import GREEN, INK, INK_MUTED, axis_for, load_map
+from deconvolve_pair_profile import (BLUE, GREEN, GRID, INK, INK_MUTED,
+                                     ORANGE, axis_for, load_map, tidy)
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +69,15 @@ ZOOM_FIG1 = 26.0
 SIM_STACK = {"5": "stack_rperp5_matched",
              "10": "stack_rperp10_matched",
              "20": "stack_rperp20_matched"}
+
+# Per-block accumulators for the mock's box jackknife.  Named separately
+# because jackknife_pair_stack.py writes them without the "_matched" suffix
+# the stack CSV carries, so they cannot be derived from SIM_STACK by string
+# surgery.  sim_band_error() checks each one's pair count against the stack's
+# sidecar, so a file from a different cut cannot be paired with a stack.
+SIM_BLOCKS = {"5": "stack_rperp5_blocks.npz",
+              "10": "stack_rperp10_blocks.npz",
+              "20": "stack_rperp20_blocks.npz"}
 
 # Set by --paper.  Module-level rather than threaded through every fig*()
 # because it affects only presentation, never a number.
@@ -223,6 +236,140 @@ def fig2(terms, out_dir):
     save(fig, out_dir / "obs_vs_sim_quadrupole_maps")
 
 
+def zoom(sep):
+    """Half-width of the plotted X range -- the same rule fig2 uses."""
+    return float(min(max(2.2 * sep, 16.0), 32.0))
+
+
+def sim_band_error(key, axis, control):
+    """Box-jackknife error on the mock band profile, from the per-block stacks.
+
+    The control is passed in and held fixed across realizations rather than
+    refitted, matching what jackknife_pair_stack.py does: it is built from the
+    *single* stack, which these blocks do not resample, so refitting it here
+    would inject a variance the data never had.
+
+    Each leave-one-out map is rebuilt as (sum_total - sum_b) / (n_total - n_b)
+    and reflection-symmetrized, because that is what the saved stack is -- the
+    blocks reconstruct it to 3e-8 of peak only after that step.
+    """
+    path = SIM_DIR / "hod_pairs" / SIM_BLOCKS[key]
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} not found. Re-run jackknife_pair_stack.py for this "
+            "separation with --blocks-output; see paper/README.md step 1.")
+    d = np.load(path)
+    sums, counts = d["sums"], d["counts"]
+
+    # The blocks must belong to the same run as the stack they will be
+    # differenced against -- stack_rperp5_rpar10_blocks.npz sits in the same
+    # directory and is a different line-of-sight cut of the same separation.
+    with open(SIM_DIR / "hod_pairs" / f"{SIM_STACK[key]}.json",
+              encoding="utf-8") as fh:
+        meta = json.load(fh)
+    if int(d["n_pairs"]) != int(meta["n_pairs"]):
+        raise ValueError(
+            f"r_perp = {key}: {path.name} holds {int(d['n_pairs'])} pairs but "
+            f"{SIM_STACK[key]}.json records {int(meta['n_pairs'])}. These are "
+            "different runs; regenerate the blocks for this stack.")
+    tot_s, tot_c = sums.sum(axis=0), counts.sum()
+    loo = []
+    for b in range(len(counts)):
+        n = tot_c - counts[b]
+        if n <= 0:
+            continue
+        m = reflect_symmetrize_map(((tot_s - sums[b]) / n).astype(np.float32))
+        loo.append(band_profile(m - control, axis))
+    logger.info("sep %-3s: mock band error from %d of %d blocks", key,
+                len(loo), len(counts))
+    return jackknife_error(np.asarray(loo))[1]
+
+
+def fig3(terms, out_dir):
+    """B(X) observed against the mock, with a residual strip beneath."""
+    fig, axes = plt.subplots(2, len(KEYS), figsize=(4.6 * len(KEYS), 5.4),
+                             sharex="col", height_ratios=[3, 1],
+                             constrained_layout=True, squeeze=False)
+    for col, key in enumerate(KEYS):
+        t = terms[key]
+        sep, axis = t["sep"], t["axis"]
+        boss_fil = t["filament"]
+
+        # Never build this error from per-pixel errors: the 8 arcmin beam is
+        # ~3.3 h^-1 Mpc against a 1 h^-1 Mpc pixel, so neighbouring pixels are
+        # correlated and the independent-bin approximation understates the
+        # band error by 2.2-2.6x (see the paper's Section 3.6).
+        boss_prof = band_profile(boss_fil, axis)
+        loo = np.asarray([band_profile(m.reshape(boss_fil.shape), axis)
+                          for m in t["loo"]["filament"]])
+        boss_err = jackknife_error(loo)[1]
+
+        sim_fil, sim_axis = sim_diff(key)
+        single = load_map(SIM_DIR / SIM_SINGLE)
+        gx, gy = np.meshgrid(sim_axis, sim_axis)
+        control = two_halo_template(single, gx, gy, float(key))
+        sim_prof = band_profile(sim_fil, sim_axis)
+        sim_err = sim_band_error(key, sim_axis, control)
+
+        half = zoom(sep)
+        m = np.abs(axis) <= half
+        ms = np.abs(sim_axis) <= half
+
+        top = axes[0][col]
+        top.axhline(0, color=INK, lw=0.9)
+        top.axvspan(-BRIDGE_HALF_X_FRAC * sep, BRIDGE_HALF_X_FRAC * sep,
+                    color=INK_MUTED, alpha=0.09, lw=0, zorder=0)
+        for xx in (-0.5 * sep, 0.5 * sep):
+            top.axvline(xx, color=GREEN, lw=1.1, ls=":")
+        top.fill_between(sim_axis[ms], (sim_prof[ms] - sim_err[ms]) * 1e4,
+                         (sim_prof[ms] + sim_err[ms]) * 1e4,
+                         color=ORANGE, alpha=0.22, lw=0, zorder=1)
+        top.plot(sim_axis[ms], sim_prof[ms] * 1e4, lw=2.0, color=ORANGE,
+                 label="mock", zorder=2)
+        top.errorbar(axis[m], boss_prof[m] * 1e4, yerr=boss_err[m] * 1e4,
+                     fmt="o", ms=3.0, lw=0, elinewidth=1.0, capsize=0,
+                     color=BLUE, ecolor=BLUE, label="BOSS", zorder=3)
+        top.set_ylabel(r"$B(X)$  [$10^{-4}$]")
+        top.set_title(rf"$r_\perp$ = {key} $h^{{-1}}$Mpc  ({t['n_pairs']:,} pairs)",
+                      loc="left", color=INK, fontsize=11, pad=5)
+        if col == 0:
+            top.legend(loc="upper right", fontsize=8.6, frameon=False)
+        tidy(top)
+
+        # The mock is on the pair grid and BOSS may not be, so interpolate the
+        # mock onto the observed axis rather than assuming they line up.
+        bot = axes[1][col]
+        resid = (boss_prof[m] - np.interp(axis[m], sim_axis, sim_prof)) / boss_err[m]
+        bot.axhline(0, color=INK, lw=0.9)
+        for lev in (-2.0, 2.0):
+            bot.axhline(lev, color=INK_MUTED, lw=0.7, ls="--")
+        bot.plot(axis[m], resid, lw=0, marker="o", ms=2.6, color=BLUE)
+        bot.set_ylim(-4.0, 4.0)
+        bot.set_xlim(-half, half)
+        bot.set_xlabel(r"$X$ along the pair axis  [$h^{-1}$ Mpc]")
+        bot.set_ylabel(r"$\Delta/\sigma$")
+        bot.grid(True, axis="y", color=GRID, linewidth=0.6)
+        bot.set_axisbelow(True)
+        tidy(bot)
+
+        n_out = int(np.sum(np.abs(resid) > 2.0))
+        logger.info("sep %-3s: %d of %d residual bins beyond 2 sigma", key,
+                    n_out, resid.size)
+
+    caption(
+        fig,
+        r"Band profile $B(X)$ — BOSS against the mock""\n"
+        "Points are the observed central-minus-off-centre band with delete-one "
+        "jackknife errors over 287 sky patches; the shaded band is the mock's "
+        "25-block box jackknife.\n"
+        "Grey marks the bridge window, dotted green the galaxies.  Lower "
+        r"strip: (BOSS $-$ mock) in units of the observed error.""\n"
+        r"At $r_\perp$ = 20 the mock bin is 19-21 $h^{-1}$Mpc against BOSS's "
+        "18-22 — see paper/README.md.",
+    )
+    save(fig, out_dir / "band_profiles_obs_vs_sim")
+
+
 def save(fig, base):
     base.parent.mkdir(parents=True, exist_ok=True)
     for e in ("png", "pdf"):
@@ -239,7 +386,7 @@ def main(argv=None):
     ap.add_argument("--single-tag", default="_scw")
     ap.add_argument("--single-random-tag", default="_scw_frac100")
     ap.add_argument("--output-dir", default="output/plots")
-    ap.add_argument("--only", default="", help="subset of 1,2")
+    ap.add_argument("--only", default="", help="subset of 1,2,3")
     ap.add_argument("--paper", action="store_true",
                     help="Drop the explanatory paragraph above each figure. "
                          "Paper figures carry no text inside the image -- the "
@@ -262,11 +409,13 @@ def main(argv=None):
         logger.info("%s: %d pairs, a = %.1f", key, terms[key]["n_pairs"],
                     terms[key]["sep"])
 
-    want = {s.strip() for s in args.only.split(",") if s.strip()} or {"1", "2"}
+    want = {s.strip() for s in args.only.split(",") if s.strip()} or {"1", "2", "3"}
     if "1" in want:
         fig1(single, terms, out)
     if "2" in want:
         fig2(terms, out)
+    if "3" in want:
+        fig3(terms, out)
 
 
 if __name__ == "__main__":

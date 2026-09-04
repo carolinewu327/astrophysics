@@ -51,7 +51,7 @@ Overleaf upload.
 | `sim_band_profiles_all_seps.pdf` | 4 | same script, `--only 3` | same as above | `PYTHONPATH=lib:analysis/sim python analysis/sim/plot_theory_figures.py --paper --only 3 --output-dir paper/styau/Figure` |
 | `boss_single_and_pair_maps.pdf` | 5.1 | `analysis/boss/scripts/plot_observed_figures.py` | **external** `analysis/boss/results/jk/acc_single_{galaxy_scw,random_scw_frac100}_BOSS_North_South.npz` and `acc_pairs_galaxy_{5,10,20}_*.npz` | `PYTHONPATH=lib:analysis/boss/scripts:analysis/sim python analysis/boss/scripts/plot_observed_figures.py --paper --only 1 --output-dir paper/styau/Figure` |
 | `obs_vs_sim_quadrupole_maps.pdf` | 5.1 | same script, `--only 2` | the same accumulators, plus `analysis/sim/results/hod_pairs/stack_rperp{5,10,20}_matched.{csv,json}` and the mock single | `PYTHONPATH=lib:analysis/boss/scripts:analysis/sim python analysis/boss/scripts/plot_observed_figures.py --paper --only 2 --output-dir paper/styau/Figure` |
-| `band_profiles_obs_vs_sim.pdf` | 5.2 | planned as `fig3` in `analysis/boss/scripts/plot_observed_figures.py`; see "Producing band_profiles_obs_vs_sim.pdf" below | the BOSS accumulators above, plus `analysis/sim/results/hod_pairs/stack_rperp{5,10,20}_matched.{csv,json}`, `blocks_rperp{5,10,20}_matched.npz` (new), and the mock single | `PYTHONPATH=lib:analysis/boss/scripts:analysis/sim python analysis/boss/scripts/plot_observed_figures.py --paper --only 3 --output-dir paper/styau/Figure` |
+| `band_profiles_obs_vs_sim.pdf` | 5.2 | `analysis/boss/scripts/plot_observed_figures.py`, `fig3` | **external** BOSS accumulators as above, plus `analysis/sim/results/hod_pairs/stack_rperp{5,10,20}_matched.{csv,json}` and the mock single; **external** `stack_rperp{5,10,20}_blocks.npz` (~0.9 MB each, kept out of git with the other accumulators) | `PYTHONPATH=lib:analysis/boss/scripts:analysis/sim python analysis/boss/scripts/plot_observed_figures.py --paper --only 3 --output-dir paper/styau/Figure` |
 | `filament_snr_vs_smoothing.pdf` | 5.4 | `analysis/boss/scripts/plot_smoothing_scan.py` | **external** `acc_pairs_galaxy_{5,10,20}{,_fwhm6,_fwhm4}_*.npz` and the matching single accumulators; smoothings are discovered from whatever is on disk | `PYTHONPATH=lib python analysis/boss/scripts/plot_smoothing_scan.py --paper --output-dir paper/styau/Figure` |
 
 Paper figures should carry no explanatory text inside the image: no
@@ -92,11 +92,27 @@ LCDM prediction as a function of position along the pair axis, so it
 separates a bridge centred at X = 0 from halo leakage near X = +/- d/2, and
 it shows the separation dependence that Section 1 promises.
 
-**Step 1 -- mock per-block stacks (run once per separation, on the machine
-with the mock maps).** The existing `stack_rperp*_matched.json` holds only
-the bridge statistic's jackknife error, not per-block maps, so the mock
-profile currently has no error band. Re-run the matched stacks with
-`--blocks-output`:
+**Step 1 -- mock per-block stacks.** Mostly already done. The
+`stack_rperp*_matched.json` files hold only the bridge statistic's jackknife
+error, but the per-block maps exist on disk for two of the three separations
+and match their stacks exactly:
+
+| separation | blocks file | n_pairs / r_par vs the matched JSON |
+|---|---|---|
+| 5 | `stack_rperp5_blocks.npz` | regenerated here; the pre-existing `stack_rperp5_rpar10_blocks.npz` is the r_par <= 10 cut (487,057 pairs), not the r_par <= 5 the matched stack uses (319,772) |
+| 10 | `stack_rperp10_blocks.npz` | 655,957 / r_par <= 10 -- identical |
+| 20 | `stack_rperp20_blocks.npz` | 929,157 / r_par <= 10 -- identical |
+
+Both existing files reconstruct their saved stack to 3e-8 of peak
+(`sums.sum(0) / counts.sum()`, then `reflect_symmetrize_map`), so they are the
+same run and can be used directly. Note the naming: `<stack stem>_blocks.npz`,
+following what `jackknife_pair_stack.py` already writes -- not
+`blocks_rperp*_matched.npz`.
+
+Only the 5 h^-1 Mpc case needs a re-run (about 5 minutes: 25 blocks at ~8 s
+each, plus reading the 346 MB pair catalogue). Send `--output` and
+`--stack-output` somewhere scratch unless you mean to overwrite the committed
+stack; only `--blocks-output` is new:
 
 ```
 PYTHONPATH=lib:analysis/sim python analysis/sim/jackknife_pair_stack.py \
@@ -109,13 +125,24 @@ PYTHONPATH=lib:analysis/sim python analysis/sim/jackknife_pair_stack.py \
     --blocks-output analysis/sim/results/hod_pairs/blocks_rperp10_matched.npz
 ```
 
-Repeat for 5 (`--rpar-max 5`) and 20 (`--rpar-max 10`). Check the input
-file names against what is on disk; the pair-catalogue and map names above
-are the ones the scripts default to. Two things to confirm in the JSON
-before going on: the 20 h^-1 Mpc mock bin must be 18-22 to match the BOSS
-catalogue (`run_sim_sensitivity.py` used 19-21; if the pair file was made
-with 19-21, regenerate it with `find_pairs_sim.py --rperp-min 18
---rperp-max 22`), and `rpar_max_hmpc` must read 5, 10, 10.
+**The r_perp = 20 mock bin does not match BOSS.** Measured from the pair
+catalogues themselves (`r_perp` column, min/max):
+
+| separation | mock bin | BOSS bin | |
+|---|---|---|---|
+| 5 | 4-6 | 4-6 | match |
+| 10 | 9-11 | 9-11 | match |
+| 20 | **19-21** | **18-22** | **mismatch** |
+
+This is not only a risk for the new figure: `stack_rperp20_matched.csv` is
+built on that same 19-21 catalogue, is already committed, and already feeds
+the committed `obs_vs_sim_quadrupole_maps.pdf`. `sim_diff()` asserts that
+`rpar_max` matches BOSS but nothing asserts the r_perp bin, which is how it
+got through. Fixing it means regenerating
+`pairs_hodnmatch50_rperp20_rsd50.csv` with `find_pairs_sim.py --rperp-min 18
+--rperp-max 22`, re-stacking, and re-issuing both that stack and the
+quadrupole figure. Until then the 20 h^-1 Mpc column compares a narrower mock
+bin against the wider BOSS one, and the caption says so.
 
 **Step 2 -- add `fig3` to `plot_observed_figures.py`.** Follow the pattern of
 `fig1`/`fig2` and the `--only` / `--paper` switches already there. Per
@@ -128,8 +155,8 @@ separation key:
    t["loo"]["filament"]]`, then `jackknife_error(loo)`. Do not derive the
    error from per-pixel errors; the 8 arcmin beam correlates neighbouring
    pixels (README section above, and Section 3.6 of the paper).
-2. Mock side: `sim_fil = sim_diff(key)` (already in the script) gives the
-   mock filament map; `sim_prof = band_profile(sim_fil, axis)`. For the
+2. Mock side: `sim_fil, axis = sim_diff(key)` (already in the script -- it
+   returns the map *and* its axis) gives the mock filament map; `sim_prof = band_profile(sim_fil, axis)`. For the
    band: load `blocks_rperp{key}_matched.npz`, form each leave-one-out
    map as `(sum_total - sum_b) / (n_total - n_b)`, subtract the *same*
    `two_halo_template` control used for the full mock stack (held fixed, as
@@ -147,8 +174,9 @@ separation key:
 **Step 3 -- consistency checks before using the figure.**
 
 - The mean of `boss_prof` over the bridge window must equal the observed
-  bridge excess in `analysis/boss/results/filament_bridge_*.csv` from
-  `combine_filament_jackknife.py`, and its windowed jackknife error must
+  bridge excess in `analysis/boss/results/filament_jackknife_BOSS_North_South.csv`
+  from `combine_filament_jackknife.py` (columns `filament_bridge_excess`,
+  `filament_bridge_err`, `significance`), and its windowed jackknife error must
   match the table error to within a few per cent (the 2D box mean and the
   1D window differ slightly in pixel weighting; a warning for this already
   exists in `plot_separation_summary.py`).
@@ -163,12 +191,34 @@ separation key:
   "consistent with the prediction" statement holds; note any bin outside
   that in the text.
 
-**Step 4 -- run and file.** Diagnostic version (with notes) to
-`output/plots/`, paper version with `--paper` to `paper/styau/Figure/`,
-delete the stray `.png` there, then update the manifest row above from
-"planned" to the real command and commit script, PDF, and the three
-`blocks_*.npz` files if they are small (about 2 MB each per the
-`jackknife_pair_stack.py` docstring).
+**Step 4 -- done.** Implemented as `fig3`; the manifest row above carries
+the command. The three `stack_rperp*_blocks.npz` are about 0.9 MB each and
+are **not** committed -- they are per-block accumulators and belong with the
+other accumulators in whatever deposit those go to, rather than being the one
+exception in git. Regenerating them is cheap: `jackknife_pair_stack.py` with
+`--blocks-output`, about 5 minutes per separation (25 blocks at ~8 s each plus
+reading the pair catalogue). `fig3` raises a `FileNotFoundError` naming the
+missing file and pointing back to step 1 if they are absent.
+
+Measured when the figure was first produced, for reference:
+
+- Step 3's first check is exact, not approximate. The bridge-window mean of
+  `boss_prof` reproduces `filament_jackknife_BOSS_North_South.csv` to the
+  printed digits at all three separations: 5.378 +/- 9.081, 11.908 +/- 5.101,
+  1.236 +/- 2.221 (x 1e-4).
+- The mock's box-jackknife error is 3-5 per cent of the BOSS error, so the
+  shaded band is drawn but is far thinner than the observed error bars. That
+  is the real ratio, not a plotting failure.
+- Fixed-band mock bridge predictions, for the Mock column of `tab:bridge`:
+  **6.32 +/- 0.36**, **4.91 +/- 0.23**, **1.94 +/- 0.17** (x 1e-4) at 5, 10,
+  20. The `% CHECK` values now in the table (6, 3.4, 1.5) came from
+  `summarize_sim_sensitivity.py`'s separation-scaled bands, a different
+  statistic; 10 h^-1 Mpc differs most (4.91 against 3.4). Not yet applied to
+  the table, the abstract or the summary.
+- Residual bins beyond 2 sigma: 0 of 33 at 5, **6 of 45 at 10**, 2 of 65 at
+  20. The 10 h^-1 Mpc column is above the ~5 per cent a Gaussian would give
+  and sits where the paper claims its 2.2 sigma excess, so it deserves a
+  sentence in the text rather than silence.
 
 ## Numbers quoted in the text
 

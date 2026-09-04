@@ -419,7 +419,16 @@ on the mock prediction.
   \includegraphics[width=0.9\linewidth]{Figure/band_profiles_obs_vs_sim.pdf}
   \caption{Observed band profile $B(X)$ with jackknife errors (points) and
   the mock prediction with its box-jackknife band (shaded) at the three
-  separations. Lower panels: difference in units of the observed error.}
+  separations. The observed errors are delete-one jackknife over the
+  $287$ sky patches; the mock band is the $25$-block box jackknife, with
+  the superposed-singles control held fixed across realisations. Grey marks
+  the bridge window $|X| \leq 0.35\,d$, dotted green the galaxy positions.
+  Lower panels: difference in units of the observed error, with dashed
+  guides at $\pm2$. At $r_\perp = 20\,\hinvMpc$ the mock pairs are drawn
+  from a $19$--$21\,\hinvMpc$ transverse bin against the $18$--$22\,\hinvMpc$
+  bin used for BOSS, so that column compares a narrower mock selection with
+  the wider observed one. % CHECK: regenerate the mock r_perp=20 pair
+  % catalogue at 18-22 and re-issue this panel before submission.}
   \label{fig:band_profiles_obs_sim}
 \end{figure*}
 
