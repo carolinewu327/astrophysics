@@ -1,0 +1,46 @@
+{
+  "blocks_per_side": 5,
+  "kappa_map": "analysis/sim/results/kappa_map_l0p1_s8arcmin.float32",
+  "n_blocks": 25,
+  "n_pairs": 929157,
+  "pairs": "analysis/sim/results/hod_pairs/pairs_hodnmatch50_rperp20_rsd50.csv",
+  "rpar_max_hmpc": 10.0,
+  "rpar_min_hmpc": null,
+  "rpar_space": "redshift",
+  "rperp_center_hmpc": 20.0,
+  "single": "analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered.csv",
+  "stats": {
+    "raw_bridge_excess_kappa": {
+      "jackknife_error": 2.0713829581568824e-05,
+      "value": 0.0015096057117251255
+    },
+    "raw_bridge_mean_kappa": {
+      "jackknife_error": 0.00024257573100172088,
+      "value": 0.002599713621161879
+    },
+    "raw_midpoint_kappa": {
+      "jackknife_error": 0.00024352427811916697,
+      "value": 0.0022956222356031127
+    },
+    "raw_sideband_mean_kappa": {
+      "jackknife_error": 0.0002350878128942837,
+      "value": 0.0010901079094367534
+    },
+    "residual_bridge_excess_kappa": {
+      "jackknife_error": 2.071382958156888e-05,
+      "value": 0.00023362311164223324
+    },
+    "residual_bridge_mean_kappa": {
+      "jackknife_error": 0.00024257573100172088,
+      "value": 7.278545130160472e-05
+    },
+    "residual_midpoint_kappa": {
+      "jackknife_error": 0.000243524278119167,
+      "value": 0.00010784367560311278
+    },
+    "residual_sideband_mean_kappa": {
+      "jackknife_error": 0.00023508781289428366,
+      "value": -0.00016083766034062852
+    }
+  }
+}

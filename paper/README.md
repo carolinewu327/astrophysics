@@ -49,8 +49,8 @@ Overleaf upload.
 | `sim_pair_vs_control_maps_sep10.pdf` | 4 | `analysis/sim/plot_theory_figures.py` | `analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv`, `analysis/sim/results/hod_pairs/stack_rperp10_matched.csv` | `PYTHONPATH=lib:analysis/sim python analysis/sim/plot_theory_figures.py --paper --only 1 --output-dir paper/styau/Figure` |
 | `sim_quadrupole_diff_maps.pdf` | 4 | same script, `--only 2` | same single, plus `stack_rperp{5_rpar10,10,20}_matched.csv` | `PYTHONPATH=lib:analysis/sim python analysis/sim/plot_theory_figures.py --paper --only 2 --output-dir paper/styau/Figure` |
 | `sim_band_profiles_all_seps.pdf` | 4 | same script, `--only 3` | same as above | `PYTHONPATH=lib:analysis/sim python analysis/sim/plot_theory_figures.py --paper --only 3 --output-dir paper/styau/Figure` |
-| `boss_single_and_pair_maps.pdf` | 5.1 | not yet committed | corrected single and pair stacks | -- |
-| `obs_vs_sim_quadrupole_maps.pdf` | 5.1 | not yet committed (closest: `analysis/boss/scripts/plot_obs_vs_sim_filament.py`) | BOSS and mock filament maps | -- |
+| `boss_single_and_pair_maps.pdf` | 5.1 | `analysis/boss/scripts/plot_observed_figures.py` | **external** `analysis/boss/results/jk/acc_single_{galaxy_scw,random_scw_frac100}_BOSS_North_South.npz` and `acc_pairs_galaxy_{5,10,20}_*.npz` | `PYTHONPATH=lib:analysis/boss/scripts:analysis/sim python analysis/boss/scripts/plot_observed_figures.py --paper --only 1 --output-dir paper/styau/Figure` |
+| `obs_vs_sim_quadrupole_maps.pdf` | 5.1 | same script, `--only 2` | the same accumulators, plus `analysis/sim/results/hod_pairs/stack_rperp{5,10,20}_matched.{csv,json}` and the mock single | `PYTHONPATH=lib:analysis/boss/scripts:analysis/sim python analysis/boss/scripts/plot_observed_figures.py --paper --only 2 --output-dir paper/styau/Figure` |
 | `band_profiles_obs_vs_sim.pdf` | 5.2 | not yet committed | BOSS band profile with jackknife errors, mock band profile with box-jackknife band | -- |
 | `smoothing_scan.pdf` | 5.4 | not yet committed (closest: `analysis/boss/scripts/plot_smoothing_scan.py`) | bridge excess vs FWHM | -- |
 
@@ -59,6 +59,13 @@ Paper figures should carry no explanatory text inside the image: no
 labels only, for example `(a) Mock pair stack`, and the explanation goes in
 the caption. Diagnostic versions of the same plots can keep their notes;
 give the plotting script a `--paper` flag that switches them off.
+
+Inputs marked **external** are not in the repository. The BOSS jackknife
+accumulators are ~45 MB each and several are needed per figure, which is past
+what belongs in git; they live only on the analysis machine today. Those
+figures are therefore reproducible from a checked-in script and a checked-in
+command, but not yet from a checked-in input. Depositing the accumulators
+with a DOI and citing it here is the intended fix.
 
 The plotting scripts write `.png` and `.pdf` side by side. Only the `.pdf`
 belongs in `styau/Figure/`; the `.png` is for reading in a terminal or a
