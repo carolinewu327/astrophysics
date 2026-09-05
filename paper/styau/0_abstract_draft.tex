@@ -3,21 +3,22 @@
 % drafted (unit-amplitude control, committed pipeline). Same CHECK/TODO
 % conventions as the section files. Keep below the AAS 250-word limit.
 
-We search for the gravitational lensing signal of cosmic-web filaments by
+We search for gravitational lensing associated with cosmic-web filaments by
 stacking the Planck 2018 CMB lensing convergence map on pairs of BOSS CMASS
-galaxies at $z\simeq0.55$. We stack pairs without rescaling them to a common
-separation, using a fixed comoving grid in transverse-separation bins centered
-at $5$, $10$, and $20\,\hinvMpc$. We subtract a parameter-free control made by
-placing the observed single-galaxy stack at the two galaxy positions, then
-measure the residual as the difference between a central band along the pair
-axis and two bracketing bands. We combine the North and South Galactic caps
-and estimate uncertainties and profile covariances with a $287$-region spatial
-jackknife. Applying the same estimator to a CMASS-like mock built from the
-BigMDPL simulation predicts bridge convergences of
-$(6.3,\,4.9,\,2.2)\times10^{-4}$ as separation increases. The observed values
-are $(5.4\pm9.1,\,11.9\pm5.1,\,1.2\pm2.2)\times10^{-4}$, corresponding to
-$0.6\sigma$, $2.3\sigma$, and $0.6\sigma$. Thus no individual bin provides a
-significant detection, and the measurements are consistent with both zero
-bridge signal and the mock prediction. The uncertainty is dominated by the
-Planck reconstruction noise, so detecting the predicted separation-dependent
-signal requires a lower-noise convergence map.
+galaxies at $z\simeq0.55$. We stack pairs on a fixed comoving grid, without
+rescaling them to a common separation, in transverse-separation bins centered
+at $5$, $10$, and $20\,\hinvMpc$. We subtract a unit-amplitude control formed
+by placing the observed single-galaxy profile at the two galaxy positions and
+define the bridge excess as the difference between a central band along the
+pair axis and two flanking bands. This residual can also contain differences
+between the halo and environmental signals of paired and average galaxies. We
+combine the North and South Galactic caps and estimate the profile covariance
+with a $287$-region spatial jackknife. Applying the same signal estimator to a
+CMASS-like BigMDPL mock predicts bridge excesses of
+$(6.3,\,4.9,\,2.2)\times10^{-4}$ at these separations. The observed bridge
+excesses are $(5.4\pm9.1,\,11.9\pm5.1,\,1.2\pm2.2)\times10^{-4}$, corresponding to
+$0.6\sigma$, $2.3\sigma$, and $0.6\sigma$. No bridge excess exceeds
+$3\sigma$, and all three measurements are consistent with both zero and the
+mock prediction. The predicted amplitudes are smaller than the observational
+errors at every separation. Resolving their separation dependence requires a
+lower-noise convergence map.
