@@ -34,6 +34,135 @@ main document.
   repo. Fill from the run outputs.
 - `% UNVERIFIED` -- describes code that is not in the repo.
 
+## Scoring the mock with the fixed physical bands
+
+**Problem.** The mock pair maps are already stacked at fixed separation
+(`jackknife_pair_stack.py` calls `stack_pairs(...,
+normalize_separation=False)`), so the stacking is fine. The mismatch is in
+the scoring: that script passes `axis / rperp_center` to
+`summarize_sim_sensitivity.map_stats`, so its central and off-centre Y bands
+scale with separation (`|Y| <= 0.15 r_perp` and `0.45-0.85 r_perp`). The
+BOSS estimator uses fixed physical bands, `|Y| <= 1.5` and
+`1.5 <= |Y| <= 10.5 h^-1 Mpc`, with only the bridge X window tied to the
+separation, `|X| <= 0.35 r_perp`. The mock numbers quoted so far (6, 3.4,
+1.5 x 1e-4) are therefore not the same statistic as the BOSS numbers, and the
+apparent factor-of-four decline with separation is partly the band definition
+changing, not the physics.
+
+**Decision.** Keep the BOSS estimator and change the mock scoring. This is
+required for a like-for-like data--mock comparison: the transverse aperture
+and smoothing scale are defined in physical units in the measurement, while
+the bridge length follows the pair separation. Separation-scaled Y bands
+remain useful as a sensitivity test, but answer a different question. Fixed
+Y bands do not by themselves remove halo leakage; the bridge-window edge is
+`0.15 r_perp` from each halo, so leakage can still vary between bins.
+
+**Fix.** In `analysis/sim/jackknife_pair_stack.py`, add
+`bridge_excess(map, axis, rperp_center)` from `lib/geometry.py` for both the raw
+and template-subtracted maps, including every leave-one-out map. Retain the
+existing `map_stats(..., norm_axis, ...)` outputs as explicitly legacy,
+scaled-band diagnostics, but make production readers require the fixed-band
+result. Keep `summarize_sim_sensitivity.py` unchanged. Correct the
+matched-single path to
+`kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv`.
+
+Provenance rules for the output JSON, so old and new files cannot be
+confused:
+
+- Write the fixed-band result under **new keys**
+  (`residual_bridge_excess_fixedband_kappa` and
+  `raw_bridge_excess_fixedband_kappa`),
+  not by redefining `residual_bridge_excess_kappa`. Old JSONs keep their old
+  meaning.
+- Add a `band_definition` block (`central_half_y_hmpc`, `off_lo_hmpc`,
+  `off_hi_hmpc`, `bridge_half_x_frac`), the configured r_perp selection bounds
+  (`rperp_min_hmpc`, `rperp_max_hmpc`), and the observed extrema
+  (`rperp_observed_min_hmpc`, `rperp_observed_max_hmpc`). Add required
+  `--rperp-min` and `--rperp-max` arguments to the stacker, validate every pair
+  against them, and reject a catalogue whose observed extent is inconsistent
+  with the declared bin. Longer term, copy the configured bounds from metadata
+  written by `find_pairs_sim.py` rather than relying on manually repeated
+  command-line values.
+- Make every reader that compares mock to BOSS (`sim_diff` in
+  `plot_observed_figures.py`, `plot_obs_vs_sim_filament.py`) **assert** that
+  the band definition equals the `lib/geometry.py` constants and that the
+  r_perp bin equals the BOSS bin, alongside the existing `rpar_max` check.
+  Nothing asserted the r_perp bin before, which is how the 19-21 stack got
+  into a committed figure.
+
+**Order of operations.** Fix the 20 h^-1 Mpc mock bin (19-21 -> 18-22; see
+the r_perp table below) *before* filling any numbers into the text. Doing it
+afterwards means the table, abstract, summary, Section 4 sentence, the
+quadrupole figure, and the blocks file all change twice. While there, note
+that the manifest row for `sim_quadrupole_diff_maps.pdf` uses
+`stack_rperp5_rpar10_matched.csv` (r_par <= 10) whereas `tab:bridge` and
+`fig3` use the matched r_par <= 5 stack at 5 h^-1 Mpc; the Section 4 map and
+its numbers should come from the same sample.
+
+**Recompute.** For 5 and 10 h^-1 Mpc, central values require no pair
+re-stacking: score the existing matched maps and two-halo controls with the
+shared estimator. The current 20 h^-1 Mpc value can be scored only as a
+provisional regression check; its final value requires the corrected 18--22
+h^-1 Mpc pair catalogue and a new stack. Correct jackknife errors require the
+per-block accumulators `stack_rperp{5,10,20}_blocks.npz`, which are external and
+may not be present in a fresh checkout. If an accumulator is missing, rerun
+only `jackknife_pair_stack.py` for that bin with `--blocks-output`; do not
+regenerate the HOD catalogue or convergence map, and do not regenerate the 5
+or 10 h^-1 Mpc pair catalogues. Budget about one hour for the code and checks,
+plus roughly five minutes of stacking per missing bin on the machine used for
+the original runs.
+
+**Acceptance checks.**
+
+1. The full map reconstructed from block sums matches the saved stack (the
+   existing files agree to 3e-8 of peak).
+2. `bridge_excess` applied to the map equals the plotted `band_profile`
+   averaged over the bridge window, to rounding.
+3. Regression targets for the currently saved stacks:
+   `(6.32 +/- 0.36, 4.91 +/- 0.23, 1.94 +/- 0.17) x 10^-4`. The JSON route
+   and the `fig3` route both hold the template fixed across leave-one-out
+   maps, so they should agree to better than 1e-3 relative. The 20 h^-1 Mpc
+   target is provisional until the bin fix.
+4. Comparison statistics, to replace the "N bins beyond 2 sigma" count
+   (1 h^-1 Mpc bins are correlated over the 3.3 h^-1 Mpc beam, so exceedances
+   cluster and the count is not a 5 per cent Gaussian test): add
+   `chi2_A1 = (BOSS - mock)^T C^-1 (BOSS - mock)` on the 22-element compressed
+   vector to `fit_band_covariance.py`, alongside its existing BOSS-versus-zero
+   `chi2_A0` and best-fit-amplitude statistics. Also report the fitted
+   amplitude A of the mock profile to BOSS in the bridge window with its
+   error. The covariance is the BOSS jackknife covariance; state that the much
+   smaller mock statistical covariance is neglected.
+
+**Propagate the regenerated values to** (one pass, after the bin fix):
+
+- `stack_rperp*_matched.json`, `band_profiles_obs_vs_sim.pdf`,
+  `sim_quadrupole_diff_maps.pdf`, `sim_band_profiles_all_seps.pdf`, and
+  `obs_vs_sim_quadrupole_maps.pdf`.
+- `3_methods_results_draft.tex`: Mock column of `tab:bridge`; the Section 4
+  sentence quoting "approximately 6, 3.4, 1.5"; the trend wording (the
+  fixed-band sequence is a factor ~3 overall with a small 5 -> 10 drop, not a
+  factor of four).
+- `0_abstract_draft.tex` and `4_summary_draft.tex`: the sentences quoting the
+  mock prediction and its decline.
+- **BOSS numbers in the same pass.** The production values in
+  `filament_jackknife_BOSS_North_South.csv` are 5.38 +/- 9.08,
+  11.91 +/- 5.10, 1.24 +/- 2.22 x 1e-4 (0.6, 2.3, 0.6 sigma). The drafts,
+  the abstract, and the S/N column of `tab:bridge` still carry the older
+  0.7 / 2.2 / -1.1 sigma from the August lit-review note; the 20 h^-1 Mpc
+  sign has flipped. That CSV is the authoritative source.
+- Caption of `fig:band_profiles_obs_sim` and the text: the mock band is
+  statistical only (3-5 per cent of the BOSS error); it excludes the
+  uncertainty in the HOD and the single mock realisation.
+
+**Optional, recommended.** The 6.32 at 5 h^-1 Mpc should be interpreted as
+bridge plus any *residual* halo leakage, since the window edge is 0.75 h^-1
+Mpc from the halo centre, well inside the beam. The already-subtracted
+superposed-single template cannot measure leakage caused by its own mismatch
+to paired haloes. Quantifying that term needs a clearly defined no-filament
+null that preserves the paired-halo mass, environment, selection, and
+smoothing--for example, a paired-halo-only simulation with the inter-halo
+matter removed. `4_summary_draft.tex` has a TODO for this.
+
 ## Figure manifest
 
 Every figure in the paper should have a row here: the file, the script that
@@ -116,13 +245,14 @@ stack; only `--blocks-output` is new:
 
 ```
 PYTHONPATH=lib:analysis/sim python analysis/sim/jackknife_pair_stack.py \
-    --pairs   analysis/sim/results/hod_pairs/pairs_hodnmatch50_rperp10_rsd50.csv \
+    --pairs   analysis/sim/results/hod_pairs/pairs_hodnmatch50_rperp5_rsd50.csv \
     --kappa-map analysis/sim/results/kappa_map_l0p1_s8arcmin.float32 \
     --single  analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv \
-    --rperp-center 10 --rpar-max 10 --rpar-space redshift \
-    --output       analysis/sim/results/hod_pairs/stack_rperp10_matched.json \
-    --stack-output analysis/sim/results/hod_pairs/stack_rperp10_matched.csv \
-    --blocks-output analysis/sim/results/hod_pairs/blocks_rperp10_matched.npz
+    --rperp-center 5 --rperp-min 4 --rperp-max 6 \
+    --rpar-max 5 --rpar-space redshift \
+    --output       /tmp/stack_rperp5_matched.json \
+    --stack-output /tmp/stack_rperp5_matched.csv \
+    --blocks-output analysis/sim/results/hod_pairs/stack_rperp5_blocks.npz
 ```
 
 **The r_perp = 20 mock bin does not match BOSS.** Measured from the pair
@@ -157,7 +287,7 @@ separation key:
    pixels (README section above, and Section 3.6 of the paper).
 2. Mock side: `sim_fil, axis = sim_diff(key)` (already in the script -- it
    returns the map *and* its axis) gives the mock filament map; `sim_prof = band_profile(sim_fil, axis)`. For the
-   band: load `blocks_rperp{key}_matched.npz`, form each leave-one-out
+   band: load `stack_rperp{key}_blocks.npz`, form each leave-one-out
    map as `(sum_total - sum_b) / (n_total - n_b)`, subtract the *same*
    `two_halo_template` control used for the full mock stack (held fixed, as
    in `jackknife_pair_stack.py`), take `band_profile` of each, and apply
@@ -216,9 +346,10 @@ Measured when the figure was first produced, for reference:
   statistic; 10 h^-1 Mpc differs most (4.91 against 3.4). Not yet applied to
   the table, the abstract or the summary.
 - Residual bins beyond 2 sigma: 0 of 33 at 5, **6 of 45 at 10**, 2 of 65 at
-  20. The 10 h^-1 Mpc column is above the ~5 per cent a Gaussian would give
-  and sits where the paper claims its 2.2 sigma excess, so it deserves a
-  sentence in the text rather than silence.
+  20. These are plotting diagnostics only: adjacent 1 h^-1 Mpc bins are
+  correlated by the 3.3 h^-1 Mpc beam, so the count has no binomial Gaussian
+  interpretation. Use the covariance-based comparison specified above for
+  inference.
 
 ## Numbers quoted in the text
 
