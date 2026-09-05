@@ -4,14 +4,14 @@
 % Assumes natbib (\citet / \citep) and the macro
 %   \newcommand{\hinvMpc}{h^{-1}\,\mathrm{Mpc}}
 %
-% Placeholder bib keys used below (rename to match your .bib):
+% Bib keys used below are in paper/styau/refs.bib:
 %   Zeldovich1970, BondKofmanPogosyan1996, Cautun2014, FukugitaHoganPeebles1998,
 %   Shull2012, CenOstriker1999, deGraaff2019, Tanimura2020, Nicastro2018,
 %   Bartelmann2001, LewisChallinor2006, Colberg2005, Clampitt2016,
 %   EppsHudson2017, Kondo2020, White2011, Jenkins1998, Planck2018lensing,
-%   He2018, Chen2016, Sousbie2011, Tanimura2019, Klypin2016, Reid2016
+%   He2018, Chen2016, Sousbie2011, Klypin2016
 %
-% Numbers marked "% CHECK" should be verified against the source before submission.
+% Numbers or statements marked "% CHECK" require verification before submission.
 % ---------------------------------------------------------------------------
 
 \section{Introduction}
@@ -23,81 +23,84 @@ morphology is a generic outcome of anisotropic gravitational collapse: in the
 Zel'dovich picture a density perturbation contracts first along one axis to
 form a sheet, then along a second to form a filament, and only finally along
 the third to form a compact node \citep{Zeldovich1970, BondKofmanPogosyan1996}.
-Filaments are the dominant reservoir of matter in this network. In $N$-body
-simulations they contain roughly half of the mass of the Universe while
-occupying only a few percent of its volume \citep{Cautun2014}. They are also
-the natural home of the baryons that are not accounted for in stars, cold
-gas, and the hot atmospheres of groups and clusters: at low redshift roughly
-30 percent of the cosmic baryon budget is unobserved
-\citep{FukugitaHoganPeebles1998, Shull2012}, and hydrodynamic simulations
-predict that most of it resides in a warm--hot intergalactic medium at
-$T\sim10^{5}$--$10^{7}\,\mathrm{K}$ tracing the filamentary web
-\citep{CenOstriker1999}. Measuring the matter content of filaments therefore
-tests both the gravitational growth of structure and the census of baryons
+The NEXUS+ classification of an $N$-body simulation assigns roughly half of
+the matter to filaments, which occupy about 6 percent of the volume
+\citep{Cautun2014}. Filaments may also contain much of the baryonic matter
+not accounted for by stars, cold gas, and the hot atmospheres of groups and
+clusters. Low-redshift censuses have historically left roughly 30 percent of
+the cosmic baryon budget unaccounted for \citep{FukugitaHoganPeebles1998,
+Shull2012}, while hydrodynamic simulations place a substantial baryon
+fraction in a warm--hot intergalactic medium at
+$T\sim10^{5}$--$10^{7}\,\mathrm{K}$ that traces the filamentary web
+\citep{CenOstriker1999}. Measurements of filament matter test structure
+formation and provide a gravitational reference for studies of filament gas,
+but lensing alone does not determine the baryon fraction
 \citep{deGraaff2019, Tanimura2020, Nicastro2018}.
 
 Gravitational lensing is the most direct probe of this matter. The lensing
 convergence is a weighted projection of the matter overdensity $\delta$ along
 the line of sight,
 \begin{equation}
-  \kappa(\hat{\bm n}) = \int_{0}^{\chi_{\rm s}} \mathrm{d}\chi\,
-  W(\chi)\,\delta(\chi\hat{\bm n},\chi), \qquad
+  \kappa(\hat{\boldsymbol n}) = \int_{0}^{\chi_{\rm s}} \mathrm{d}\chi\,
+  W(\chi)\,\delta(\chi\hat{\boldsymbol n},\chi), \qquad
   W(\chi) = \frac{3\Omega_{\rm m}H_{0}^{2}}{2c^{2}}\,
   \frac{\chi}{a(\chi)}\,\frac{\chi_{\rm s}-\chi}{\chi_{\rm s}},
   \label{eq:kappa}
 \end{equation}
-where $\chi$ is comoving distance and $\chi_{\rm s}$ the distance to the
-source plane \citep{Bartelmann2001}. Because $\kappa$ responds to the total
-matter density, a lensing measurement of a filament requires no assumption
-about how galaxies or gas trace the dark matter. Equation~(\ref{eq:kappa}) also
+where $\chi$ is comoving distance, $\chi_{\rm s}$ is the distance to the
+source plane, and $a$ is the scale factor \citep{Bartelmann2001}. Once
+candidate filaments have been selected, $\kappa$ traces their total projected
+matter without a model for galaxy bias or the thermodynamic state of the gas.
+Equation~(\ref{eq:kappa}) also
 sets the scale of the expected signal. For a source at the last-scattering
 surface, $z_{\rm s}\simeq1090$, the kernel $W(\chi)$ is broad and peaks near
 $z\sim2$ \citep{LewisChallinor2006}; at the redshift of the BOSS CMASS sample,
 $z\simeq0.55$, its value is $W\simeq7\times10^{-5}\,\mathrm{Mpc}^{-1}$.
-A filament of core overdensity $\delta\sim3$--$5$ and diameter of a few
-megaparsecs, seen in projection, then produces
-$\kappa\sim(0.5$--$1.5)\times10^{-3}$. A background galaxy population at
-$z_{\rm s}\sim1$ has a kernel that peaks close to the lens redshift and
-therefore yields a larger per-object signal, at the cost of shape noise and a
-much smaller footprint.
+An idealized filament with overdensity $\delta\sim3$--$5$ and a comoving
+line-of-sight depth of a few megaparsecs then produces
+$\kappa\sim(0.5$--$1.5)\times10^{-3}$ \citep{Colberg2005}. For a lens at
+$z\simeq0.55$, a
+background galaxy population at $z_{\rm s}\sim1$ has lower lensing efficiency
+than the CMB. Although intrinsic source shapes add noise, deep galaxy imaging
+provides much finer angular resolution and can achieve high statistical
+precision over a smaller footprint.
 
-Filaments cannot be located individually in a noise-dominated lensing map, so
-all measurements to date stack many candidate structures. The candidates are
-either identified algorithmically from the galaxy distribution or, as in this
-work, defined by pairs of massive galaxies whose connecting axis fixes the
-expected orientation of a bridge. Simulations show that pairs of
-group- and cluster-mass haloes are connected by a filament with a probability
-that decreases with separation, from near unity below $\sim5\,\hinvMpc$ to
-roughly one third at $15$--$20\,\hinvMpc$ \citep{Colberg2005}. % CHECK fractions against Colberg+2005
+The weak lensing signal of a typical filament generally requires stacking
+many candidate structures. Candidates may be identified algorithmically from
+the galaxy distribution or, as in this work, defined by pairs of massive
+galaxies whose connecting axis sets the expected orientation of a bridge. In
+an $N$-body study of cluster-mass haloes, all pairs separated by less than
+$5\,\hinvMpc$ were connected by a filament, compared with roughly one third
+at $15$--$20\,\hinvMpc$ \citep{Colberg2005}.
 CMASS galaxies occupy haloes of $M\sim10^{13}\,h^{-1}\mathrm{M}_{\odot}$
 \citep{White2011}, so a pair at these separations is a plausible filament
-anchor. The mean convergence around such a pair decomposes into three
-pieces: the one-halo profiles of the two members, the isotropic two-halo
-contribution from the correlated large-scale environment in which the pair
-sits, and an anisotropic excess concentrated along the axis joining them. In
-the language of correlation functions the isotropic terms are set by the
-galaxy--matter two-point function, while the anisotropic excess is the
-connected part of the galaxy--galaxy--matter three-point function
-\citep{Clampitt2016}. It is this last term that we identify as the filament
-signal, and it is a quantity with a definite $\Lambda$CDM prediction. Because
-the connection probability falls with separation and the bridge density
-declines as it lengthens, the amplitude of the excess should decrease with
-pair separation. Measuring that dependence is a primary goal of this work.
+anchor. The mean convergence around such a pair contains the one-halo
+profiles of the two members, matter in their correlated environments, and an
+anisotropic excess along the axis joining them. In correlation-function
+language, subtracting the superposed galaxy--matter two-point contributions
+is intended to isolate the connected galaxy--galaxy--matter three-point term
+\citep{Clampitt2016}. An empirical control cannot perform this separation
+exactly, because paired galaxies occupy different environments from average
+galaxies. We therefore refer to the control-subtracted field as a residual
+and interpret its axial excess as filament-associated rather than as a pure
+filament map. The mock predicts that this excess decreases with pair
+separation, reflecting changes in both the connected-pair fraction and the
+matter distribution around the pairs. Measuring this dependence is a primary
+goal of this work.
 
-Two selection effects govern the purity of a pair sample. The first is
-projection: pairs that are close on the sky but distant along the line of
-sight are not connected, and their inclusion dilutes the mean signal. The
-second is redshift-space distortion. The observed line-of-sight separation
-of two galaxies includes their relative peculiar velocity, and for haloes at
-these separations the pairwise velocity dispersion is $\sigma_{v}\simeq500\,
+Two selection effects are especially important for pair purity. Projection
+pairs galaxies that are close on the sky but distant along the line of sight;
+these unconnected pairs dilute the mean signal. Redshift-space distortions
+also change the inferred line-of-sight separation. For haloes at these
+separations, the pairwise velocity dispersion is $\sigma_{v}\simeq500\,
 \mathrm{km\,s^{-1}}$ \citep{Jenkins1998, deGraaff2019}. At $z=0.55$ this
 corresponds to a comoving displacement $(1+z)\sigma_{v}/H(z)\simeq
 6\,\hinvMpc$, which is why previous pair-stacking analyses have adopted a
 line-of-sight cut of $5$--$6\,\hinvMpc$. Such a cut rejects some genuinely
 connected pairs whose members have large relative velocities and admits some
 unconnected pairs that happen to lie within the velocity window, but it
-retains pairs whose axes are close to the plane of the sky, which is the
-geometry in which the bridge is seen with least projection.
+retains pairs whose axes are close to the plane of the sky, minimizing
+line-of-sight dilution of the bridge.
 
 \subsection{Previous stacked lensing measurements of filaments}
 
@@ -109,34 +112,30 @@ shapes. \citet{Clampitt2016} stacked the shear field around pairs of SDSS
 luminous red galaxies at $z\approx0.25$ with projected separations of
 $6$--$14\,\hinvMpc$ and line-of-sight separations below $6\,\hinvMpc$, using
 SDSS source shapes over approximately $8000\,\mathrm{deg}^{2}$, and reported
-a $4.5\sigma$ detection. Their four-point estimator combines the shear at
-positions rotated by $90^{\circ}$ about each halo center, which cancels the
-tangential shear of two spherically symmetric haloes analytically and
-isolates the bridge. \citet{EppsHudson2017} stacked CFHTLenS convergence
-around BOSS LOWZ and CMASS pairs at a mean redshift $\langle z\rangle\approx
-0.42$. They modeled the two-halo contribution with the stack of
-non-physical pairs, selected with the same projected separation but large
-line-of-sight separation, and reported a $5\sigma$ excess after subtracting
-it from the physical-pair stack. \citet{Kondo2020} paired BOSS CMASS galaxies
-at $z\approx0.55$ with first-year Subaru Hyper Suprime-Cam shapes. Although
+a $4.5\sigma$ detection. Their four-point shear estimator uses symmetry to
+cancel the signal of two spherical haloes and isolate the bridge.
+\citet{EppsHudson2017} stacked the weak-lensing signal from CFHTLenS source
+shapes around BOSS LOWZ and CMASS pairs at a mean redshift
+$\langle z\rangle\approx0.42$. They used pairs with the same projected
+separation but large line-of-sight separation as a control and reported a
+$5\sigma$ excess after subtracting this control from the physical-pair
+stack. \citet{Kondo2020} paired BOSS CMASS galaxies at $z\approx0.55$ with
+first-year Subaru Hyper Suprime-Cam shapes. Although
 the overlap footprint is only $\sim140\,\mathrm{deg}^{2}$ and contains
 $14{,}422$ CMASS galaxies, the source density of $\sim22\,\mathrm{arcmin}^{-2}$
 yielded a $3.9\sigma$ detection. Their mock analysis showed that intrinsic
 variation among filaments together with projected large-scale structure
-contributes approximately 60 percent of the covariance, with source shape
-noise supplying the remainder, so that deeper imaging alone would not
-substantially improve the measurement.
+contributes about 60 percent of the covariance, with source shape noise
+contributing the remaining 40 percent.
 
 The CMB provides a complementary source. Its lensing kernel is broad, the
 reconstruction is free of galaxy shape noise and intrinsic alignments, and
 the Planck maps cover most of the sky, so the full BOSS footprint can be
-used. Against this, the Planck reconstruction has per-mode signal-to-noise
-ratio of order unity only at multipoles $L\approx40$--$60$ and is strongly
-noise dominated on the arcminute scales relevant to filaments
-\citep{Planck2018lensing}, and it carries possible foreground-related
-systematics. Two studies have stacked or cross-correlated Planck
-convergence with filaments identified directly from the spectroscopic galaxy
-distribution. \citet{He2018} applied a density-ridge algorithm to the CMASS
+used. However, the Planck reconstruction is strongly noise dominated on the
+angular scales relevant to these filaments \citep{Planck2018lensing} and may
+retain foreground contamination. Two earlier studies used filaments
+identified directly from the spectroscopic galaxy distribution.
+\citet{He2018} applied a density-ridge algorithm to the CMASS
 distribution \citep{Chen2016}, constructed a filament intensity map from the
 resulting catalog, and cross-correlated it with the Planck convergence map,
 obtaining a $5\sigma$ detection and a filament bias $b_{\rm f}\approx1.5$.
@@ -144,29 +143,28 @@ obtaining a $5\sigma$ detection and a filament bias $b_{\rm f}\approx1.5$.
 $30$--$100\,\mathrm{Mpc}$ in LOWZ+CMASS with DisPerSE \citep{Sousbie2011},
 masked the critical points at their ends, and stacked Planck $\kappa$ on the
 filament spines, reaching $8.1\sigma$. These significances are not directly
-comparable to pair-stacking results: the structures are longer, are selected
-to be genuine overdensities, and are analyzed with different estimators,
-whereas a pair sample necessarily includes unconnected pairs that dilute the
-mean.
+comparable to pair-stacking results. These studies identify longer structures
+directly from the galaxy density field and use different estimators, whereas
+a pair sample includes unconnected pairs that dilute the mean.
 
 The study of \citet{deGraaff2019} is the closest predecessor of this work.
 Their primary measurement was the thermal Sunyaev--Zel'dovich signal of
 filament gas, and they applied the same pipeline to the Planck convergence
 map to estimate the filament matter density. They stacked around
-$1{,}002{,}334$ pairs % CHECK: draft had 1,020,334; lit notes have 1,002,334
+$1{,}002{,}334$ pairs
 drawn from the BOSS CMASS catalog used here, with transverse comoving
 separations of $6$--$14\,\hinvMpc$ and line-of-sight separations below
-$5\,\hinvMpc$. Each pair is rotated to a common orientation, rescaled to unit
+$5\,\hinvMpc$. Each pair was rotated to a common orientation, rescaled to unit
 separation, projected onto a rectangular grid, and reflected to exchange the
-two members. Halo contributions are removed by fitting an isotropic radial
+two members. Halo contributions were removed by fitting an isotropic radial
 profile within a $60^{\circ}$ cone perpendicular to the pair axis and
 subtracting the resulting two-dimensional model. Because the convergence map
 was matched to the $10$-arcmin resolution of the Compton-$y$ map, the
-lensing analysis was smoothed more heavily than the reconstruction requires.
-They measured a mean filament convergence of
+lensing analysis also used $10$-arcmin smoothing. They measured a mean
+filament convergence of
 $\bar{\kappa}=(0.58\pm0.31)\times10^{-3}$ between the pair members, a
-$1.9\sigma$ result, rising to $3.1\sigma$ when the region beyond the pair
-is included.
+$1.9\sigma$ result. The significance increased to $3.1\sigma$ when the region
+beyond the pair was included.
 
 \subsection{This work}
 
@@ -174,68 +172,68 @@ We revisit the combination of BOSS CMASS pairs with Planck CMB lensing,
 following \citet{deGraaff2019}, with four changes in design.
 
 First, we resolve the measurement in pair separation rather than integrating
-over it. Where \citet{deGraaff2019} rescale every pair to a normalized
+over it. Whereas \citet{deGraaff2019} rescaled every pair to a normalized
 separation before stacking, we stack on a fixed comoving grid of
 $101\times101$ pixels spanning $100\times100\,(\hinvMpc)^{2}$, using disjoint
-separation bins centered at $5$, $10$, and $20\,\hinvMpc$. The finite width of
-each bin smears the bridge modestly, but the construction allows us to test
+separation bins centered at $5$, $10$, and $20\,\hinvMpc$. The finite bin
+width causes some smearing, but the construction allows us to test
 the predicted decline of the anisotropic excess with separation described
 above.
 
-Second, we model the entire measurement in simulation. We construct a
+Second, we apply the signal estimator to a simulation. We construct a
 CMASS-like mock catalog from the BigMDPL $N$-body simulation
-\citep{Klypin2016} and apply matched pair selection, map smoothing, stacking,
-and halo subtraction to convergence maps generated from the same volume. This
-supplies a separation-dependent $\Lambda$CDM reference for both the amplitude
-and the transverse profile of the bridge, which can be compared directly with
-the observed stacks.
+\citep{Klypin2016} and apply matched pair selection, smoothing, stacking,
+control subtraction, and fixed-band measurement to a convergence map from the
+same volume. This provides a separation-dependent $\Lambda$CDM reference for
+the amplitude and transverse profile of the residual, measured with the same
+statistic as the observed stacks.
 
-Third, we use an independent halo-subtraction method. Where
+Third, we use a different halo-subtraction method. Where
 \citet{deGraaff2019} fit an isotropic profile to the observed pair stack
 itself, we subtract a control map built by displacing the stack of single
 CMASS galaxies to $\pm d/2$ along the pair axis, in the spirit of the control
-stacks of \citet{EppsHudson2017}. The two approaches fail in different ways.
-Profile fitting can absorb part of the bridge into the halo model. The
-control map, by construction, contains the one-halo term and the isotropic
-two-halo term of an average CMASS galaxy, but galaxies selected to have a
-close companion reside in denser-than-average environments, so the control
-underestimates the isotropic two-halo contribution of paired galaxies and
-leaves a positive residual that is not filamentary. We quantify this bias
-with the mock catalog, where the same control construction can be applied
-to a simulation with known halo and filament content. % CHECK: confirm this test is in the analysis
+stacks of \citet{EppsHudson2017}. Profile fitting can absorb part of the
+bridge into the halo model. Our control instead models the one-halo and
+isotropic environmental terms using the profile of an average CMASS galaxy.
+Galaxies selected to have a close companion reside in different environments,
+so this profile need not match the halo and environmental contributions
+around paired galaxies. The subtraction can therefore leave both isotropic
+and axis-aligned residuals that cannot be assigned uniquely to a filament.
+We apply the same control to the mock and compare the resulting residual,
+rather than an isolated filament component, with the data.
 
 Fourth, we vary the line-of-sight cut rather than adopting the
 $5$--$6\,\hinvMpc$ value used in previous pair-stacking studies. Larger cuts
 increase the pair count but admit more unconnected pairs, and, as discussed
 above, peculiar velocities of $\sim500\,\mathrm{km\,s^{-1}}$ move pairs across
 any threshold of a few $\hinvMpc$. We therefore measure directly how the cut
-trades contamination against sample size, again using the mock to calibrate
-the fraction of connected pairs at each cut.
+trades completeness against contamination, using the mock to identify
+interlopers in real space.
 
 We use the Planck 2018 minimum-variance lensing reconstruction
 \citep{Planck2018lensing} synthesized at $N_{\rm side}=2048$ and smoothed with
 an $8$-arcmin Gaussian kernel, compared with the $10$-arcmin smoothing of
 \citet{deGraaff2019}. At $z=0.55$ the comoving distance is
 $\chi\simeq1400\,\hinvMpc$, so $8$ arcmin corresponds to $\simeq3.3\,\hinvMpc$,
-comparable to the expected filament core radius, while pair separations of
-$5$, $10$, and $20\,\hinvMpc$ subtend approximately $12$, $24$, and $48$ arcmin.
-The smallest separation bin is therefore only marginally resolved after
-smoothing, and we treat it as a consistency check on the larger bins rather
-than as an independent profile measurement. Because the reconstruction noise
-exceeds the signal on all of these scales, the difference between $8$- and
-$10$-arcmin smoothing has a modest effect on the recovered significance.
+comparable to the few-megaparsec transverse width of inter-halo filaments
+\citep{Colberg2005}. Pair separations of $5$, $10$, and $20\,\hinvMpc$ subtend
+approximately $12$, $24$, and $48$ arcmin. The smallest separation spans only
+about 1.5 beam widths, so its bridge profile is poorly resolved and its
+central bin can contain beam-convolved halo residuals. We test the dependence
+on smoothing scale in Section~\ref{sec:robust}.
 
 Throughout we adopt the Planck 2018 cosmology with $h=0.6766$ and quote
-comoving distances in $\hinvMpc$. A positive filament signal denotes an excess
-of convergence, and hence of projected matter, between the pair members
-relative to the control.
+comoving distances in $\hinvMpc$. We use ``filament-associated signal'' for a
+positive axial convergence excess between the pair members. We use
+``residual'' for the full control-subtracted field because it can also contain
+imperfectly subtracted halo and environmental contributions.
 
 The paper is organized as follows. Section~\ref{sec:data} describes the
 CMASS and random catalogs, the Planck lensing map, and the BigMDPL mock
 catalog with its simulated convergence map. Section~\ref{sec:method}
 presents the pair selection, stacking, control construction, band statistic,
-and error estimation, applied identically to data and mock.
-Section~\ref{sec:sim_expect} gives the $\Lambda$CDM expectation from the
+and error estimation for the data and mock.
+Section~\ref{sec:sim_expect} gives the $\Lambda$CDM reference signal from the
 mock. Section~\ref{sec:results} reports the observed stacks, the bridge
 convergence at each separation, the comparison with the mock prediction and
 with previous work, and the robustness tests. Section~\ref{sec:discussion}
