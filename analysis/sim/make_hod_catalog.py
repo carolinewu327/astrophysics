@@ -7,7 +7,8 @@ hosts a central galaxy with probability
     <Ncen(Mh)> = 0.5 * [1 + erf( (ln Mh - ln Mcut) / (sqrt(2) * sigma) )]
 
 using the White et al. (2011) CMASS best-fit parameters
-log10(Mcut / h^-1 Msun) = 13.04 and sigma = 0.94 (width in ln M). A seeded
+log10(Mcut / h^-1 Msun) = 13.04 and sigma = 0.94 (width in ln M). The paper's
+mock overrides Mcut on the command line; see the note on LOG10_MCUT_DEFAULT. A seeded
 uniform draw per halo decides occupation; occupied halos are written with the
 halo's position and peculiar velocity, in the same CSV schema as
 ``halos_mass13.csv`` so all downstream scripts consume the mock unchanged.
@@ -35,6 +36,20 @@ from sim_utils import ensure_parent, setup_logging
 
 logger = logging.getLogger(__name__)
 
+# White et al. (2011) published log10 Mcut = 13.04 for CMASS, and that is the
+# default here so the code matches the citation. It is NOT the value the paper's
+# mock uses. Applied to Rockstar Mvir on BigMDPL with the log10 Mvir >= 12.5
+# floor, 13.04 gives nbar = 4.21e-4 (h/Mpc)^3, 40% above CMASS -- their fit was
+# calibrated on a different halo definition and mass function.
+#
+# The paper's catalog is galaxies_hod_nmatch.csv, built 2026-07-20 with
+# --log10-mcut 13.246. That threshold matches the CMASS *central* number
+# density, not the total: this HOD places no satellites, so the target is
+# (1 - f_sat) * 3e-4 = 2.7e-4 for f_sat = 0.10, and 13.246 solves it over
+# hosts_minmass12p5.bin (realized nbar = 2.7027e-4). Solving for the full 3e-4
+# would instead give 13.20. The tuning was done by hand and is not reproduced by
+# any script here; the per-run record is the .meta.json sidecar written beside
+# each output catalog.
 LOG10_MCUT_DEFAULT = 13.04
 SIGMA_LN_DEFAULT = 0.94
 CMASS_NBAR_HMPC3 = 3.0e-4  # approximate CMASS number density, (h/Mpc)^3

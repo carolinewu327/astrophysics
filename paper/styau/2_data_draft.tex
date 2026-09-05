@@ -182,9 +182,17 @@ the form used for CMASS by \citet{White2011},
   \left(\frac{\ln M-\ln M_{\rm cut}}{\sqrt{2}\,\sigma}\right)\right],
   \label{eq:hod}
 \end{equation}
-with $\sigma=0.94$ in $\ln M$ and $\log_{10}M_{\rm cut}=13.246$, the latter
-chosen so that the mock number density matches the CMASS value of
-$3\times10^{-4}\,(h/{\rm Mpc})^{3}$. % CHECK: code default is 13.04; no run record of 13.246 in the repo
+with their width $\sigma=0.94$ in $\ln M$, but with
+$\log_{10}M_{\rm cut}=13.246$ in place of their $13.04$. For the halo
+definition and mass floor adopted here, $13.04$ yields a number density of
+$4.21\times10^{-4}\,(h/{\rm Mpc})^{3}$. The threshold is instead set so that
+the mock reproduces the number density of CMASS centrals,
+$2.70\times10^{-4}\,(h/{\rm Mpc})^{3}$, i.e.\ the observed
+$3\times10^{-4}\,(h/{\rm Mpc})^{3}$ reduced by the satellite fraction.
+% Provenance: analysis/sim/results/galaxies_hod_nmatch.csv.meta.json
+% (run 2026-07-20, occupation seed 20260720). 13.246 solves nbar = 0.9 * 3e-4
+% over hosts_minmass12p5.bin; make_hod_catalog.py still defaults to the
+% published White+11 value 13.04, so the paper run passes --log10-mcut.
 Each host receives a galaxy with probability $\langle N_{\rm cen}\rangle$.
 The mock contains no satellites, whereas about 10 percent of CMASS galaxies
 are satellites \citep{White2011}; we return to this limitation in
@@ -213,8 +221,9 @@ observational covariance. The single-halo stack from this map has been
 checked against a direct particle-count estimator that shares no code with
 the map: the two agree to 3 percent inside $10\,\hinvMpc$.
 
-Mock pairs are selected in redshift space. The projection axis serves as the
-line of sight, and each galaxy's coordinate along it is displaced by
+Mock pairs are selected in redshift space from a random 50 percent subsample
+of the catalog, which reduces the pair count without altering the halo-mass
+selection. The projection axis serves as the line of sight, and each galaxy's coordinate along it is displaced by
 $(1+z)\,v_{\parallel}/H(z)$ before the line-of-sight cut is applied, so that
 the $r_{\parallel}$ cut removes the same kinds of pairs it removes in the
 data. Transverse separations are computed with periodic boundaries.

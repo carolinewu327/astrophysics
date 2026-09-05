@@ -1,0 +1,41 @@
+{
+  "cmass_reference_nbar_hmpc3": 0.0003,
+  "columns": [
+    "id",
+    "Mvir",
+    "x",
+    "y",
+    "z",
+    "vx",
+    "vy",
+    "vz"
+  ],
+  "created_utc": "2026-07-22T16:03:10.546295+00:00",
+  "fraction": 0.5,
+  "fraction_seed": 50,
+  "hod": {
+    "log10_mcut": 13.246,
+    "model": "central-only erf (White et al. 2011 eq. 12)",
+    "sigma_ln": 0.94
+  },
+  "input_catalog": "/Users/carolinewu/PycharmProjects/astrophysics/analysis/sim/results/hosts_minmass12p5.bin",
+  "input_selection": {
+    "min_log10_mvir": 12.5,
+    "mode": "floor",
+    "upid": -1
+  },
+  "known_limitations": [
+    "input halos floored at log10 Mvir >= 12.5; centrals in lower-mass halos are not realized (see ncen_at_input_floor for how much occupation the floor truncates for these HOD parameters)",
+    "central galaxies only; CMASS satellite fraction ~10% is ignored",
+    "halo masses are Rockstar Mvir; published HOD fits may use other definitions (e.g. M200b in Yuan et al. 2021)"
+  ],
+  "ncen_at_input_floor": 0.03382202411835433,
+  "number_density_hmpc3": 0.000135057472,
+  "seed": 20260720,
+  "stats": {
+    "downsampled_to": 2110273,
+    "expected_centrals": 4222891.333287366,
+    "n_halos_in": 18574914,
+    "realized_centrals": 4221501
+  }
+}
