@@ -57,7 +57,7 @@ galaxy may belong to several pairs and we apply no isolation criterion; the
 resulting correlation between pairs is handled by the spatial jackknife
 rather than by down-weighting. The pair is assigned the comoving distance
 $D_{\rm mid}=\chi(\bar z)\,h$ at the mean redshift of its members. Random
-pairs are selected from the full random catalogues with the same criteria.
+pairs are selected from the full random catalogs with the same criteria.
 
 \subsection{Stacking in the pair frame}
 \label{sec:stacking}
@@ -100,12 +100,12 @@ physical quantity and removes any residual asymmetry between the two
 members.
 
 Single galaxies and single random points are stacked in the same way on a
-$100\times100$ grid of $1\,\hinvMpc$ cells centred on the object, with the
+$100\times100$ grid of $1\,\hinvMpc$ cells centered on the object, with the
 axes aligned with Galactic longitude and latitude and the weight $w$ of
 Equation~(\ref{eq:weights}) multiplied by the lensing-efficiency factor
 (Section~\ref{sec:data_cmass}). Because a single stack has no preferred
-direction it is symmetrised radially: pixels are averaged in annuli about
-the physical centre of the grid, which for an even grid lies between the
+direction it is symmetrized radially: pixels are averaged in annuli about
+the physical center of the grid, which for an even grid lies between the
 four central pixels.
 
 \subsection{Joint footprint and random subtraction}
@@ -113,7 +113,7 @@ four central pixels.
 
 The North and South caps are accumulated into a single running total, so
 Equation~(\ref{eq:stack}) is evaluated once over all objects. This differs
-from averaging two per-cap maps: with $73$ per cent of the galaxies in the
+from averaging two per-cap maps: with $73$ percent of the galaxies in the
 North, an equal-weight average would give each Southern galaxy $2.7$ times
 the influence of a Northern one and would carry the noisier Southern map
 into the combined profile at half weight. % CHECK: percentages from footprint_stats.txt (579,089 / 792,294)
@@ -137,7 +137,7 @@ between subsamples, is below the level of the galaxy-pair errors.
 The pair stack contains the one-halo and isotropic two-halo contributions of
 both members in addition to any anisotropic excess (Section~\ref{sec:intro}).
 We model the isotropic part with a control built from the corrected single
-stack. Let $P(r)$ be the radial profile of the radially symmetrised
+stack. Let $P(r)$ be the radial profile of the radially symmetrized
 corrected single map, interpolated linearly in radius. The control for a
 pair of separation $d$ is the superposition
 \begin{equation}
@@ -145,7 +145,7 @@ pair of separation $d$ is the superposition
          + P\!\left(\sqrt{(X+d/2)^{2}+Y^{2}}\right),
   \label{eq:control}
 \end{equation}
-evaluated at the bin-centre separation on the $101\times101$ pair grid. It
+evaluated at the bin-center separation on the $101\times101$ pair grid. It
 has unit amplitude and no free parameters. The filament map is
 \begin{equation}
   F(X,Y) = \left[\hat\kappa_{\rm gp}(X,Y)-\hat\kappa_{\rm rp}(X,Y)\right]
@@ -161,7 +161,7 @@ selected to have a close companion sit in denser regions and in somewhat
 more massive haloes, nor that their environment is elongated along the pair
 axis. Both effects survive in $F$: the first as an isotropic residual around
 each halo, the second as the anisotropic pattern we are looking for. The
-mock, where the same construction is applied to a catalogue with known halo
+mock, where the same construction is applied to a catalog with known halo
 and filament content, calibrates what $F$ contains
 (Section~\ref{sec:sim_expect}). We deliberately do not fit the amplitude of
 $T$ to the observed pair stack: because the pair axis is aligned with the
@@ -175,7 +175,7 @@ part of it. Section~\ref{sec:robust} quantifies this on the mock.
 Rather than interpret the two-dimensional map pixel by pixel, we compress
 $F$ into a profile along the pair axis. For each column $X$ we take the
 mean of $F$ in a central band $|Y|\leq1.5\,\hinvMpc$, where a filament
-would lie, and in an off-centre band $1.5\leq|Y|\leq10.5\,\hinvMpc$ that
+would lie, and in an off-center band $1.5\leq|Y|\leq10.5\,\hinvMpc$ that
 brackets it, and form their difference,
 \begin{equation}
   B(X) = \langle F(X,Y)\rangle_{|Y|\leq1.5}
@@ -191,14 +191,14 @@ difference removes anything that varies slowly with $Y$, including a
 residual offset shared by both bands, and reduces the map to one number per
 position along the axis. The bridge excess is the mean of $B(X)$ over the
 window $|X|\leq0.35\,d$ between the galaxies, which stops $0.15\,d$ short of
-each halo centre. For covariance-based fits the profile is further compressed
-into a vector of the central and off-centre band means in eleven bins of
+each halo center. For covariance-based fits the profile is further compressed
+into a vector of the central and off-center band means in eleven bins of
 $4\,\hinvMpc$ along $X\geq0$ out to $40\,\hinvMpc$, $22$ numbers in all; the
 bin width matches the smoothing scale so adjacent bins are only weakly
 correlated.
 
 After smoothing, the filament is at least $3.3\,\hinvMpc$ wide at half
-maximum, so part of it falls in the off-centre band and the difference in
+maximum, so part of it falls in the off-center band and the difference in
 Equation~(\ref{eq:band}) under-reports the bridge amplitude. The mock
 provides the transfer factor: the same statistic is applied to the
 simulated filament map, and all comparisons between data and prediction are
@@ -210,21 +210,21 @@ made in the compressed statistic rather than in map amplitude.
 
 Errors on the observed maps come from a delete-one spatial jackknife. The
 footprint is tessellated with HEALPix cells of $N_{\rm side}=10$, area
-$34.4\,\mathrm{deg}^{2}$, traced by a seeded 10 per cent subsample of the
-randoms. Cells with at least $70$ per cent of the mean occupancy become
+$34.4\,\mathrm{deg}^{2}$, traced by a seeded 10 percent subsample of the
+randoms. Cells with at least $70$ percent of the mean occupancy become
 region cores. Partially covered cells at the survey edge are not dropped:
 each is merged into the least-populated of its four nearest cores,
 processing the most populated edge cells first, so every object belongs to
 a region and the regions stay close to equal in size. The joint footprint
-yields $K=287$ regions with an RMS size scatter of $11$ per cent. % CHECK: 287 and 11% quoted in CLAUDE.md / docstrings; regions file not in the repo
+yields $K=287$ regions with an RMS size scatter of $11$ percent. % CHECK: 287 and 11% quoted in CLAUDE.md / docstrings; regions file not in the repo
 No region straddles the two caps. Galaxies and random points are assigned to
 regions by their own positions and pairs by their midpoints.
 
 During stacking we accumulate $\sum w\kappa$ and $\sum w$ separately for
 each region, so the leave-one-out map for region $k$ is obtained by
 subtracting that region's totals from the full sums rather than by
-re-stacking. All $287$ realisations therefore cost about as much as one
-stack. Galaxies and randoms share the tessellation, so each realisation is a
+re-stacking. All $287$ realizations therefore cost about as much as one
+stack. Galaxies and randoms share the tessellation, so each realization is a
 valid version of the corrected map and the error applies to the subtracted
 quantity. For any statistic $x$ (a pixel, a band value, or the compressed
 vector), the jackknife variance and covariance are
@@ -236,7 +236,7 @@ vector), the jackknife variance and covariance are
 \end{equation}
 with $\bar x$ the mean of the leave-one-out values. The full chain of
 Equations~(\ref{eq:control})--(\ref{eq:band}) is rebuilt inside every
-realisation: the control is regenerated from the leave-one-out single stack
+realization: the control is regenerated from the leave-one-out single stack
 and subtracted from the leave-one-out pair stack, so the uncertainty of the
 control propagates into the bridge error. The random-pair map is the one
 quantity held fixed.
@@ -246,9 +246,9 @@ grid pixels. Treating pixels or $1\,\hinvMpc$ bins as independent
 understates the error on a band mean by a factor of $2.2$ to $2.6$ on the
 joint stack. % CHECK: CLAUDE.md, fit_sim_template.py docstring
 All quoted errors on band quantities are jackknife errors on the quantity
-itself, and all fits use $\mathsf{C}$. With $K=287$ realisations and a
+itself, and all fits use $\mathsf{C}$. With $K=287$ realizations and a
 $22$-element vector the Hartlap correction to $\mathsf{C}^{-1}$ is
-$4$ per cent; we report it but do not apply it. % CHECK: fit_band_covariance.py computes, does not apply
+$4$ percent; we report it but do not apply it. % CHECK: fit_band_covariance.py computes, does not apply
 
 Where we fit the amplitude $A$ of a fixed template $\mathbf{s}$ to an
 observed vector $\mathbf{d}$ we use
@@ -282,8 +282,8 @@ survive the redshift-space cut), the interloper fraction (the fraction of
 selected pairs whose real-space separation exceeds $20\,\hinvMpc$), and the
 jackknife signal-to-noise of the bridge excess. The production cuts were
 chosen before the observed stacks were examined as the cuts with the highest
-mock signal-to-noise among those with completeness above $90$ per cent and
-interloper fraction below $10$ per cent. Second, a non-physical-pair test
+mock signal-to-noise among those with completeness above $90$ percent and
+interloper fraction below $10$ percent. Second, a non-physical-pair test
 stacks mock pairs with real-space line-of-sight separations of $20$--$40$,
 $40$--$60$, $60$--$90$, and $90$--$120\,\hinvMpc$, which should show no
 bridge, and checks that the control leaves no residual there. Third, a
@@ -294,7 +294,7 @@ half-width, and the halo mass of the tracer sample.
 \label{sec:sim_expect}
 
 Figure~\ref{fig:sim_pair_vs_control} shows the mock pair stack at
-$r_{\perp}=10\,\hinvMpc$ beside its control. On a common colour scale the
+$r_{\perp}=10\,\hinvMpc$ beside its control. On a common color scale the
 two are nearly indistinguishable: the filament is a small residual between
 two large and similar maps, which is why the construction of the control
 matters. Subtracting the control leaves the pattern shown in
@@ -303,7 +303,7 @@ ridge along the pair axis between the galaxies and a deficit above and
 below it. The ridge is the bridge; the deficit arises because the matter
 around a paired halo is concentrated toward the axis, so an isotropic
 control over-predicts the convergence perpendicular to it. The quadrupole is
-therefore the expected signature, not an artefact, and the band difference
+therefore the expected signature, not an artifact, and the band difference
 of Equation~(\ref{eq:band}) is designed to measure it.
 
 \begin{figure*}
@@ -311,7 +311,7 @@ of Equation~(\ref{eq:band}) is designed to measure it.
   \includegraphics[width=0.9\linewidth]{Figure/sim_pair_vs_control_maps_sep10.pdf}
   \caption{Mock pair stack at $r_{\perp}=10\,\hinvMpc$ (left) and its
   unit-amplitude control, Equation~(\ref{eq:control}) (right), on a common
-  colour scale.}
+  color scale.}
   \label{fig:sim_pair_vs_control}
 \end{figure*}
 
@@ -340,7 +340,7 @@ anisotropic component measures the bridge itself.
 \begin{figure*}
   \centering
   \includegraphics[width=0.9\linewidth]{Figure/sim_band_profiles_all_seps.pdf}
-  \caption{Central-band mean, off-centre-band mean, and their difference
+  \caption{Central-band mean, off-center-band mean, and their difference
   $B(X)$ for the mock filament maps at the three separations. The shaded
   window is $|X|\leq0.35\,d$.}
   \label{fig:sim_band_profiles}
@@ -361,7 +361,7 @@ cut is widened, while at $10\,\hinvMpc$ it only falls.
 \label{sec:obs_stacks}
 
 The three BOSS samples contain $217{,}702$, $459{,}051$, and
-$1{,}282{,}969$ pairs at $r_{\perp}=5$, $10$, and $20\,\hinvMpc$. % CHECK: 5 and 10 verified from catalogues; 20 uses the r_par<=10 catalogue which is not in the repo (the r_par<=20 catalogue has 2,425,676)
+$1{,}282{,}969$ pairs at $r_{\perp}=5$, $10$, and $20\,\hinvMpc$. % CHECK: 5 and 10 verified from catalogs; 20 uses the r_par<=10 catalog which is not in the repo (the r_par<=20 catalog has 2,425,676)
 Figure~\ref{fig:boss_maps} shows the corrected single stack and the three
 corrected pair stacks. Figure~\ref{fig:obs_vs_sim_maps} compares the
 observed filament maps with the simulated ones. The observed maps show the
@@ -382,7 +382,7 @@ dominated on these scales.
   \includegraphics[width=0.7\linewidth]{Figure/obs_vs_sim_quadrupole_maps.pdf}
   \caption{Observed (left) and simulated (right) filament maps at
   $r_{\perp}=5$, $10$, and $20\,\hinvMpc$ (top to bottom), on a common
-  colour scale per row.}
+  color scale per row.}
   \label{fig:obs_vs_sim_maps}
 \end{figure*}
 
@@ -399,7 +399,7 @@ on the mock prediction.
   \caption{Bridge excess, Equation~(\ref{eq:band}) averaged over
   $|X|\leq0.35\,d$, for the three BOSS samples, with the mock prediction in
   the same statistic. Observed errors are from the $287$-region delete-one
-  jackknife with the control rebuilt in every realisation; mock errors from
+  jackknife with the control rebuilt in every realization; mock errors from
   the $25$-block jackknife.}
   \label{tab:bridge}
   \begin{tabular}{cccccc}
@@ -421,12 +421,12 @@ on the mock prediction.
   the mock prediction with its box-jackknife band (shaded) at the three
   separations. The observed errors are delete-one jackknife over the
   $287$ sky patches; the mock band is the $25$-block box jackknife, with
-  the superposed-singles control held fixed across realisations. Grey marks
+  the superposed-singles control held fixed across realizations. Gray marks
   the bridge window $|X| \leq 0.35\,d$, dotted green the galaxy positions.
   Lower panels: difference in units of the observed error, with dashed
   guides at $\pm2$. The mock pairs are selected in the same
   transverse bins as BOSS at all three separations. The mock band is
-  statistical only: it is the $25$-block scatter of a single realisation and
+  statistical only: it is the $25$-block scatter of a single realization and
   excludes the uncertainty in the HOD.}
   \label{fig:band_profiles_obs_sim}
 \end{figure*}
@@ -468,7 +468,7 @@ The first is the bridge amplitude itself, the last column of
 Table~\ref{tab:bridge}. The observed errors exceed the mock prediction at
 every separation, so the data cannot distinguish the $\Lambda$CDM bridge
 from zero; the useful statement is the upper limit. Converting the
-$95$ per cent upper limit on the bridge excess to a surface density through
+$95$ percent upper limit on the bridge excess to a surface density through
 $\Sigma_{\rm crit}$ and to a linear mass density over the bridge length
 gives % TODO: compute; compare with Epps & Hudson (2017) filament mass and de Graaff et al. (2019) overdensity 5.5 +/- 2.9
 
@@ -505,7 +505,7 @@ number directly comparable to theirs (Section~\ref{sec:discussion}).
 
 \paragraph{Smoothing.} Repeating the full chain with $6$, $4$, and $2$
 arcmin smoothing changes the bridge excess and its error as shown in
-Figure~\ref{fig:smoothing_scan}; the $8$ arcmin choice maximises the
+Figure~\ref{fig:smoothing_scan}; the $8$ arcmin choice maximizes the
 signal-to-noise of the mock bridge. % TODO: table of bridge excess / error / S/N vs FWHM
 
 \begin{figure}
@@ -523,8 +523,8 @@ equal-weight average instead of the joint stack shifts the corrected single
 profile at $20\,\hinvMpc$ by % TODO
 and produced the apparent dip reported in earlier versions of this analysis.
 
-\paragraph{Random-pair sample.} Replacing the full random catalogue by a
-10 per cent subsample shifts the $10\,\hinvMpc$ bridge excess by
+\paragraph{Random-pair sample.} Replacing the full random catalog by a
+10 percent subsample shifts the $10\,\hinvMpc$ bridge excess by
 $5\times10^{-4}$, comparable to the signal, which is why the full randoms
 are required. % CHECK: combine_filament_jackknife.py docstring
 
