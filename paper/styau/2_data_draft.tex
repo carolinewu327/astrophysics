@@ -1,14 +1,12 @@
 % ---------------------------------------------------------------------------
 % Data section draft -- filament CMB lensing with BOSS CMASS pairs
 %
-% Written to match the pipeline at commit af39a9b (lib/catalog.py,
-% lib/jackknife.py, stack_single_jk.py, stack_pairs_jk.py,
-% find_and_stack_pairs.py, combine_*_jackknife.py, analysis/sim/*).
+% Written to match the checked-in analysis pipeline and its archived outputs.
 %
-% New bib keys used here (added to notes/refs.bib):
+% Bib keys used here are in paper/styau/refs.bib:
 %   Eisenstein2011, Dawson2013, Alam2015, Ross2012, Gorski2005, Riebe2013
 %
-% "% CHECK" marks numbers to verify. The simulation subsection is unchanged.
+% "% CHECK" marks numbers or statements that still require verification.
 % ---------------------------------------------------------------------------
 
 \section{Data}
@@ -16,11 +14,11 @@
 
 The measurement combines three ingredients: spectroscopic galaxy positions
 from BOSS, which define the pairs and the single-galaxy control; the
-corresponding BOSS random catalogs, which calibrate the footprint and
-remove additive systematics; and the Planck CMB lensing convergence map,
-which supplies the signal. A fourth ingredient, an $N$-body mock of the
-CMASS sample and its convergence field, provides the $\Lambda$CDM
-expectation and is described in Section~\ref{sec:sim}.
+corresponding BOSS random catalogs, which trace the angular selection and
+measure footprint-dependent offsets; and the Planck CMB lensing convergence
+map, which supplies the signal. An $N$-body mock of the CMASS sample and its
+convergence field provides a $\Lambda$CDM reference signal
+(Section~\ref{sec:sim}).
 
 \subsection{BOSS CMASS galaxies}
 \label{sec:data_cmass}
@@ -34,26 +32,23 @@ locus, so that the sample has an approximately constant stellar mass across
 its redshift range; hence the name. The galaxies are luminous red galaxies
 hosted by haloes of typical mass $M\simeq10^{13}\,h^{-1}\mathrm{M}_{\odot}$,
 with a satellite fraction of about 10 percent \citep{White2011}. Massive
-hosts are advantageous here for two reasons: the one-halo lensing signal that
-must be modeled and removed is well measured, and pairs of such haloes are
-the objects that simulations predict to be connected by filaments
-\citep{Colberg2005}.
+hosts are useful here because their one-halo lensing signal can be measured
+and modeled, and simulations predict that pairs of such haloes are often
+connected by filaments \citep{Colberg2005}.
 
 We use both Galactic caps, referred to as North and South, and restrict the
 sample to $0.4<z<0.7$. This is slightly wider than the $0.43<z<0.7$ range
-adopted for the BOSS clustering analyses \citep{Reid2016}; the lower bound
-is relaxed to retain pairs whose lower-redshift member falls just below the
-nominal cut. % CHECK: confirm this is the reason for 0.4 rather than 0.43
+adopted for the BOSS clustering analyses \citep{Reid2016}.
+% CHECK: document the reason for using 0.4 rather than 0.43.
 After this cut the sample contains $792{,}294$ galaxies, $579{,}089$ in the
 North and $213{,}205$ in the South, with a summed weight of $847{,}528$.
 The effective survey area is approximately $6{,}850\,\mathrm{deg}^{2}$ in the
 North and $2{,}525\,\mathrm{deg}^{2}$ in the South, for a total of
 $9{,}376\,\mathrm{deg}^{2}$ \citep{Reid2016}. % CHECK against Reid+2016 Table 2
 Figure~\ref{fig:footprint_zdist} shows the footprint of both caps together
-with the Planck lensing mask, and the redshift distribution of the sample,
-which has a median redshift of $z=0.539$ and a weight-averaged redshift of
-$\langle z\rangle=0.545$; the two caps have indistinguishable redshift
-distributions.
+with the Planck lensing mask. The sample has a median redshift of $z=0.539$
+and a weight-averaged redshift of $\langle z\rangle=0.545$; the two caps have
+very similar redshift distributions.
 
 Each galaxy carries the standard BOSS systematic weights
 \citep{Ross2012, Reid2016}. We combine them as
@@ -65,9 +60,9 @@ Each galaxy carries the standard BOSS systematic weights
 where $w_{\rm seeing}$ and $w_{\rm star}$ correct the angular selection
 function for variations in seeing and stellar density, $w_{\rm cp}$ accounts
 for close pairs lost to fiber collisions, and $w_{\rm noz}$ accounts for
-redshift failures. We do not apply the FKP weight, which optimizes
-power-spectrum estimation and is not appropriate for a stacking measurement.
-In the single-object stacks we multiply $w$ by a lensing-efficiency weight
+redshift failures. We do not apply the FKP weight because it is designed to
+optimize clustering measurements rather than this stacking estimator.
+In the single-galaxy stacks we multiply $w$ by a lensing-efficiency weight
 $\Sigma_{\rm crit}^{-2}$, where
 $\Sigma_{\rm crit}\propto D_{\rm A}(z_{\rm s})/[D_{\rm A}(z)\,D_{\rm A}(z,z_{\rm s})]$
 is evaluated with the CMB as the source plane, $z_{\rm s}=1090$, and
@@ -76,17 +71,19 @@ given mass produces the largest convergence. The same weight is applied to
 the random points, so that the galaxy and random stacks are weighted
 identically before subtraction. In the pair stacks the weight of each pair is
 the product $w_{1}w_{2}$ of its members' systematic weights, without the
-lensing-efficiency factor. % CHECK: random-pair maps predate the Sigma_crit weight; state the effect on the pair stack if measured (weighting_sensitivity.py)
+lensing-efficiency factor. The single-galaxy and pair estimators therefore
+have slightly different effective redshift weightings.
+% CHECK: quantify the effect of removing the Sigma_crit weight from the
+% single-galaxy stacks (weighting_sensitivity.py).
 
 Right ascension and declination are converted to Galactic longitude and
-latitude $(l,b)$, which avoids coordinate singularities near the celestial
-poles and matches the native frame of the Planck maps. Redshifts are
+latitude $(l,b)$ to match the native frame of the Planck maps. Redshifts are
 converted to comoving distances with the Planck 2018 cosmology
 \citep{Planck2018lensing} and expressed in $\hinvMpc$ with $h=0.6766$. The
 North and South caps are stacked as a single joint sample: every galaxy
-enters the stack with its own weight, and the relative contribution of the
-two caps follows from their galaxy content rather than from a separate
-averaging step (Section~\ref{sec:method}).
+enters with its own weight, so the relative contribution of the two caps is
+set by their galaxy content rather than by a separate average
+(Section~\ref{sec:method}).
 
 \begin{figure}
   \centering
@@ -96,8 +93,7 @@ averaging step (Section~\ref{sec:method}).
   Galactic coordinates, overlaid on the Planck 2018 lensing analysis mask.
   Right: weighted redshift distribution of the CMASS galaxies in each cap
   and in total, with the $0.4<z<0.7$ selection shaded and the median
-  redshift of the selected sample marked. Both panels are produced by
-  \texttt{plot\_footprint.py}.
+  redshift of the selected sample marked.
   }
   \label{fig:footprint_zdist}
 \end{figure}
@@ -107,13 +103,14 @@ averaging step (Section~\ref{sec:method}).
 
 The BOSS random catalogs \citep{Reid2016} sample the angular selection
 function of each cap at roughly fifty times the galaxy density, with
-redshifts drawn from the observed galaxy redshift distribution so that the
-randoms share the galaxies' $n(z)$ but carry no clustering. We apply the
+redshifts assigned from the observed galaxy distribution. The randoms
+therefore share the galaxies' $n(z)$ but contain no clustering. We apply the
 same $0.4<z<0.7$ cut and use the full catalogs, $40.9$ million points over
-both caps, for every random stack; a 10 percent subsample was found to
-leave a random-pair map whose own noise is not negligible against the
-filament signal. % CHECK: quote the frac10 vs frac100 shift (combine_filament_jackknife.py notes ~5e-4 at sep 10)
-Random points carry unit systematic weight and, in the single-object stacks,
+both caps, for every random stack. Replacing the full catalog by a 10 percent
+subsample shifts the $10\,\hinvMpc$ bridge excess by
+$5\times10^{-4}$, comparable to the measured signal.
+% CHECK: combine_filament_jackknife.py docstring.
+Random points carry unit systematic weight and, in the single-galaxy stacks,
 the same lensing-efficiency weight as the galaxies.
 
 The randoms serve three purposes. First, a stack of the convergence map
@@ -122,10 +119,10 @@ including any residual mean-field or mask-related offset, and is subtracted
 from the single-galaxy stack. Second, pairs of random points selected with
 the same separation criteria as the galaxy pairs provide the equivalent
 correction for the pair stack. Because the number of random pairs is of
-order $10^{9}$, they are stacked as they are found and never written to
-disk. Third, a seeded 10 percent subsample of the randoms traces the survey
-footprint on a coarse HEALPix grid to define the jackknife regions used for
-error estimation (Section~\ref{sec:method}).
+order $10^{9}$, the full random catalog is needed to reduce the noise in this
+correction. Third, a seeded 10 percent subsample of the randoms traces the
+survey footprint on a coarse HEALPix grid to define the jackknife regions
+used for error estimation (Section~\ref{sec:method}).
 
 \subsection{Planck CMB lensing map}
 \label{sec:data_planck}
@@ -134,22 +131,21 @@ We use the Planck 2018 lensing reconstruction \citep{Planck2018lensing},
 release \texttt{COM\_Lensing\_4096\_R3.00}. The convergence harmonic
 coefficients $\kappa_{LM}$ are taken from the minimum-variance combination
 of the temperature and polarization quadratic estimators applied to the
-SMICA foreground-cleaned maps. The estimator's mean field is subtracted by
-the Planck pipeline, and the coefficients are provided up to
+SMICA foreground-cleaned maps. The Planck pipeline subtracts the estimator
+mean field, and the coefficients are provided up to
 $L_{\rm max}=4096$. As discussed in Section~\ref{sec:intro}, the
-reconstruction noise exceeds the lensing power at all multipoles above a few
-hundred, so the map is noise dominated on the arcminute scales relevant to
+reconstruction is noise dominated on the small angular scales relevant to
 this work.
 
 Before stacking we multiply $\kappa_{LM}$ by a Gaussian beam of
 $8\,\mathrm{arcmin}$ full width at half maximum and synthesize a HEALPix map
 \citep{Gorski2005} at $N_{\rm side}=2048$, corresponding to a pixel scale of
-$1.7\,\mathrm{arcmin}$. Smoothing suppresses the small-scale reconstruction
-noise that would otherwise dominate each pixel of the stack, at a scale
-chosen to be comparable to the expected filament core radius: at $z=0.55$,
-$8\,\mathrm{arcmin}$ corresponds to $\simeq3.3\,\hinvMpc$ comoving. The
-smoothed map is sampled at the comoving grid positions of each galaxy or
-pair by nearest-pixel lookup, without further interpolation.
+$1.7\,\mathrm{arcmin}$. This smoothing suppresses small-scale reconstruction
+noise. At $z=0.55$, $8\,\mathrm{arcmin}$ spans
+$\simeq3.3\,\hinvMpc$ comoving. We test the dependence on smoothing scale in
+Section~\ref{sec:method}. We sample the smoothed map at the sky positions
+corresponding to the comoving stack grid by nearest-pixel lookup, without
+interpolation.
 
 We apply the Planck lensing analysis mask distributed with the release,
 which removes the Galactic plane, point sources, and regions of poor
@@ -160,54 +156,66 @@ lies almost entirely within the unmasked region: 96.5 percent of North and
 94.7 percent of South galaxies, 96.0 percent overall, fall on unmasked
 pixels. The remainder lie mostly in the point-source and cluster holes of the
 mask and at the low-latitude edge of the North cap
-(Fig.~\ref{fig:footprint_zdist}). % CHECK: fraction of galaxies whose full 100 hMpc cutout is unmasked is not yet computed
+(Fig.~\ref{fig:footprint_zdist}).
+% CHECK: the fraction whose full 100 h^-1 Mpc cutout is unmasked is not yet computed.
 
 \subsection{$N$-body simulation and mock catalog}
 \label{sec:sim}
 
-The $\Lambda$CDM expectation is built from the BigMDPL run of the MultiDark
-suite \citep{Klypin2016, Riebe2013}, a dark-matter-only simulation of a
-periodic box $2500\,\hinvMpc$ on a side with $3840^{3}$ particles of mass
+We calculate the $\Lambda$CDM reference signal from the BigMDPL run of the
+MultiDark suite \citep{Klypin2016, Riebe2013}, a dark-matter-only simulation
+of a periodic box $2500\,\hinvMpc$ on a side with $3840^{3}$ particles of mass
 $2.36\times10^{10}\,h^{-1}\mathrm{M}_{\odot}$ in a Planck cosmology with
-$\Omega_{\rm m}=0.307$ and $h=0.677$. We use the snapshot at $a=0.6464$,
+$\Omega_{\rm m}=0.307$ and $h=0.678$. We use the snapshot at $a=0.6464$,
 $z=0.547$, close to the weighted mean redshift of the CMASS sample. Haloes
 are taken from the public Rockstar catalog; we keep host haloes only,
 discarding subhaloes, and use the Rockstar virial mass $M_{\rm vir}$. The
-HOD is applied to hosts with $\log_{10}M_{\rm vir}\geq12.5$.
+HOD is applied to hosts with
+$\log_{10}(M_{\rm vir}/h^{-1}\mathrm{M}_{\odot})\geq12.5$.
 
 Mock galaxies are placed with a central-only halo occupation distribution of
-the form used for CMASS by \citet{White2011},
+the form adopted for CMASS by \citet{White2011},
 \begin{equation}
   \langle N_{\rm cen}\rangle(M) = \tfrac{1}{2}\left[1+\mathrm{erf}
-  \left(\frac{\ln M-\ln M_{\rm cut}}{\sqrt{2}\,\sigma}\right)\right],
+  \left(\frac{\ln(M/M_{\rm cut})}{\sqrt{2}\,\sigma}\right)\right],
   \label{eq:hod}
 \end{equation}
-with their width $\sigma=0.94$ in $\ln M$, but with
-$\log_{10}M_{\rm cut}=13.246$ in place of their $13.04$. For the halo
-definition and mass floor adopted here, $13.04$ yields a number density of
-$4.21\times10^{-4}\,(h/{\rm Mpc})^{3}$. The threshold is instead set so that
-the mock reproduces the number density of CMASS centrals,
-$2.70\times10^{-4}\,(h/{\rm Mpc})^{3}$, i.e.\ the observed
-$3\times10^{-4}\,(h/{\rm Mpc})^{3}$ reduced by the satellite fraction.
+with $\sigma=0.94$ in $\ln M$. We use
+$\log_{10}(M_{\rm cut}/h^{-1}\mathrm{M}_{\odot})=13.246$, rather than the
+value $13.04$ adopted by \citet{White2011}. With our halo definition and
+catalog mass floor, the latter gives a number density of
+$4.21\times10^{-4}\,h^{3}\,\mathrm{Mpc}^{-3}$. We set the threshold to match
+the CMASS central-galaxy density,
+$2.70\times10^{-4}\,h^{3}\,\mathrm{Mpc}^{-3}$: the observed density of
+$3\times10^{-4}\,h^{3}\,\mathrm{Mpc}^{-3}$ multiplied by a central fraction
+of 0.9.
 % Provenance: analysis/sim/results/galaxies_hod_nmatch.csv.meta.json
 % (run 2026-07-20, occupation seed 20260720). 13.246 solves nbar = 0.9 * 3e-4
 % over hosts_minmass12p5.bin; make_hod_catalog.py still defaults to the
 % published White+11 value 13.04, so the paper run passes --log10-mcut.
 Each host receives a galaxy with probability $\langle N_{\rm cen}\rangle$.
-The mock contains no satellites, whereas about 10 percent of CMASS galaxies
-are satellites \citep{White2011}; we return to this limitation in
-Section~\ref{sec:discussion}. Halo peculiar velocities are carried through
-for the redshift-space pair selection. A second halo sample, hosts within
-$\pm0.05$ dex of $\log_{10}M_{\rm vir}=13.0$, is used for the sensitivity
-tests described in Section~\ref{sec:method}.
+The input halo catalog ends at the stated mass floor, where the adopted
+occupation is still $0.034$, and therefore truncates the low-mass tail of
+the model. The mock contains no satellites, whereas about 10 percent of
+CMASS galaxies are satellites \citep{White2011}; we return to this limitation
+in Section~\ref{sec:discussion}. Halo peculiar velocities are included in
+the redshift-space pair selection.
+
+The second halo sample used for the sensitivity tests consists of hosts
+within $\pm0.05$ dex of
+$\log_{10}(M_{\rm vir}/h^{-1}\mathrm{M}_{\odot})=13.0$
+(Section~\ref{sec:method}).
 
 The simulated convergence map is built from the public 1-in-200 particle
-subsample, $2.8\times10^{8}$ particles, each carrying an effective mass of
-$200$ particle masses. Particles are projected along one box axis through
+subsample, which contains $2.8\times10^{8}$ particles. Each sampled particle
+has an effective mass equal to 200 simulation particles. We project the
+particles along one box axis through
 the full $2500\,\hinvMpc$ depth onto a periodic grid of $0.1\,\hinvMpc$
-pixels. The surface density is
-$\Sigma=m_{\rm eff}\,(N_{\rm pix}/\ell^{2}-N_{\rm tot}/L^{2})$, so that the
-map has zero mean, and is converted to convergence as
+pixels. If $N_{\rm p}(\boldsymbol{x})$ is the number of particles in a pixel
+of width $\ell$, $N_{\rm tot}$ is the total number of projected particles,
+and $L$ is the box width, the mean-subtracted surface density is
+$\Sigma(\boldsymbol{x})=m_{\rm eff}[N_{\rm p}(\boldsymbol{x})/\ell^{2}
+-N_{\rm tot}/L^{2}]$. We convert it to convergence as
 $\kappa=\Sigma/\Sigma_{\rm crit}$ with the comoving critical density for a
 lens at $z=0.547$ and the CMB as source,
 $\Sigma_{\rm crit}=8.88\times10^{14}\,h\,\mathrm{M}_{\odot}\,{\rm Mpc}^{-2}$.
@@ -216,18 +224,20 @@ $3.31\,\hinvMpc$, which is $8\,\mathrm{arcmin}$ at the comoving distance
 $1424.5\,\hinvMpc$ of the snapshot. Because the box is projected at a single
 redshift, the mock reproduces the mean signal of structure correlated with
 the pairs but not the full line-of-sight integral or the Planck
-reconstruction noise; it is used for the expected signal, not for the
-observational covariance. The single-halo stack from this map has been
-checked against a direct particle-count estimator that shares no code with
-the map: the two agree to 3 percent inside $10\,\hinvMpc$.
+reconstruction noise; it is used for the reference signal, not for the
+observational covariance. The single-galaxy stack from this map has been
+checked against an independent direct particle-count estimator; the two
+agree to 3 percent inside $10\,\hinvMpc$.
 
 Mock pairs are selected in redshift space from a random 50 percent subsample
-of the catalog, which reduces the pair count without altering the halo-mass
-selection. The projection axis serves as the line of sight, and each galaxy's coordinate along it is displaced by
-$(1+z)\,v_{\parallel}/H(z)$ before the line-of-sight cut is applied, so that
-the $r_{\parallel}$ cut removes the same kinds of pairs it removes in the
-data. Transverse separations are computed with periodic boundaries.
-Non-physical pairs, close in projection but separated along the line of
+of the catalog, which reduces the pair count while preserving the halo-mass
+selection in expectation. The projection axis serves as the line of sight,
+and each galaxy's coordinate along it is displaced by
+$(1+z)\,v_{\parallel}/H(z)$, where $v_{\parallel}$ is its line-of-sight
+peculiar velocity, before the line-of-sight cut is applied. This models the
+effect of peculiar velocities on the pair selection. Transverse
+separations are computed with periodic boundaries.
+Nonphysical pairs, close in projection but separated along the line of
 sight in real space by $20$--$120\,\hinvMpc$, are selected from the same
-catalog. These should have no filament between them and serve as a null
+catalog. They are not close in three dimensions and therefore provide a null
 test of the control.
