@@ -153,6 +153,10 @@ residual map as
   \label{eq:filament}
 \end{equation}
 where gp and rp denote the galaxy-pair and random-pair stacks.
+We use $F$ to search for convergence associated with filaments between the
+paired galaxies. We call it a residual map, rather than a filament map,
+because imperfect halo subtraction and differences between paired and average
+galaxy environments can also contribute.
 
 The control represents the mean isotropic signal of two CMASS galaxies placed
 at the pair positions. It does not remove differences between the
@@ -293,8 +297,11 @@ relative to the signal around the galaxies. After control subtraction, all
 three separation bins show a positive ridge between the galaxies and a
 deficit perpendicular to the pair axis (Figure~\ref{fig:sim_residual_maps}).
 This pattern arises because the matter distribution around the selected mock
-pairs is anisotropic. The band difference in Equation~(\ref{eq:band}) measures
-the contrast between the axial and perpendicular residuals.
+pairs is anisotropic. The ridge between the galaxies is the
+filament-associated component targeted by the analysis, while the full
+residual also contains signal associated with the paired haloes and their
+environments. The band difference in Equation~(\ref{eq:band}) measures the
+contrast between the axial and perpendicular residuals.
 
 \begin{figure*}
   \centering
@@ -352,9 +359,11 @@ The three BOSS samples contain $217{,}702$, $459{,}051$, and
 $1{,}282{,}969$ pairs at $r_{\perp}=5$, $10$, and $20\,\hinvMpc$.
 Figure~\ref{fig:boss_maps} shows the corrected single-galaxy stack and the
 three corrected pair stacks. Figure~\ref{fig:obs_vs_sim_maps} compares the
-observed and simulated residual maps. The observed maps contain a broad
-axis-aligned excess and an off-axis deficit, although both features have low
-signal-to-noise in the Planck reconstruction.
+observed and simulated residual maps. These residual maps are the
+observational estimators of the filament signal, but may also contain
+imperfectly subtracted halo and environmental contributions. The observed
+maps contain a broad axis-aligned excess and an off-axis deficit, although
+both features have low signal-to-noise in the Planck reconstruction.
 
 \begin{figure*}
   \centering
