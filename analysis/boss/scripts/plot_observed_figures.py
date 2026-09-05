@@ -42,11 +42,10 @@ import numpy as np
 
 from catalog import setup_logging
 from combine_jackknife import load_accumulator, total_map
-from geometry import (BRIDGE_HALF_X_FRAC, band_profile,
-                      reflect_symmetrize_map, symmetrize_map,
-                      two_halo_template)
+from geometry import (BRIDGE_HALF_X_FRAC, band_profile, reflect_symmetrize_map,
+                      symmetrize_map, two_halo_template)
 from jackknife import jackknife_error
-from plot_separation_summary import build_terms
+from plot_separation_summary import assert_comparable, build_terms
 from weighting_sensitivity import SEPARATIONS
 
 from deconvolve_pair_profile import (BLUE, GREEN, GRID, INK, INK_MUTED,
@@ -82,6 +81,12 @@ SIM_BLOCKS = {"5": "stack_rperp5_blocks.npz",
 # Set by --paper.  Module-level rather than threaded through every fig*()
 # because it affects only presentation, never a number.
 PAPER = False
+
+# Set by --allow-rperp-mismatch.  Off by default: a mock stack built
+# from a different transverse bin than BOSS is a different sample, and
+# silently plotting the two together is what put a 19-21 mock panel
+# beside BOSS's 18-22 in a committed figure.
+ALLOW_RPERP_MISMATCH = False
 
 
 def caption(fig, text):
@@ -138,7 +143,10 @@ def sim_diff(key):
         raise ValueError(
             f"r_perp = {key}: BOSS uses r_par <= {want:g} but {stem} was cut at "
             f"r_par <= {got:g}. Pick the matching simulation stack.")
-    logger.info("sep %-3s: sim %s, r_par <= %g, %d pairs", key, stem, got,
+    assert_comparable(key, meta, stem,
+                      allow_rperp_mismatch=ALLOW_RPERP_MISMATCH)
+    logger.info("sep %-3s: sim %s, r_par <= %g, r_perp %g-%g, %d pairs", key,
+                stem, got, meta["rperp_min_hmpc"], meta["rperp_max_hmpc"],
                 int(meta["n_pairs"]))
     single = load_map(SIM_DIR / SIM_SINGLE)
     pair = load_map(SIM_DIR / "hod_pairs" / f"{stem}.csv")
@@ -364,8 +372,8 @@ def fig3(terms, out_dir):
         "25-block box jackknife.\n"
         "Grey marks the bridge window, dotted green the galaxies.  Lower "
         r"strip: (BOSS $-$ mock) in units of the observed error.""\n"
-        r"At $r_\perp$ = 20 the mock bin is 19-21 $h^{-1}$Mpc against BOSS's "
-        "18-22 — see paper/README.md.",
+        "Mock pairs are selected in the same transverse bins as BOSS at all "
+        "three separations; the mock band is statistical only.",
     )
     save(fig, out_dir / "band_profiles_obs_vs_sim")
 
@@ -387,6 +395,11 @@ def main(argv=None):
     ap.add_argument("--single-random-tag", default="_scw_frac100")
     ap.add_argument("--output-dir", default="output/plots")
     ap.add_argument("--only", default="", help="subset of 1,2,3")
+    ap.add_argument("--allow-rperp-mismatch", action="store_true",
+                    help="Plot a mock stack whose transverse bin differs from "
+                         "the BOSS sample's. Provisional use only, while the "
+                         "corrected pair catalogue is being generated; the "
+                         "caption must carry the same caveat.")
     ap.add_argument("--paper", action="store_true",
                     help="Drop the explanatory paragraph above each figure. "
                          "Paper figures carry no text inside the image -- the "
@@ -395,8 +408,9 @@ def main(argv=None):
     args = ap.parse_args(argv)
     setup_logging()
 
-    global PAPER
+    global PAPER, ALLOW_RPERP_MISMATCH
     PAPER = args.paper
+    ALLOW_RPERP_MISMATCH = args.allow_rperp_mismatch
     regions = [r.strip() for r in args.regions.split(",")]
     out = Path(args.output_dir)
 

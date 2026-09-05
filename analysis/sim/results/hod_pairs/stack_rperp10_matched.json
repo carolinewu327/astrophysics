@@ -1,4 +1,21 @@
 {
+  "band_definition": {
+    "fixedband_keys": {
+      "bridge_half_x_frac": 0.35,
+      "central_half_y_hmpc": 1.5,
+      "off_hi_hmpc": 10.5,
+      "off_lo_hmpc": 1.5,
+      "source": "lib/geometry.py"
+    },
+    "legacy_scaled_keys": {
+      "bridge_half_x_frac": 0.35,
+      "central_half_y_frac": 0.15,
+      "note": "not comparable with the BOSS estimator",
+      "off_hi_frac": 0.85,
+      "off_lo_frac": 0.45,
+      "source": "summarize_sim_sensitivity.map_stats on axis/r_perp"
+    }
+  },
   "blocks_per_side": 5,
   "kappa_map": "analysis/sim/results/kappa_map_l0p1_s8arcmin.float32",
   "n_blocks": 25,
@@ -8,8 +25,16 @@
   "rpar_min_hmpc": null,
   "rpar_space": "redshift",
   "rperp_center_hmpc": 10.0,
-  "single": "analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered.csv",
+  "rperp_max_hmpc": 11.0,
+  "rperp_min_hmpc": 9.0,
+  "rperp_observed_max_hmpc": 10.99999576443554,
+  "rperp_observed_min_hmpc": 9.000002049799633,
+  "single": "analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv",
   "stats": {
+    "raw_bridge_excess_fixedband_kappa": {
+      "jackknife_error": 2.1487928195997893e-05,
+      "value": 0.002330730335661284
+    },
     "raw_bridge_excess_kappa": {
       "jackknife_error": 2.564187864640283e-05,
       "value": 0.0026392164379321907
@@ -26,21 +51,25 @@
       "jackknife_error": 0.00023018784930408685,
       "value": 0.0021932851325462805
     },
+    "residual_bridge_excess_fixedband_kappa": {
+      "jackknife_error": 2.1487847443551628e-05,
+      "value": 0.0004911440088425667
+    },
     "residual_bridge_excess_kappa": {
-      "jackknife_error": 2.5641878646402435e-05,
-      "value": 0.0005521087503020978
+      "jackknife_error": 2.5641878646402334e-05,
+      "value": 0.0005666842485986354
     },
     "residual_bridge_mean_kappa": {
-      "jackknife_error": 0.00024388588850741567,
-      "value": 9.702265139795139e-05
+      "jackknife_error": 0.0002438858885074157,
+      "value": 0.00011847633002104171
     },
     "residual_midpoint_kappa": {
       "jackknife_error": 0.0002460407043947487,
-      "value": 0.00019881262708561914
+      "value": 0.00018582241089514472
     },
     "residual_sideband_mean_kappa": {
-      "jackknife_error": 0.00023018784930408704,
-      "value": -0.0004550860989041465
+      "jackknife_error": 0.00023018784930408702,
+      "value": -0.00044820791857759366
     }
   }
 }

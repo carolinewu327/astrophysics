@@ -266,7 +266,7 @@ and test for an additive constant by nesting a model with a free offset.
 The mock analysis repeats Sections~\ref{sec:stacking}--\ref{sec:bands} on
 the simulated convergence map of Section~\ref{sec:sim}. Mock pairs are
 selected in redshift space with the same $r_{\perp}$ bins and
-$r_{\parallel}$ cuts as the data. % CHECK: the mock 20 hMpc bin is 19-21 in run_sim_sensitivity.py, the data bin is 18-22
+$r_{\parallel}$ cuts as the data.
 Mock pairs and mock single galaxies are unweighted. The single stack uses
 every mock galaxy, so the control is built exactly as for the data. Errors
 come from a delete-one jackknife over a $5\times5$ tiling of the box face,
@@ -325,10 +325,10 @@ of Equation~(\ref{eq:band}) is designed to measure it.
 \end{figure*}
 
 Figure~\ref{fig:sim_band_profiles} shows the band profiles. The bridge
-excess in the mock is % CHECK: values read from sensitivity/sim_sensitivity_summary.png; replace with the matched-cut stack_rperp*_matched.json values
-approximately $6$, $3.4$, and $1.5\times10^{-4}$ at $r_{\perp}=5$, $10$,
-and $20\,\hinvMpc$, each detected at high significance in the box jackknife.
-% TODO: sim bridge excess +/- jackknife error and S/N per separation from hod_pairs/stack_rperp{5,10,20}_matched.json
+excess in the mock is
+$6.32\pm0.36$, $4.91\pm0.21$, and $2.18\pm0.12\times10^{-4}$ at
+$r_{\perp}=5$, $10$, and $20\,\hinvMpc$, detected at $17.7$, $22.9$, and
+$18.1\sigma$ in the $25$-block jackknife.
 The decline with separation is the trend anticipated in
 Section~\ref{sec:intro}: the fraction of connected pairs and the mean bridge
 density both fall as the pair lengthens. The mock also separates the two
@@ -407,9 +407,9 @@ on the mock prediction.
     $r_{\perp}$ & $N_{\rm pairs}$ & Observed & S/N & Mock & Obs.$-$Mock \\
     $[\hinvMpc]$ & & $[10^{-4}]$ & & $[10^{-4}]$ & $[\sigma]$ \\
     \hline
-    5  & $217{,}702$   & TODO & $0.7$  & $\sim6.0$ & TODO \\ % CHECK S/N: notes/lit_review.md 2026-08-01
-    10 & $459{,}051$   & TODO & $2.2$  & $\sim3.4$ & TODO \\
-    20 & $1{,}282{,}969$ & TODO & $-1.1$ & $\sim1.5$ & TODO \\
+    5  & $217{,}702$   & $5.38\pm9.08$  & $0.6$ & $6.32\pm0.36$ & $-0.1$ \\
+    10 & $459{,}051$   & $11.91\pm5.10$ & $2.3$ & $4.91\pm0.21$ & $+1.4$ \\
+    20 & $1{,}282{,}969$ & $1.24\pm2.22$  & $0.6$ & $2.18\pm0.12$ & $-0.4$ \\
     \hline
   \end{tabular}
 \end{table}
@@ -424,29 +424,38 @@ on the mock prediction.
   the superposed-singles control held fixed across realisations. Grey marks
   the bridge window $|X| \leq 0.35\,d$, dotted green the galaxy positions.
   Lower panels: difference in units of the observed error, with dashed
-  guides at $\pm2$. At $r_\perp = 20\,\hinvMpc$ the mock pairs are drawn
-  from a $19$--$21\,\hinvMpc$ transverse bin against the $18$--$22\,\hinvMpc$
-  bin used for BOSS, so that column compares a narrower mock selection with
-  the wider observed one. % CHECK: regenerate the mock r_perp=20 pair
-  % catalogue at 18-22 and re-issue this panel before submission.}
+  guides at $\pm2$. The mock pairs are selected in the same
+  transverse bins as BOSS at all three separations. The mock band is
+  statistical only: it is the $25$-block scatter of a single realisation and
+  excludes the uncertainty in the HOD.}
   \label{fig:band_profiles_obs_sim}
 \end{figure*}
 
 None of the three samples yields a detection. The $10\,\hinvMpc$ sample
-shows a positive excess at $2.2\sigma$; the other two are consistent with
-zero. % CHECK
-A $\chi^{2}$ test of the compressed profile against zero with the full
-covariance gives the same conclusion. % TODO: chi2 / dof per separation
+shows a positive excess at $2.3\sigma$, above rather than below the mock
+prediction; the other two are consistent with zero.
+A $\chi^{2}$ test of the compressed $22$-element profile against zero with
+the full covariance also yields no detection, with $\chi^{2}=35.0$, $20.7$,
+and $32.4$ for $22$ degrees of freedom ($p=0.04$, $0.54$, $0.07$). The
+$\chi^{2}$ orders the samples differently from the bridge statistic --- it is
+least consistent with zero at $5\,\hinvMpc$ and most consistent at
+$10\,\hinvMpc$ --- because it weights the whole profile, including the bins
+containing the galaxies, rather than the bridge window alone.
 
 Fitting the amplitude of the mock filament map to the observed one with
 Equation~(\ref{eq:amplitude}) over the full $22$-element vector returns
-$A=1.30$, $0.84$, and $1.51$ at $3.9$, $2.1$, and $3.6\sigma$. % CHECK: plot_band_response.py docstring; errors not recorded
+$A=1.47\pm0.36$, $1.07\pm0.49$, and $1.60\pm0.57$, at $4.1$, $2.2$, and
+$2.8\sigma$.
 These amplitudes are dominated by the bins containing the galaxies, where
 both maps have large isotropic residuals, and so measure the paired haloes
-rather than the bridge. Restricting the fit to the bridge window gives
-% TODO: bridge-only amplitude fit (fit_band_covariance.py --x-max 0.35*sep) per separation
-The nested test for an additive offset finds none.
-% TODO: offset amplitude and delta chi2
+rather than the bridge. Restricting the fit to the bridge window
+$|X|\leq0.35\,d$ gives $A=1.97\pm0.58$, $1.81\pm0.84$, and $0.71\pm0.95$, at
+$3.4$, $2.1$, and $0.7\sigma$: the $20\,\hinvMpc$ amplitude, the largest of
+the three over the full vector, becomes the least significant once the
+haloes are excluded.
+A nested test that adds a free monopole to the fit leaves the amplitude
+unchanged and returns offsets of $-1.6$, $+0.4$, and $+0.2\times10^{-4}$,
+consistent with no residual monopole from the control subtraction.
 
 \subsection{Comparison with the simulation and with previous work}
 \label{sec:compare}
@@ -489,7 +498,7 @@ smaller by a factor that follows partly from pooling about $2.2$ times as
 many pairs, worth a factor $1.5$, and partly from averaging over a larger
 bridge area. % CHECK: recompute the ratio once the observed error is filled in
 Pooling our three samples with inverse-variance weights gives a single
-number directly comparable to theirs. % TODO
+number directly comparable to theirs (Section~\ref{sec:discussion}).
 
 \subsection{Robustness tests}
 \label{sec:robust}

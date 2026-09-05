@@ -90,8 +90,22 @@ confused:
   Nothing asserted the r_perp bin before, which is how the 19-21 stack got
   into a committed figure.
 
-**Order of operations.** Fix the 20 h^-1 Mpc mock bin (19-21 -> 18-22; see
-the r_perp table below) *before* filling any numbers into the text. Doing it
+**Also in scope: two scripts the plan above did not name.** The scaled
+convention is hard-coded in `analysis/sim/compare_observed_sim.py:109-113` and
+`analysis/sim/check_boss_consistency.py:110-114`, both tracked. Left alone
+they would become a *fourth* band definition, and the first is an
+observed-versus-mock comparison whose filename advertises nothing. They are
+not migrated -- doing so would silently change numbers that have been quoted
+-- but they are now labelled: a warning block at the top of each module, a
+`band_convention` column in the CSV they write, and a `_scaledband` suffix on
+the output filenames (`boss_vs_sim_bridge_stats_scaledband_*.csv`,
+`boss_consistency_stats_scaledband.{csv,png}`). Nothing read those files
+programmatically, so the rename is safe.
+
+**Order of operations. DONE.** The 20 h^-1 Mpc mock bin was fixed
+(19-21 -> 18-22) *before* any number went into the text, so the fill was a
+single pass with final values and no footnote. Original reasoning:
+fix the bin *before* filling any numbers into the text. Doing it
 afterwards means the table, abstract, summary, Section 4 sentence, the
 quadrupole figure, and the blocks file all change twice. While there, note
 that the manifest row for `sim_quadrupole_diff_maps.pdf` uses
@@ -116,13 +130,34 @@ the original runs.
 
 1. The full map reconstructed from block sums matches the saved stack (the
    existing files agree to 3e-8 of peak).
-2. `bridge_excess` applied to the map equals the plotted `band_profile`
-   averaged over the bridge window, to rounding.
-3. Regression targets for the currently saved stacks:
-   `(6.32 +/- 0.36, 4.91 +/- 0.23, 1.94 +/- 0.17) x 10^-4`. The JSON route
-   and the `fig3` route both hold the template fixed across leave-one-out
-   maps, so they should agree to better than 1e-3 relative. The 20 h^-1 Mpc
-   target is provisional until the bin fix.
+2. ~~`bridge_excess` equals `band_profile` averaged over the bridge
+   window.~~ **Dropped: it cannot fail.** `geometry.bridge_excess` *is*
+   `band_profile(arr, axis)[window].mean()` -- one line, deliberately, so the
+   plotted curve and the quoted number cannot drift. Asserting it tests a
+   function against its own body. The real cross-check is check 3, which
+   compares two genuinely different code paths (the JSON route builds its
+   template with `sim_utils.make_two_halo_template` and jackknifes over the
+   block sums; `fig3` uses `geometry.two_halo_template` and rebuilds the
+   leave-one-out maps itself).
+3. Regression targets for the currently saved stacks, **measured**:
+   `6.32 +/- 0.36`, `4.91 +/- 0.21`, `2.18 +/- 0.12` (x 1e-4).
+
+   The central values are as predicted. The errors at 10 and 20 are *not* the
+   `+/- 0.23` and `+/- 0.17` quoted earlier: those were the mean of the
+   per-bin jackknife errors across the window, which is not the error on the
+   window mean. The correct quantity jackknifes the windowed mean itself. The
+   two coincide at 5 h^-1 Mpc (0.357 against 0.356) because the window is
+   narrow and its bins are almost perfectly correlated, and diverge as the
+   window widens -- by 6 per cent at 10 and 31 per cent at 20. Use the
+   error-of-the-mean; the JSON now reports it.
+
+   The 20 h^-1 Mpc value is **final**: the bin fix is done. The corrected
+   18-22 catalogue (`pairs_hodnmatch50_rperp20wide_rsd50.csv`, 7,884,478
+   pairs, 3.6 min) and its stack (1,856,389 pairs after r_par <= 10, 18 min)
+   replaced the 19-21 products in place; the superseded ones are archived
+   under `hod_pairs/archive_bin19to21/`. The value moved 1.94 -> 2.18, a 12
+   per cent shift and larger than either error -- which is why the bins had
+   to match rather than be caveated.
 4. Comparison statistics, to replace the "N bins beyond 2 sigma" count
    (1 h^-1 Mpc bins are correlated over the 3.3 h^-1 Mpc beam, so exceedances
    cluster and the count is not a 5 per cent Gaussian test): add
@@ -162,6 +197,63 @@ to paired haloes. Quantifying that term needs a clearly defined no-filament
 null that preserves the paired-halo mass, environment, selection, and
 smoothing--for example, a paired-halo-only simulation with the inter-halo
 matter removed. `4_summary_draft.tex` has a TODO for this.
+
+## After submission
+
+Deliberately deferred. Each is understood and none affects a number in the
+paper; they are structural debt that is cheaper to pay once the deadline is
+past. Recorded here so the reasoning is not lost.
+
+1. **Put the transverse bin in the filename.**
+   `stack_rperp20_matched.json` does not say which r_perp bin produced it,
+   which is why the 18-22 run overwrote the 19-21 one in place and needed a
+   hand-made archive (`hod_pairs/archive_bin19to21/`, see its README).
+   `stack_rperp20_bin18to22_matched.json` makes a new bin a new file and
+   clobbering structurally impossible. Touches `SIM_STACK`/`SIM_BLOCKS` in
+   `plot_observed_figures.py`, `PAIR_STACK` in `deconvolve_pair_profile.py`,
+   the `stack_rperp{key}_matched` pattern in `plot_obs_vs_sim_filament.py`,
+   and the figure manifest above. Mechanical, but it touches every reader at
+   once -- and those readers are producing the figures being shipped.
+   Mitigated meanwhile: file *contents* are self-describing (`rperp_min_hmpc`
+   etc. in every JSON and `.npz`) and `assert_comparable()` checks the bin
+   before plotting, so the dangerous failure mode -- a wrong comparison -- is
+   already closed. What remains is the inconvenience.
+
+2. **`chi2_A1` and the fitted mock amplitude** (acceptance check 4 above).
+   Not implemented. Until it is, `Obs.-Mock` in `tab:bridge` is a
+   per-separation z-score, which ignores the bin-to-bin covariance.
+
+3. **`plot_theory_figures.py` has no `assert_comparable`.** The Section 4
+   figures bypass the band/bin guard that the Section 5 figures now enforce.
+
+4. **Section 4 and Section 5 use different samples at 5 h^-1 Mpc.**
+   `deconvolve_pair_profile.PAIR_STACK["5"]` is the r_par <= 10 stack;
+   `tab:bridge` and `fig3` use r_par <= 5. The Section 4 map and its numbers
+   should come from one sample.
+
+5. **Read the r_perp bounds from `find_pairs_sim.py` metadata** rather than
+   from repeated command-line values (noted as "longer term" above).
+
+6. **Migrate or retire the two legacy scaled-band scripts.**
+   `compare_observed_sim.py` and `check_boss_consistency.py` are labelled, not
+   migrated. Labelling stops a wrong quote; it does not remove the fourth
+   convention from the tree.
+
+7. **Deposit the external inputs with a DOI.** The ~45 MB BOSS accumulators
+   and the `*_blocks.npz` are not in git, so no figure marked **external**
+   above is reproducible from a fresh clone.
+
+8. **`numbers.tex`.** Generated macros written by the pipeline and `\input` by
+   `main.tex`, so text numbers cannot drift from the results -- the standing
+   fix for the `% CHECK` / `% TODO` problem described at the end of this file.
+
+9. **`.gitignore` covers only `data/`.** `analysis/*/results/`, `*.npz`,
+   `*.float32`, `*.bin`, `.DS_Store` and `.idea/` are all one `git add -A`
+   away from the index; the tree holds ~27 GB of such files.
+
+10. **~20 analysis scripts remain untracked**, including
+    `boss_band_core_tail.py`, `band_chi2_significance.py`, `band_ratio_Q.py`
+    and `quadrupole_moments.py`. Pure code, no data question.
 
 ## Figure manifest
 
@@ -340,11 +432,12 @@ Measured when the figure was first produced, for reference:
   shaded band is drawn but is far thinner than the observed error bars. That
   is the real ratio, not a plotting failure.
 - Fixed-band mock bridge predictions, for the Mock column of `tab:bridge`:
-  **6.32 +/- 0.36**, **4.91 +/- 0.23**, **1.94 +/- 0.17** (x 1e-4) at 5, 10,
-  20. The `% CHECK` values now in the table (6, 3.4, 1.5) came from
+  **6.32 +/- 0.36**, **4.91 +/- 0.21**, **2.18 +/- 0.12** (x 1e-4) at 5, 10,
+  20 (errors corrected, and the 20 value is now the 18-22 bin -- see
+  acceptance check 3).  Applied to `tab:bridge`, the abstract and the
+  summary. The `% CHECK` values now in the table (6, 3.4, 1.5) came from
   `summarize_sim_sensitivity.py`'s separation-scaled bands, a different
-  statistic; 10 h^-1 Mpc differs most (4.91 against 3.4). Not yet applied to
-  the table, the abstract or the summary.
+  statistic; 10 h^-1 Mpc differs most (4.91 against 3.4).
 - Residual bins beyond 2 sigma: 0 of 33 at 5, **6 of 45 at 10**, 2 of 65 at
   20. These are plotting diagnostics only: adjacent 1 h^-1 Mpc bins are
   correlated by the 3.3 h^-1 Mpc beam, so the count has no binomial Gaussian

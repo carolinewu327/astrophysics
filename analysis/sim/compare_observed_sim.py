@@ -1,5 +1,19 @@
 #!/usr/bin/env python
-"""Compare BOSS observed kappa stacks with BigMDPL simulation stacks."""
+"""Compare BOSS observed kappa stacks with BigMDPL simulation stacks.
+.. warning::
+
+   This script scores with **separation-scaled** Y bands
+   (``|Y| <= 0.15 r_perp``, off-centre ``0.45-0.85 r_perp``), not the fixed
+   physical bands (``|Y| <= 1.5``, ``1.5-10.5 h^-1 Mpc``) that
+   ``lib/geometry.py`` defines and that the BOSS estimator and the paper use.
+   The two differ by 15-44 per cent and the ratio itself varies with
+   separation, so numbers from here are **not** comparable with BOSS numbers
+   and must not be quoted beside them.  Kept as a legacy sensitivity axis --
+   scaled bands answer a different question.  Outputs carry a ``_scaledband``
+   suffix and a ``band_convention`` column so they cannot be mistaken for the
+   production statistic.  See "Scoring the mock with the fixed physical bands"
+   in ``paper/README.md``.
+"""
 
 from __future__ import annotations
 
@@ -105,6 +119,7 @@ def resample_map(
 
 
 def bridge_masks(axis: np.ndarray, rperp_center: float) -> tuple[np.ndarray, np.ndarray]:
+    """LEGACY separation-scaled bands -- see the module warning."""
     x_grid, y_grid = np.meshgrid(axis, axis)
     bridge = (np.abs(x_grid) <= 0.35 * rperp_center) & (np.abs(y_grid) <= 0.15 * rperp_center)
     side = (
@@ -296,14 +311,15 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     stats = pd.DataFrame(stats_rows)
-    stats_path = out_dir / f"boss_vs_sim_bridge_stats_{args.mass_label}.csv"
+    stats_path = out_dir / f"boss_vs_sim_bridge_stats_scaledband_{args.mass_label}.csv"
     out_dir.mkdir(parents=True, exist_ok=True)
+    stats["band_convention"] = "scaled_0.15/0.45/0.85_x_rperp"
     stats.to_csv(stats_path, index=False)
     logger.info("Saved %s", stats_path)
 
     plot_bridge_comparison(
         stats,
-        out_dir / f"boss_vs_sim_bridge_stats_{args.mass_label}.{args.format}",
+        out_dir / f"boss_vs_sim_bridge_stats_scaledband_{args.mass_label}.{args.format}",
     )
     plot_map_comparison(
         rows,

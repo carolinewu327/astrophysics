@@ -1,5 +1,19 @@
 #!/usr/bin/env python
-"""Check BOSS 5/10/20 products for cut consistency and simple error bars."""
+"""Check BOSS 5/10/20 products for cut consistency and simple error bars.
+.. warning::
+
+   This script scores with **separation-scaled** Y bands
+   (``|Y| <= 0.15 r_perp``, off-centre ``0.45-0.85 r_perp``), not the fixed
+   physical bands (``|Y| <= 1.5``, ``1.5-10.5 h^-1 Mpc``) that
+   ``lib/geometry.py`` defines and that the BOSS estimator and the paper use.
+   The two differ by 15-44 per cent and the ratio itself varies with
+   separation, so numbers from here are **not** comparable with BOSS numbers
+   and must not be quoted beside them.  Kept as a legacy sensitivity axis --
+   scaled bands answer a different question.  Outputs carry a ``_scaledband``
+   suffix and a ``band_convention`` column so they cannot be mistaken for the
+   production statistic.  See "Scoring the mock with the fixed physical bands"
+   in ``paper/README.md``.
+"""
 
 from __future__ import annotations
 
@@ -106,6 +120,7 @@ def build_control_pair_map(single_map: np.ndarray, separation_hmpc: float) -> np
 
 
 def bridge_masks(axis: np.ndarray, rperp_center: float) -> tuple[np.ndarray, np.ndarray]:
+    """LEGACY separation-scaled bands -- see the module warning."""
     x_grid, y_grid = np.meshgrid(axis, axis)
     bridge = (np.abs(x_grid) <= 0.35 * rperp_center) & (np.abs(y_grid) <= 0.15 * rperp_center)
     side = (
@@ -247,8 +262,8 @@ def plot_boss_summary(stats: pd.DataFrame, output: Path) -> None:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check BOSS product consistency and simple error bars.")
     parser.add_argument("--results-dir", type=Path, default=Path("analysis/boss/results"))
-    parser.add_argument("--output", type=Path, default=Path("analysis/sim/results/observed_comparison/boss_consistency_stats.csv"))
-    parser.add_argument("--plot", type=Path, default=Path("analysis/sim/results/observed_comparison/boss_consistency_stats.png"))
+    parser.add_argument("--output", type=Path, default=Path("analysis/sim/results/observed_comparison/boss_consistency_stats_scaledband.csv"))
+    parser.add_argument("--plot", type=Path, default=Path("analysis/sim/results/observed_comparison/boss_consistency_stats_scaledband.png"))
     parser.add_argument("--rperp-labels", nargs="+", default=["rperp5", "rperp10", "rperp20"])
     return parser.parse_args(argv)
 
@@ -258,6 +273,7 @@ def main(argv: list[str] | None = None) -> None:
     setup_logging()
     stats = summarize_boss(args.results_dir, args.rperp_labels)
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    stats["band_convention"] = "scaled_0.15/0.45/0.85_x_rperp"
     stats.to_csv(args.output, index=False)
     logger.info("Saved %s", args.output)
     plot_boss_summary(stats, args.plot)

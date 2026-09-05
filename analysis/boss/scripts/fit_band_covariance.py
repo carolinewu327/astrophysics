@@ -360,7 +360,7 @@ def parse_args(argv=None):
     p.add_argument("--scan-x-max", default="10,20,40")
     p.add_argument("--results-dir", default="analysis/boss/results")
     p.add_argument("--sim-dir", default="analysis/sim/results")
-    p.add_argument("--sim-single", default="kappa_single_sim_hodnmatch_8arcmin.csv")
+    p.add_argument("--sim-single", default="kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv")
     p.add_argument("--output-dir", default="output/plots")
     return p.parse_args(argv)
 

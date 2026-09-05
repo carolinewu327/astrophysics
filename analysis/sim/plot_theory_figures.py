@@ -56,6 +56,17 @@ logger = logging.getLogger(__name__)
 
 SINGLE = "kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv"
 SEPS = ("5", "10", "20")
+
+# Which mock stack stands for each separation *in the paper*.  This is NOT
+# deconvolve_pair_profile.PAIR_STACK: that maps "5" to the r_par <= 10 stack,
+# which is the right sample for the deconvolution work but not for the paper,
+# where the BOSS 5 h^-1 Mpc sample is cut at r_par <= 5.  Section 4 states the
+# LCDM expectation for the samples Section 5 measures, so the two must be the
+# same stacks -- otherwise the figure and the number quoted beside it disagree
+# (measured: 7.64e-4 plotted against 6.32e-4 quoted, 21 per cent apart).
+PAPER_STACK = {"5": "stack_rperp5_matched",
+               "10": "stack_rperp10_matched",
+               "20": "stack_rperp20_matched"}
 BLUE, ORANGE, PURPLE = "#2a78d6", "#eb6834", "#7d5ba6"
 
 # Set by --paper.  Module-level rather than threaded through every fig*()
@@ -87,7 +98,7 @@ def zoom_for(sep):
 
 
 def load_pair(key):
-    return load_map(HOD / f"{PAIR_STACK[key]}.csv")
+    return load_map(HOD / f"{PAPER_STACK[key]}.csv")
 
 
 def control_map(single, axis, sep):

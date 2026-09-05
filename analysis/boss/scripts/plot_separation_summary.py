@@ -89,6 +89,68 @@ plt.rcParams.update({
 })
 
 
+
+def boss_rperp_bin(key):
+    """The BOSS sample's transverse bin, from its pair-catalog stem.
+
+    The stem is "<rpar_max>_<rperp_min>_<rperp_max>", e.g. "10.0_18.0_22.0".
+    """
+    _, lo, hi = SEPARATIONS[key]["pair_catalog"].split("_")
+    return float(lo), float(hi)
+
+
+def assert_comparable(key, meta, stem, allow_rperp_mismatch=False):
+    """Refuse to plot a mock stack that is not the same measurement as BOSS.
+
+    Three things have to agree before a mock curve can sit beside an observed
+    one, and only the first was ever checked:
+
+      r_par cut     already asserted below
+      r_perp bin    never asserted, which is how a 19-21 mock stack ended up in
+                    a committed figure against BOSS's 18-22
+      band scoring  the JSON must carry the fixed physical bands of
+                    lib/geometry.py, not the separation-scaled legacy ones
+
+    A JSON written before the fixed-band change has no band_definition block at
+    all; that is reported as its own case rather than as a mismatch, because the
+    fix is to re-run the stacker, not to edit the file.
+    """
+    want_lo, want_hi = boss_rperp_bin(key)
+    got_lo, got_hi = meta.get("rperp_min_hmpc"), meta.get("rperp_max_hmpc")
+    if got_lo is None or got_hi is None:
+        raise ValueError(
+            f"r_perp = {key}: {stem}.json predates the transverse-bin record. "
+            "Re-run jackknife_pair_stack.py with --rperp-min/--rperp-max.")
+    if not (np.isclose(want_lo, got_lo) and np.isclose(want_hi, got_hi)):
+        msg = (f"r_perp = {key}: BOSS uses the {want_lo:g}-{want_hi:g} h^-1 Mpc "
+               f"bin but {stem} was built from {got_lo:g}-{got_hi:g}. These are "
+               "different samples; regenerate the pair catalogue for the BOSS "
+               "bin with find_pairs_sim.py.")
+        if not allow_rperp_mismatch:
+            raise ValueError(msg)
+        # The opt-out exists for one situation: publishing a provisional figure
+        # while the corrected catalogue is still being generated.  It has to be
+        # asked for explicitly, it says so at WARNING, and the caption is
+        # expected to carry the same caveat -- see paper/README.md.
+        logger.warning("PROVISIONAL: %s Proceeding because the caller passed "
+                       "allow_rperp_mismatch.", msg)
+
+    band = meta.get("band_definition", {}).get("fixedband_keys")
+    if band is None:
+        raise ValueError(
+            f"r_perp = {key}: {stem}.json has no fixed-band scoring. Its bridge "
+            "numbers come from separation-scaled Y bands and are not the "
+            "statistic BOSS reports. Re-run jackknife_pair_stack.py.")
+    for name, want in (("central_half_y_hmpc", CENTRAL_HALF_Y_HMPC),
+                       ("off_lo_hmpc", OFF_LO_Y_HMPC),
+                       ("off_hi_hmpc", OFF_HI_Y_HMPC),
+                       ("bridge_half_x_frac", BRIDGE_HALF_X_FRAC)):
+        if not np.isclose(band.get(name, np.nan), want):
+            raise ValueError(
+                f"r_perp = {key}: {stem} was scored with {name} = "
+                f"{band.get(name)}, but lib/geometry.py now says {want}. The "
+                "mock and the observation would be different statistics.")
+
 def build_terms(R: str, dataset: str, regions: list[str], sep_key: str,
                 single_tag: str, single_random_tag: str,
                 pair_suffix: str = "", symmetrize_pairs: bool = True) -> dict:

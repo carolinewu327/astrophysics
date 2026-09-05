@@ -195,7 +195,7 @@ def parse_args(argv=None):
     p.add_argument("--kappa-map",
                    default="analysis/sim/results/kappa_map_l0p1_s8arcmin.float32")
     p.add_argument("--single",
-                   default="analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin.csv")
+                   default="analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv")
     p.add_argument("--reference-cut", type=float, default=None,
                    help="Cut to normalise the figure of merit against. Default: the "
                         "production cut, 5 for r_perp=5 and 10 otherwise.")

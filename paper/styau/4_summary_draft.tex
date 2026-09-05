@@ -13,7 +13,7 @@
 
 We have stacked the Planck 2018 lensing convergence map on $217{,}702$,
 $459{,}051$, and $1{,}282{,}969$ BOSS CMASS galaxy pairs at transverse
-separations of $5$, $10$, and $20\,\hinvMpc$, % CHECK: 20 hMpc count
+separations of $5$, $10$, and $20\,\hinvMpc$,
 subtracted a control built from the galaxies' own single-galaxy stack, and
 measured the convergence left between the pair members. The same pipeline
 was run on a CMASS-like mock built from the BigMDPL simulation, which
@@ -21,14 +21,18 @@ supplies the $\Lambda$CDM expectation for every quantity we measure.
 
 \textbf{We do not detect a filament, and the data cannot yet test the
 $\Lambda$CDM prediction.} The bridge excess is consistent with zero at all
-three separations, at $0.7\sigma$, $2.2\sigma$, and $-1.1\sigma$. % CHECK
+three separations, at $0.6\sigma$, $2.3\sigma$, and $0.6\sigma$.
 Testing the compressed profile against zero with the full covariance gives
-the same conclusion. The mock predicts a bridge of roughly $6$, $3.4$, and
-$1.5\times10^{-4}$ in the same statistic, % CHECK
-below our errors at every separation, so the observations are consistent
-with the prediction and equally consistent with no bridge at all. The
-$95$ per cent upper limits correspond to % TODO: Sigma and linear mass density limits
-The $2.2\sigma$ excess at $10\,\hinvMpc$ is at the level of the
+the same conclusion. The mock predicts a bridge of $6.32\pm0.36$,
+$4.91\pm0.21$, and $2.18\pm0.12\times10^{-4}$ in the same statistic,
+at or below our errors at every separation --- comfortably so at
+$5\,\hinvMpc$, but by only a few per cent at $10$ and $20\,\hinvMpc$ --- so
+the observations cannot distinguish the prediction from no bridge at all.
+At $10\,\hinvMpc$ the measurement sits $2.3\sigma$ from zero and $1.4\sigma$
+from the mock, so such preference as there is runs mildly towards the
+prediction rather than away from it.
+% TODO: 95 per cent upper limits as Sigma and linear mass density.
+The $2.3\sigma$ excess at $10\,\hinvMpc$ is at the level of the
 $1.9\sigma$ signal that \citet{deGraaff2019} found in the same data with a
 different estimator, and we regard the two as the same marginal hint.
 
@@ -36,16 +40,20 @@ different estimator, and we regard the two as the same marginal hint.
 Planck cannot afford.} The first change we made relative to
 \citet{deGraaff2019} was to bin pairs by separation on a fixed comoving grid
 rather than rescaling and pooling them. The mock shows why this is worth
-doing: the predicted bridge falls by a factor of four from $5$ to
+doing: the predicted bridge falls by a factor of three from $5$ to
 $20\,\hinvMpc$, so the pooled measurement mixes structures of very
 different amplitude. But dividing the sample raises the error in each bin,
 and at Planck noise none of the bins is individually informative. Pooling
-our three bins with inverse-variance weights gives % TODO
-which is the number to compare with theirs.
+our three bins with inverse-variance weights gives
+$3.05\pm1.99\times10^{-4}$, or $1.5\sigma$, which is the number to compare
+with theirs. The three samples are drawn from one catalogue over one
+footprint and share galaxies, so this error, which assumes they are
+independent, is a lower bound.
 
 \textbf{The limit is the map, not the method.} Removing the control
-entirely and measuring the same window on the raw band changes the error by
-% TODO: quote from the committed pipeline (the 7% figure came from the fitted-control analysis)
+entirely and measuring the same window on the raw band changes the error
+only marginally,
+% TODO: quote the exact change from the committed pipeline (the 7 per cent figure came from the fitted-control analysis).
 so the error budget is set by the Planck reconstruction noise within the
 bridge window and not by the uncertainty of the control. No refinement of
 the template can shrink the error bar; only more pairs or a less noisy

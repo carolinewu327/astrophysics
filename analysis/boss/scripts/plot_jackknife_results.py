@@ -198,7 +198,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Figures for the joint jackknife results.")
     parser.add_argument("--results-dir", default="analysis/boss/results")
     parser.add_argument("--mock",
-                        default="analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin.csv")
+                        default="analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv")
     parser.add_argument("--output-dir", default="output/plots")
     args = parser.parse_args(argv)
     setup_logging()

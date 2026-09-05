@@ -60,8 +60,15 @@ def parse_args(argv=None):
     parser.add_argument("--kappa-map",
                         default="results/kappa_map_l0p1_s8arcmin.float32")
     parser.add_argument("--single",
-                        default="results/kappa_single_sim_hodnmatch_8arcmin.csv")
+                        default="results/kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv")
     parser.add_argument("--rperp-center", type=float, required=True)
+    parser.add_argument("--rperp-min", type=float, default=None,
+                        help="Lower edge of the transverse bin. Defaults to "
+                             "--rperp-center minus 1, the 2 h^-1 Mpc-wide bin "
+                             "the mock catalogues use.")
+    parser.add_argument("--rperp-max", type=float, default=None,
+                        help="Upper edge of the transverse bin (default: "
+                             "--rperp-center plus 1).")
     parser.add_argument("--bands", default=DEFAULT_BANDS,
                         help="Comma-separated lo:hi LOS bands in h^-1 Mpc, applied to "
                              "the true (real-space) separation.")
@@ -74,6 +81,17 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     setup_logging()
+    # jackknife_pair_stack requires the transverse bin to be declared.  Do not
+    # guess it: centre +/- 1 is right for the 5 and 10 h^-1 Mpc catalogues but
+    # gives 19-21 at 20, which is the narrow bin this whole change set exists to
+    # retire.  Make the caller say which bin the catalogue holds.
+    if args.rperp_min is None or args.rperp_max is None:
+        raise SystemExit(
+            "--rperp-min and --rperp-max are required: they must match the bin "
+            "the pair catalogue was built with (4-6, 9-11, 18-22 for the "
+            "production samples), and guessing centre +/- 1 silently produces "
+            "the retired 19-21 bin at 20 h^-1 Mpc.")
+
     label = args.label or f"rperp{int(args.rperp_center)}"
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -84,7 +102,9 @@ def main(argv=None):
         stem = out_dir / f"nonphys_{label}_rpar{int(lo)}_{int(hi)}"
         stack_args = Namespace(
             pairs=args.pairs, kappa_map=args.kappa_map, single=args.single,
-            rperp_center=args.rperp_center, rpar_min=lo, rpar_max=hi,
+            rperp_center=args.rperp_center,
+            rperp_min=args.rperp_min, rperp_max=args.rperp_max,
+            rpar_min=lo, rpar_max=hi,
             rpar_space="real", blocks_per_side=args.blocks_per_side,
             grid_size=101, box_size=100.0, max_pairs=None, seed=0,
             rpar_half_open=True,

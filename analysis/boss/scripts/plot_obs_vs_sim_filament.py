@@ -50,6 +50,7 @@ from geometry import two_halo_template
 from jackknife import jackknife_error
 from plot_separation_summary import (
     BRIDGE_X_FRAC,
+    assert_comparable,
     band_profile,
     build_terms,
     draw_map,
@@ -93,6 +94,7 @@ def sim_filament(sim_dir: str, sep_key: str, single_name: str) -> tuple[np.ndarr
 
     with open(meta_path, encoding="utf-8") as fh:
         meta = json.load(fh)
+    assert_comparable(sep_key, meta, f"stack_rperp{sep_key}_matched")
     return pair_stack - control, meta
 
 
@@ -167,7 +169,11 @@ def make_sheet(t: dict, sim_fil: np.ndarray, sim_meta: dict, out_base: str) -> N
     # it is NOT the same measurement as sim_bridge above and must not be read as
     # a 2D-vs-1D discrepancy. It is quoted only for its jackknife error, which
     # sets the scale of the simulation's own uncertainty.
-    sim_stat = sim_meta["stats"]["residual_bridge_excess_kappa"]
+    # The fixed-band key, not "residual_bridge_excess_kappa": that one is scored
+    # on axis / r_perp, so its Y bands scale with the separation and it is not
+    # the statistic the BOSS panel beside it reports.  assert_comparable above
+    # guarantees this key exists.
+    sim_stat = sim_meta["stats"]["residual_bridge_excess_fixedband_kappa"]
     ax.text(0.02, 0.03,
             f"bridge excess, $|X|\\leq${BRIDGE_X_FRAC * sep:.1f}:\n"
             f"  BOSS  {boss_bridge * 1e4:+.2f} ± {boss_bridge_err * 1e4:.2f}\n"
@@ -208,7 +214,7 @@ def main(argv=None):
     parser.add_argument("--single-random-tag", default="_scw_frac100")
     parser.add_argument("--results-dir", default="analysis/boss/results")
     parser.add_argument("--sim-dir", default="analysis/sim/results")
-    parser.add_argument("--sim-single", default="kappa_single_sim_hodnmatch_8arcmin.csv")
+    parser.add_argument("--sim-single", default="kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv")
     parser.add_argument("--output-dir", default="output/plots")
     args = parser.parse_args(argv)
     args.regions = [r.strip() for r in args.regions.split(",")]
