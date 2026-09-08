@@ -236,10 +236,10 @@ agree to 3 percent inside $10\,\hinvMpc$.
 Mock pairs are selected in redshift space from a random 50 percent subsample
 of the catalog, which reduces the pair count while preserving the halo-mass
 selection in expectation. The projection axis serves as the line of sight,
-and each galaxy's coordinate along it is displaced by
-$(1+z)\,v_{\parallel}/H(z)$, where $v_{\parallel}$ is its line-of-sight
-peculiar velocity, before the line-of-sight cut is applied. This models the
-effect of peculiar velocities on the pair selection. Transverse
+and we map each galaxy to redshift space by shifting its coordinate along
+this axis by $(1+z)\,v_{\parallel}/H(z)$, with $v_{\parallel}$ denoting the
+peculiar-velocity component along the same axis. We evaluate the
+line-of-sight separation cut from these shifted coordinates. Transverse
 separations are computed with periodic boundaries.
 Nonphysical pairs, close in projection but separated along the line of
 sight in real space by $20$--$120\,\hinvMpc$, are selected from the same
