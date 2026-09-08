@@ -164,12 +164,14 @@ mask and at the low-latitude edge of the North cap
 \subsection{$N$-body simulation and mock catalog}
 \label{sec:sim}
 
-We calculate the $\Lambda$CDM reference signal from the BigMDPL run of the
-MultiDark suite \citep{Klypin2016, Riebe2013}, a dark-matter-only simulation
-of a periodic box $2500\,\hinvMpc$ on a side with $3840^{3}$ particles of mass
-$2.36\times10^{10}\,h^{-1}\mathrm{M}_{\odot}$ in a Planck cosmology with
-$\Omega_{\rm m}=0.307$ and $h=0.678$. We use the snapshot at $a=0.6464$,
-$z=0.547$, close to the weighted mean redshift of the CMASS sample. Haloes
+We calculate the $\Lambda$CDM reference signal using BigMDPL from the
+MultiDark suite \citep{Klypin2016, Riebe2013}. This dark-matter-only simulation
+evolves $3840^{3}$ particles in a periodic cube of comoving side length
+$2500\,\hinvMpc$; each particle has mass
+$2.36\times10^{10}\,h^{-1}\mathrm{M}_{\odot}$. Its cosmological parameters
+include $\Omega_{\rm m}=0.307$ and $h=0.678$. We analyze the output at
+$z=0.547$ ($a=0.6464$), which is close to the weighted mean redshift of the
+CMASS sample. Haloes
 are taken from the public Rockstar catalog; we keep host haloes only,
 discarding subhaloes, and use the Rockstar virial mass $M_{\rm vir}$. The
 HOD is applied to hosts with
