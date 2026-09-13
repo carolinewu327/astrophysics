@@ -35,4 +35,69 @@ GCS Supercomputer SuperMUC at Leibniz Supercomputing Centre
 
 This research made use of \textsc{astropy}, \textsc{healpy}, \textsc{numpy},
 \textsc{scipy}, and \textsc{matplotlib}. % add \citep keys if your journal wants software cited
+\emph{Declaration of AI use.} Generative AI tools were used in this project.
+This declaration states what they were used for, what they were not used for,
+and when.
+
+\emph{Tools and versions.} All AI assistance was obtained through Claude Code,
+Anthropic's command-line coding assistant. The models used, as recorded in the
+co-authorship trailers of the project's version-control history, were Claude
+Opus 4.6 (February 2026), Claude Opus 5, including its 1M-context configuration
+(August and September 2026), and Claude Fable 5.1 (September 2026).
+% CHECK: add any other AI tool used outside this repository. If none, say so.
+
+\emph{Work completed without AI assistance.} The measurement method of this
+paper was developed before any AI tool was used on the project. Between
+2025 July 17 and 2026 February 5, the first author wrote the original analysis
+in Jupyter notebooks and committed it in 59 revisions: the construction of the
+convergence maps, the galaxy-pair catalogs, the stacking and symmetrization
+procedure, the control subtraction, and the first error estimates. Bugs found
+and fixed in that period, including an error in the Mpc$/h$ conversion and a
+comparison of the equatorial and Galactic coordinate implementations, were
+diagnosed by the first author. The research question, the choice to look for
+filaments between CMASS pairs in the Planck lensing map, and the design of the
+control were proposed and refined in discussion with Prof.\ Zheng Zheng and
+Dr.\ Di He. These notebooks are preserved in the project repository under
+\texttt{legacy/}.
+
+\emph{Work in which AI assisted.} From 2026 February onward, AI assistance was
+used at three stages.
+
+First, software. The notebooks were restructured into the current command-line
+pipeline with AI assistance, and much of that code---catalog loading, pair
+selection, the stacking routines, the jackknife covariance estimation, and the
+plotting scripts---was corrected with AI assistance. Debugging was a continuous
+part of this: corrections made with AI assistance include an out-of-memory failure
+in the random-catalog loader, a normalization error in the control-pair map, and a
+half-pixel error in the centering of the stacking grid.
+
+Second, verification. AI was used to audit the code and the intermediate
+results. Two errors that affected numbers previously written into this draft
+were found this way: a mismatch between the transverse separation bin used for
+the mock and that used for the data (Section~\ref{sec:sim}), and an
+inconsistency between the bridge-band definitions applied to the mock and to
+the observation (Section~\ref{sec:method}). Both were corrected before
+submission.
+
+Third, the manuscript. Sections of this report were polished with AI assistance
+from the authors' outlines, results, and notes, and were then revised more by the
+authors. AI was also used for a spelling-convention pass.
+
+\emph{What AI was not used for.} No numerical result reported here was produced
+by a language model. Every value in the text, tables, and figures is an output
+of the analysis code running on the public BOSS, Planck, and MultiDark data
+described in Section~\ref{sec:data}, and can be recomputed from the archived
+pipeline. AI was not used to generate, alter, or select data; the catalogs and
+maps are public and unmodified. The physical model was not chosen by AI: the
+cosmology is Planck 2018 and the halo occupation form is that of
+\citet{White2011}, adopted on the advice of Prof.\ Zheng Zheng. No AI-edited
+code or text entered the repository or this report without being read and
+accepted by the authors, who are responsible for all of its content, including
+any remaining errors.
+
+\emph{Timing and frequency.} AI assistance was used between 2026 February and
+2026 September, in two concentrated periods: the restructuring of the pipeline
+in 2026 February, and the analysis, verification, and writing in 2026 August
+and September. No AI tool was used on this project before 2026 February.
+
 \end{acknowledgments}
