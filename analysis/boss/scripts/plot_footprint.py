@@ -43,6 +43,13 @@ logger = logging.getLogger(__name__)
 
 REGION_COLORS = {"North": "#1f77b4", "South": "#d62728", "NGC": "#1f77b4", "SGC": "#d62728"}
 
+# The two panels of fig:footprint_zdist are both included at 0.48\linewidth
+# (2_data_draft.tex), but the Mollweide map is saved ~8.8 in wide against
+# zdist's 5.2 in, so LaTeX scales it down about 1.7x more and its text prints
+# correspondingly smaller. Text, legend markers and graticule on the footprint
+# are drawn this much larger so the two panels match in apparent type size.
+FOOTPRINT_FONT_SCALE = 8.84 / 5.2
+
 
 # ===========================================================================
 # Data loading
@@ -126,8 +133,13 @@ def write_stats(stats, path, z_min, z_max):
 # ===========================================================================
 # Plots
 # ===========================================================================
-def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base):
-    """Mollweide map of the Planck mask with galaxies overplotted."""
+def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base,
+                   font_scale=FOOTPRINT_FONT_SCALE):
+    """Mollweide map of the Planck mask with galaxies overplotted.
+
+    `font_scale` enlarges every annotation by the factor this panel is scaled
+    down relative to zdist in the paper; see FOOTPRINT_FONT_SCALE.
+    """
     mask_dg = hp.ud_grade(mask.astype(float), nside_plot)
     # Two-level colour map: masked (0) light grey, unmasked (1) white.
     cmap = ListedColormap(["#d9d9d9", "#ffffff"])
@@ -141,7 +153,7 @@ def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base):
         mask_dg, fig=fig.number, title="", cbar=False, notext=True,
         cmap=cmap, min=0, max=1, badcolor="white", bgcolor="white",
     )
-    hp.graticule(dpar=30, dmer=60, color="0.6", alpha=0.5, lw=0.5)
+    hp.graticule(dpar=30, dmer=60, color="0.6", alpha=0.5, lw=0.5 * font_scale)
 
     rng = np.random.default_rng(12345)
     handles = []
@@ -155,16 +167,20 @@ def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base):
             alpha=0.5, linewidths=0, rasterized=True,
         )
         sc.set_rasterized(True)
-        handles.append(Line2D([], [], marker="o", ls="", color=color, ms=5, label=f"CMASS {name}"))
+        handles.append(Line2D([], [], marker="o", ls="", color=color, ms=5 * font_scale,
+                              label=f"CMASS {name}"))
 
-    handles.append(Line2D([], [], marker="s", ls="", color="#d9d9d9", ms=9,
+    handles.append(Line2D([], [], marker="s", ls="", color="#d9d9d9", ms=9 * font_scale,
                           label=f"Planck lensing mask ($f_{{\\rm sky}}={np.mean(mask > 0):.2f}$)"))
     ax = plt.gca()
-    ax.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, -0.08),
-              ncol=3, frameon=False, fontsize=9, markerscale=1.0)
+    # Tight column spacing keeps the enlarged legend narrower than the map, so the
+    # saved width stays set by the ellipse and font_scale means what it says.
+    ax.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, -0.17),
+              ncol=3, frameon=False, fontsize=9 * font_scale, markerscale=1.0,
+              columnspacing=1.2, handletextpad=0.5, borderpad=0.0)
     # Longitude labels along the equator (astronomical convention: l increases leftwards).
     for lon in (120, 60, 0, -60, -120):
-        hp.projtext(lon, -4, f"$l={lon % 360:d}^\\circ$", lonlat=True, fontsize=8,
+        hp.projtext(lon, -4, f"$l={lon % 360:d}^\\circ$", lonlat=True, fontsize=8 * font_scale,
                     ha="center", va="top", color="0.35")
 
     for ext in ("pdf", "png"):
@@ -224,6 +240,11 @@ def parse_args():
                    help="HEALPix nside to which the mask is degraded for plotting.")
     p.add_argument("--n-points", type=int, default=60000,
                    help="Maximum galaxies drawn per region on the footprint map.")
+    p.add_argument("--font-scale", type=float, default=FOOTPRINT_FONT_SCALE,
+                   help="Enlarge the footprint legend, longitude labels and graticule by this "
+                        "factor. The default compensates for the footprint being scaled down "
+                        "more than zdist when both are placed at 0.48\\linewidth; use 1.0 for "
+                        "a standalone figure.")
     return p.parse_args()
 
 
@@ -245,7 +266,7 @@ def main():
     write_stats(stats, os.path.join(args.output_dir, "footprint_stats.txt"), args.z_min, args.z_max)
 
     plot_footprint(regions, mask, args.z_min, args.z_max, args.nside_plot, args.n_points,
-                   os.path.join(args.output_dir, "footprint"))
+                   os.path.join(args.output_dir, "footprint"), font_scale=args.font_scale)
     plot_zdist(regions, args.z_min, args.z_max, os.path.join(args.output_dir, "zdist"))
 
 
