@@ -34,6 +34,21 @@ separation, recomputed exactly as the pair finder does
 finder.  ``--rperp-half-open`` makes the cut ``[min, max)`` so adjacent
 groupings never share a pair.
 
+Separation summaries: with an r_perp cut, the range is also split into fine
+bins (``--fine-bin-width``, default 0.5 h^-1 Mpc) and the stack records, for
+the pairs actually stacked,
+
+- per jackknife region and fine bin: pair count, sum(w) and sum(w * r_perp);
+- per fine bin, over the whole sky: the valid-weight map sum(w * valid).
+
+These let the separation-averaged halo control reproduce the signal's own
+separation mix and per-pixel weighting without re-stacking.  The per-region
+counts and weights give exact leave-one-out separation mixes.  The coverage
+maps are whole-sky only, so leave-one-out coverage is approximated by
+rescaling each fine bin's map by its leave-one-out weight fraction -- the
+planned approximation, checked against per-pair coverage before use.  None of
+this changes the stacked sums.
+
 Usage
 -----
     PYTHONPATH=lib python analysis/boss/scripts/stack_pairs_jk.py \\
@@ -80,6 +95,10 @@ SIN_T: np.ndarray | None = None
 DMID: np.ndarray | None = None
 WPAIR: np.ndarray | None = None
 REGION_ARR: np.ndarray | None = None
+# Fine-bin separation summaries; FINE_IDX is None when they are off.
+FINE_IDX: np.ndarray | None = None
+RPERP: np.ndarray | None = None
+N_FINE: int = 0
 
 
 def _set_runtime_globals(**kw) -> None:
@@ -114,8 +133,15 @@ def pair_geometry(
     return lc, bc, dl / norm, db / norm
 
 
-def stack_index_range(start: int, stop: int) -> tuple[np.ndarray, np.ndarray, int, int]:
-    """Accumulate weighted kappa sums over pairs ``[start, stop)``."""
+def stack_index_range(
+    start: int, stop: int, fine: dict[str, np.ndarray] | None = None
+) -> tuple[np.ndarray, np.ndarray, int, int]:
+    """Accumulate weighted kappa sums over pairs ``[start, stop)``.
+
+    With fine bins on, also adds the stacked pairs' per-fine-bin count,
+    sum(w), sum(w * r_perp) and valid-weight map into ``fine`` (pairs dropped by
+    the pole guard contribute to none of them).
+    """
     sum_wk = np.zeros(GRID_RES**2, dtype=np.float64)
     sum_w = np.zeros(GRID_RES**2, dtype=np.float64)
     n_used = 0
@@ -162,6 +188,14 @@ def stack_index_range(start: int, stop: int) -> tuple[np.ndarray, np.ndarray, in
         sum_w += (w * valid).sum(axis=0)
         n_used += int(ok.sum())
 
+        if fine is not None:
+            fb = FINE_IDX[lo:hi][ok]
+            wf = w[:, 0]
+            fine["count"] += np.bincount(fb, minlength=N_FINE)
+            fine["w"] += np.bincount(fb, weights=wf, minlength=N_FINE)
+            fine["wr"] += np.bincount(fb, weights=wf * RPERP[lo:hi][ok], minlength=N_FINE)
+            np.add.at(fine["cov"], fb, w * valid)
+
     return sum_wk, sum_w, n_used, n_skipped
 
 
@@ -172,8 +206,20 @@ def process_chunk(chunk_meta: tuple[int, int, int]) -> dict[str, object]:
     bounds = np.concatenate(([0], edges, [len(labels)]))
 
     regions, sums_wk, sums_w, n_used, n_pairs, n_skipped = [], [], [], [], [], 0
+    fine_count, fine_w, fine_wr = [], [], []
+    fine_cov = np.zeros((N_FINE, GRID_RES**2), dtype=np.float64) if FINE_IDX is not None else None
     for lo, hi in zip(bounds[:-1], bounds[1:]):
-        wk, w, used, skipped = stack_index_range(start + int(lo), start + int(hi))
+        fine = None
+        if FINE_IDX is not None:
+            fine = {"count": np.zeros(N_FINE, dtype=np.int64),
+                    "w": np.zeros(N_FINE, dtype=np.float64),
+                    "wr": np.zeros(N_FINE, dtype=np.float64),
+                    "cov": fine_cov}
+        wk, w, used, skipped = stack_index_range(start + int(lo), start + int(hi), fine)
+        if fine is not None:
+            fine_count.append(fine["count"])
+            fine_w.append(fine["w"])
+            fine_wr.append(fine["wr"])
         regions.append(int(labels[lo]))
         sums_wk.append(wk)
         sums_w.append(w)
@@ -189,7 +235,40 @@ def process_chunk(chunk_meta: tuple[int, int, int]) -> dict[str, object]:
         "n_used": np.asarray(n_used, dtype=np.int64),
         "n_pairs": np.asarray(n_pairs, dtype=np.int64),
         "n_skipped": n_skipped,
+        "fine_count": np.asarray(fine_count, dtype=np.int64),
+        "fine_w": np.asarray(fine_w, dtype=np.float64),
+        "fine_wr": np.asarray(fine_wr, dtype=np.float64),
+        "fine_cov": fine_cov,
     }
+
+
+def fine_bin_edges(lo: float | None, hi: float | None, width: float) -> np.ndarray | None:
+    """Fine-bin edges spanning [lo, hi], or None when summaries are off.
+
+    Summaries need a declared r_perp range, and the width must divide it
+    exactly so fine bins nest inside every grouping built on the same grid.
+    """
+    if width <= 0 or lo is None or hi is None:
+        return None
+    n = int(round((hi - lo) / width))
+    if n < 1 or abs(n * width - (hi - lo)) > 1e-9 * max(1.0, hi - lo):
+        raise ValueError(
+            f"--fine-bin-width {width:g} does not divide the r_perp range [{lo:g}, {hi:g}]."
+        )
+    # Rounded so a decimal width lands edges on the intended values:
+    # 3 + 0.1*3 is 3.3000000000000003, which would put r_perp = 3.3 in the
+    # bin below.
+    return np.round(lo + width * np.arange(n + 1, dtype=np.float64), 10)
+
+
+def fine_bin_index(rperp: np.ndarray, edges: np.ndarray) -> np.ndarray:
+    """Fine-bin index for ``[e_k, e_k+1)`` bins; the top edge folds into the last bin.
+
+    Compares against the edges themselves rather than dividing by the width,
+    which misassigns values sitting on an edge.
+    """
+    idx = np.searchsorted(edges, rperp, side="right") - 1
+    return np.clip(idx, 0, len(edges) - 2)
 
 
 def pair_rperp(pairs: pd.DataFrame) -> np.ndarray:
@@ -319,6 +398,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Keep pairs with r_perp <= this (< with --rperp-half-open).")
     parser.add_argument("--rperp-half-open", action="store_true",
                         help="Make the upper r_perp edge exclusive: [min, max).")
+    parser.add_argument("--fine-bin-width", type=float, default=0.5,
+                        help="Width (h^-1 Mpc) of the fine separation bins recorded for the "
+                             "averaged control; needs --rperp-min and --rperp-max. 0 disables "
+                             "(default: 0.5).")
     parser.add_argument("--allow-undeclared-catalog", action="store_true",
                         help="Accept pair catalogs whose names do not state their r_perp "
                              "selection; only the kept-pair span is then checked.")
@@ -379,6 +462,11 @@ def main(argv: list[str] | None = None) -> None:
     pairs = load_pair_catalogs(args.pair_catalogs)
     n_pairs_catalog = len(pairs)
     pairs, rperp = select_rperp(pairs, args.rperp_min, args.rperp_max, args.rperp_half_open)
+    fine_edges = fine_bin_edges(args.rperp_min, args.rperp_max, args.fine_bin_width)
+    fine_idx = None if fine_edges is None else fine_bin_index(rperp, fine_edges)
+    if fine_edges is not None:
+        logger.info("Recording separation summaries in %d fine bins of %g h^-1 Mpc.",
+                    len(fine_edges) - 1, args.fine_bin_width)
 
     l1 = np.radians(pairs["l1"].to_numpy(dtype=np.float64))
     b1 = np.radians(pairs["b1"].to_numpy(dtype=np.float64))
@@ -404,8 +492,10 @@ def main(argv: list[str] | None = None) -> None:
                 int((per_region == 0).sum()))
 
     order = np.argsort(labels, kind="stable")
-    lc, bc, cos_t, sin_t, dmid, wpair, labels = (
-        arr[order] for arr in (lc, bc, cos_t, sin_t, dmid, wpair, labels))
+    lc, bc, cos_t, sin_t, dmid, wpair, labels, rperp = (
+        arr[order] for arr in (lc, bc, cos_t, sin_t, dmid, wpair, labels, rperp))
+    if fine_idx is not None:
+        fine_idx = fine_idx[order]
 
     alm_path, mask_path = resolve_planck_paths(args.data_dir)
     logger.info("Loading Planck map ...")
@@ -418,6 +508,9 @@ def main(argv: list[str] | None = None) -> None:
         COS_T=np.ascontiguousarray(cos_t), SIN_T=np.ascontiguousarray(sin_t),
         DMID=np.ascontiguousarray(dmid), WPAIR=np.ascontiguousarray(wpair),
         REGION_ARR=np.ascontiguousarray(labels, dtype=np.int32),
+        FINE_IDX=None if fine_idx is None else np.ascontiguousarray(fine_idx),
+        RPERP=np.ascontiguousarray(rperp),
+        N_FINE=0 if fine_edges is None else len(fine_edges) - 1,
     )
 
     chunks = [(i, s, min(s + args.chunk_size, len(labels)))
@@ -428,6 +521,11 @@ def main(argv: list[str] | None = None) -> None:
     n_pairs = np.zeros(jk_regions.n_regions, dtype=np.int64)
     total_skipped = 0
     done = 0
+    n_fine = 0 if fine_edges is None else len(fine_edges) - 1
+    fine_count = np.zeros((jk_regions.n_regions, n_fine), dtype=np.int64)
+    fine_w = np.zeros((jk_regions.n_regions, n_fine), dtype=np.float64)
+    fine_wr = np.zeros((jk_regions.n_regions, n_fine), dtype=np.float64)
+    fine_cov = np.zeros((n_fine, GRID_RES**2), dtype=np.float64)
 
     def handle(result):
         nonlocal total_skipped, done
@@ -436,6 +534,12 @@ def main(argv: list[str] | None = None) -> None:
             sum_w[reg] += result["sum_w"][k]
             n_used[reg] += int(result["n_used"][k])
             n_pairs[reg] += int(result["n_pairs"][k])
+            if n_fine:
+                fine_count[reg] += result["fine_count"][k]
+                fine_w[reg] += result["fine_w"][k]
+                fine_wr[reg] += result["fine_wr"][k]
+        if n_fine:
+            fine_cov[:] += result["fine_cov"]
         total_skipped += int(result["n_skipped"])
         done += 1
         if done % max(1, len(chunks) // 20) == 0 or done == len(chunks):
@@ -473,9 +577,16 @@ def main(argv: list[str] | None = None) -> None:
         rperp_observed=np.array([rperp.min(), rperp.max()], dtype=np.float64),
         n_pairs_catalog=np.int64(n_pairs_catalog),
         jk_regions_path=np.array(regions_path),
+        fine_edges=np.zeros(0) if fine_edges is None else fine_edges,
+        fine_count=fine_count, fine_w=fine_w, fine_wr=fine_wr, fine_cov=fine_cov,
         args_json=np.array(json.dumps(vars(args), sort_keys=True)),
     )
     logger.info("Saved per-region accumulators -> %s", acc_path)
+    if n_fine:
+        tot_w, tot_wr = fine_w.sum(axis=0), fine_wr.sum(axis=0)
+        logger.info("Pair-weighted mean r_perp: %.3f h^-1 Mpc; weight share per fine bin: %s",
+                    tot_wr.sum() / tot_w.sum(),
+                    ", ".join(f"{e:g}:{f:.3f}" for e, f in zip(fine_edges[:-1], tot_w / tot_w.sum())))
 
     pd.DataFrame(reflect_symmetrize_map(mean.reshape(GRID_RES, GRID_RES))).to_csv(
         csv_path, index=True)
