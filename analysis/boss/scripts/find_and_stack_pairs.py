@@ -18,6 +18,12 @@ With ``--sigma-crit-weight`` each pair is additionally weighted by
 1/Sigma_crit^2 at its midpoint redshift, the inverse-variance lensing weight
 already used by ``stack_single_jk.py``.  Default off, so legacy runs are
 unchanged.
+
+With ``--shard K/N`` the run processes only chunks whose id satisfies
+``id % N == K``.  The chunk layout is exactly that of the unsharded run, so
+shards run on separate machines partition the work, and their raw sums add up
+to the unsharded result (``merge_pair_shards.py``).  Shard outputs carry a
+``_shard{K}of{N}`` suffix.
 """
 
 from __future__ import annotations
@@ -358,9 +364,28 @@ def _format_number(value: float) -> str:
     return str(value).replace(".", "p")
 
 
-def make_output_path(output_dir: str, label: str, dataset: str, region: str) -> str:
+def shard_suffix(shard_index: int, shard_count: int) -> str:
+    """Filename suffix for a shard; empty for an unsharded run."""
+    return f"_shard{shard_index}of{shard_count}" if shard_count > 1 else ""
+
+
+def parse_shard(spec: str) -> tuple[int, int]:
+    """Parse ``K/N`` into ``(K, N)`` with ``0 <= K < N``."""
+    try:
+        k_str, n_str = spec.split("/")
+        k, n = int(k_str), int(n_str)
+    except ValueError as exc:
+        raise ValueError(f"--shard must look like K/N, got {spec!r}.") from exc
+    if n < 1 or not 0 <= k < n:
+        raise ValueError(f"--shard needs 0 <= K < N, got {spec!r}.")
+    return k, n
+
+
+def make_output_path(
+    output_dir: str, label: str, dataset: str, region: str, suffix: str = ""
+) -> str:
     """Return the output CSV path for a stacked pair map."""
-    filename = f"kappa_pairs_{label}_{dataset}_{region}.csv"
+    filename = f"kappa_pairs_{label}_{dataset}_{region}{suffix}.csv"
     return os.path.join(output_dir, filename)
 
 
@@ -369,9 +394,11 @@ def make_sums_path(output_path: str) -> str:
     return output_path[: -len(".csv")] + ".npz"
 
 
-def make_checkpoint_path(output_dir: str, label: str, dataset: str, region: str) -> str:
+def make_checkpoint_path(
+    output_dir: str, label: str, dataset: str, region: str, suffix: str = ""
+) -> str:
     """Return the default checkpoint path for a run."""
-    filename = f"kappa_pairs_{label}_{dataset}_{region}.npz"
+    filename = f"kappa_pairs_{label}_{dataset}_{region}{suffix}.npz"
     return os.path.join(output_dir, "checkpoints", filename)
 
 
@@ -450,6 +477,8 @@ def serialize_run_config(
     # Recorded only when on, for the same reason: legacy configs stay identical.
     if args.sigma_crit_weight:
         config["sigma_crit_weight"] = True
+    if args.shard_count > 1:
+        config["shard"] = f"{args.shard_index}/{args.shard_count}"
     return config
 
 
@@ -558,6 +587,7 @@ def save_sums_atomic(
     edges: np.ndarray,
     args_dict: dict[str, object],
     sigma_crit_weight: bool,
+    args_shard: tuple[int, int] = (0, 1),
 ) -> None:
     """Write the final raw per-bin sums (unsymmetrized) next to the CSV."""
     tmp_path = f"{sums_path}.tmp"
@@ -572,7 +602,10 @@ def save_sums_atomic(
             completed_chunks=np.asarray(
                 sorted(reducer_state["completed_chunks"]), dtype=np.int32
             ),
+            # The full catalog's chunk count, not this shard's share.
             n_chunks_total=np.int64(len(reducer_state["chunk_ranges"])),
+            shard_index=np.int32(args_shard[0]),
+            shard_count=np.int32(args_shard[1]),
             grid_res=np.int32(GRID_RES),
             box_size_hmpc=np.float64(BOX_SIZE_HMPC),
             sigma_crit_weight=np.bool_(sigma_crit_weight),
@@ -714,6 +747,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.set_defaults(sigma_crit_weight=False)
     parser.add_argument(
+        "--shard",
+        type=str,
+        default="0/1",
+        help=(
+            "Process only chunks with id %% N == K, written as K/N (default: 0/1, "
+            "the whole catalog). Run K = 0..N-1 on separate machines with "
+            "otherwise identical arguments, then combine with merge_pair_shards.py."
+        ),
+    )
+    parser.add_argument(
         "--n-processes",
         type=int,
         default=None,
@@ -793,16 +836,19 @@ def main(argv: list[str] | None = None) -> None:
 
     rperp_edges = parse_rperp_edges(args)
     n_bins = len(rperp_edges) - 1
+    args.shard_index, args.shard_count = parse_shard(args.shard)
+    suffix = shard_suffix(args.shard_index, args.shard_count)
 
     if args.label is None:
         args.label = f"{args.catalog_type}_{_format_number(args.rpar)}"
 
-    output_path = make_output_path(args.output_dir, args.label, args.dataset, args.region)
+    output_path = make_output_path(args.output_dir, args.label, args.dataset, args.region, suffix)
     checkpoint_path = args.checkpoint_path or make_checkpoint_path(
         args.output_dir,
         args.label,
         args.dataset,
         args.region,
+        suffix,
     )
     metadata_path = output_path.replace(".csv", ".meta.json")
     sums_path = make_sums_path(output_path)
@@ -859,6 +905,13 @@ def main(argv: list[str] | None = None) -> None:
             args.seed = saved_seed
             logger.info("Resume: using seed %d from checkpoint.", args.seed)
         elif args.seed is None:
+            # Each shard subsamples the catalog independently, so shards of one
+            # run must share an explicit seed or they stack different subsets
+            # (which merge_pair_shards.py would only reject after the work).
+            if args.shard_count > 1:
+                raise ValueError(
+                    "--fraction < 1 with --shard needs an explicit --seed, shared by all shards."
+                )
             args.seed = int(np.random.SeedSequence().entropy)
             logger.info("Auto-generated subsampling seed: %d", args.seed)
 
@@ -879,6 +932,7 @@ def main(argv: list[str] | None = None) -> None:
     logger.info("r_perp sub-bins:    %d (edges: %s)", n_bins,
                 ",".join(_format_number(e) for e in rperp_edges))
     logger.info("1/Sigma_crit^2 pair weight: %s", "ON" if args.sigma_crit_weight else "off")
+    logger.info("Shard:              %d/%d", args.shard_index, args.shard_count)
     logger.info("Processes:          %d", n_processes)
     logger.info("Chunk size:         %d", args.chunk_size)
     logger.info("Output CSV:         %s", output_path)
@@ -954,12 +1008,24 @@ def main(argv: list[str] | None = None) -> None:
             len(reducer_state["completed_chunks"]),
         )
 
-    pending_chunks = [
+    # The layout above is the full catalog's, identical for every shard; the
+    # shard only selects which of those chunks it owns.
+    shard_chunks = [
         chunk_meta
         for chunk_meta in chunk_ranges
+        if chunk_meta[0] % args.shard_count == args.shard_index
+    ]
+    if not shard_chunks:
+        raise RuntimeError(
+            f"Shard {args.shard_index}/{args.shard_count} owns no chunks "
+            f"({len(chunk_ranges)} in the catalog)."
+        )
+    pending_chunks = [
+        chunk_meta
+        for chunk_meta in shard_chunks
         if chunk_meta[0] not in reducer_state["completed_chunks"]
     ]
-    total_chunks = len(chunk_ranges)
+    total_chunks = len(shard_chunks)
 
     logger.info(
         "Processing %d pending chunk(s) out of %d total.",
@@ -1011,7 +1077,10 @@ def main(argv: list[str] | None = None) -> None:
     save_checkpoint_atomic(checkpoint_path, reducer_state, serialized_args)
     logger.info("Final checkpoint saved to %s", checkpoint_path)
 
-    save_sums_atomic(sums_path, reducer_state, rperp_edges, serialized_args, args.sigma_crit_weight)
+    save_sums_atomic(
+        sums_path, reducer_state, rperp_edges, serialized_args, args.sigma_crit_weight,
+        (args.shard_index, args.shard_count),
+    )
     final_map = finalize_map(reducer_state)
     pd.DataFrame(final_map).to_csv(output_path, index=True)
 
@@ -1038,6 +1107,8 @@ def main(argv: list[str] | None = None) -> None:
         "rperp_min": args.rperp_min,
         "rperp_bin_edges": [float(x) for x in rperp_edges],
         "sigma_crit_weight": bool(args.sigma_crit_weight),
+        "shard": f"{args.shard_index}/{args.shard_count}",
+        "n_chunks_catalog": len(chunk_ranges),
         "n_pairs_per_bin": [int(x) for x in reducer_state["pairs_per_bin"]],
         "output_sums": sums_path,
         "runtime_seconds": runtime_seconds,
