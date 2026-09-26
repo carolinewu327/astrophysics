@@ -13,6 +13,11 @@ contiguous grouping of sub-bins can be formed afterwards by adding sums.  The
 pair search is identical either way: it depends only on the outer edges.  The
 raw (unsymmetrized) per-bin sums are written to ``kappa_pairs_*.npz`` next to
 the CSV; the CSV remains the reflection-symmetrized map over all bins.
+
+With ``--sigma-crit-weight`` each pair is additionally weighted by
+1/Sigma_crit^2 at its midpoint redshift, the inverse-variance lensing weight
+already used by ``stack_single_jk.py``.  Default off, so legacy runs are
+unchanged.
 """
 
 from __future__ import annotations
@@ -37,6 +42,7 @@ from catalog import (
     resolve_catalog_path,
     resolve_planck_paths,
     setup_logging,
+    sigma_crit_weights,
 )
 from constants import BOX_SIZE_HMPC
 from geometry import angular_separation, reflect_symmetrize_map
@@ -68,6 +74,12 @@ R_PERP_MIN: float | None = None
 R_PERP_MAX: float | None = None
 RPERP_EDGES: np.ndarray | None = None
 N_BINS: int | None = None
+# 1/Sigma_crit^2 lookup table; both None when --sigma-crit-weight is off.
+SCW_Z: np.ndarray | None = None
+SCW_W: np.ndarray | None = None
+
+# Table resolution for 1/Sigma_crit^2 over the catalog's redshift range.
+SCW_TABLE_SIZE: int = 4096
 
 
 def _set_runtime_globals(
@@ -86,11 +98,12 @@ def _set_runtime_globals(
     sorted_d: np.ndarray,
     r_par_max: float,
     rperp_edges: np.ndarray,
+    scw_table: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> None:
     """Populate module globals used by the worker path."""
     global KMAP, MASK, NSIDE, X_GRID, Y_GRID
     global L_ARR, B_ARR, D_ARR, Z_ARR, WEIGHTS_ARR, SORTED_INDICES, SORTED_D
-    global R_PAR_MAX, R_PERP_MIN, R_PERP_MAX, RPERP_EDGES, N_BINS
+    global R_PAR_MAX, R_PERP_MIN, R_PERP_MAX, RPERP_EDGES, N_BINS, SCW_Z, SCW_W
 
     KMAP = kmap
     MASK = mask
@@ -112,6 +125,7 @@ def _set_runtime_globals(
     # The pair search only ever sees the outer edges.
     R_PERP_MIN = float(RPERP_EDGES[0])
     R_PERP_MAX = float(RPERP_EDGES[-1])
+    SCW_Z, SCW_W = scw_table if scw_table is not None else (None, None)
 
 
 def _require_globals() -> None:
@@ -138,6 +152,18 @@ def _require_globals() -> None:
     missing = [name for name, value in required.items() if value is None]
     if missing:
         raise RuntimeError(f"Worker globals not initialized: {', '.join(missing)}")
+
+
+def build_scw_table(z_arr: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Tabulate 1/Sigma_crit^2 once over the catalog's redshift range.
+
+    Built once per run and interpolated at each pair's midpoint, so a pair's
+    weight does not depend on which chunk (or shard) it falls in.  Units are
+    those of ``catalog.sigma_crit_weights`` -- the same relative units the
+    single-galaxy stack uses; the normalization cancels in weighted means.
+    """
+    z_grid = np.linspace(float(z_arr.min()) - 0.01, float(z_arr.max()) + 0.01, SCW_TABLE_SIZE)
+    return z_grid, sigma_crit_weights(z_grid)
 
 
 def assign_rperp_bins(r_perp: np.ndarray, edges: np.ndarray) -> np.ndarray:
@@ -167,8 +193,11 @@ def stack_pairs_inline(
     b1_arr = np.deg2rad(B_ARR[i_final])
     l2_arr = np.deg2rad(L_ARR[j_final])
     b2_arr = np.deg2rad(B_ARR[j_final])
-    dmid_arr = cosmo.comoving_distance((Z_ARR[i_final] + Z_ARR[j_final]) / 2.0).value * cosmo.h
+    z_mid = (Z_ARR[i_final] + Z_ARR[j_final]) / 2.0
+    dmid_arr = cosmo.comoving_distance(z_mid).value * cosmo.h
     pair_weights = WEIGHTS_ARR[i_final] * WEIGHTS_ARR[j_final]
+    if SCW_Z is not None:
+        pair_weights = pair_weights * np.interp(z_mid, SCW_Z, SCW_W)
 
     n_skipped = 0
 
@@ -418,6 +447,9 @@ def serialize_run_config(
     }
     if args.rperp_bin_edges is not None:
         config["rperp_bin_edges"] = [float(x) for x in edges]
+    # Recorded only when on, for the same reason: legacy configs stay identical.
+    if args.sigma_crit_weight:
+        config["sigma_crit_weight"] = True
     return config
 
 
@@ -525,6 +557,7 @@ def save_sums_atomic(
     reducer_state: dict[str, object],
     edges: np.ndarray,
     args_dict: dict[str, object],
+    sigma_crit_weight: bool,
 ) -> None:
     """Write the final raw per-bin sums (unsymmetrized) next to the CSV."""
     tmp_path = f"{sums_path}.tmp"
@@ -542,6 +575,7 @@ def save_sums_atomic(
             n_chunks_total=np.int64(len(reducer_state["chunk_ranges"])),
             grid_res=np.int32(GRID_RES),
             box_size_hmpc=np.float64(BOX_SIZE_HMPC),
+            sigma_crit_weight=np.bool_(sigma_crit_weight),
             config_json=np.array(json.dumps(args_dict, sort_keys=True)),
         )
     os.replace(tmp_path, sums_path)
@@ -663,6 +697,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Bins are [lo, hi) except the last, which is [lo, hi]."
         ),
     )
+    parser.add_argument(
+        "--sigma-crit-weight",
+        dest="sigma_crit_weight",
+        action="store_true",
+        help=(
+            "Weight each pair by 1/Sigma_crit^2 at its midpoint redshift, matching "
+            "the single-galaxy stack's inverse-variance weighting (default: off)."
+        ),
+    )
+    parser.add_argument(
+        "--no-sigma-crit-weight",
+        dest="sigma_crit_weight",
+        action="store_false",
+        help="Pair weights w1*w2 only (default).",
+    )
+    parser.set_defaults(sigma_crit_weight=False)
     parser.add_argument(
         "--n-processes",
         type=int,
@@ -828,6 +878,7 @@ def main(argv: list[str] | None = None) -> None:
     logger.info("r_perp range:       %.3f to %.3f Mpc/h", args.rperp_min, args.rperp_max)
     logger.info("r_perp sub-bins:    %d (edges: %s)", n_bins,
                 ",".join(_format_number(e) for e in rperp_edges))
+    logger.info("1/Sigma_crit^2 pair weight: %s", "ON" if args.sigma_crit_weight else "off")
     logger.info("Processes:          %d", n_processes)
     logger.info("Chunk size:         %d", args.chunk_size)
     logger.info("Output CSV:         %s", output_path)
@@ -848,6 +899,14 @@ def main(argv: list[str] | None = None) -> None:
     y_vals = np.linspace(-HALF_SIZE, HALF_SIZE, GRID_RES)
     x_grid, y_grid = np.meshgrid(x_vals, y_vals)
 
+    scw_table = build_scw_table(z_arr) if args.sigma_crit_weight else None
+    if scw_table is not None:
+        logger.info(
+            "1/Sigma_crit^2 table over z=%.4f-%.4f: relative range %.3f-%.3f",
+            scw_table[0][0], scw_table[0][-1],
+            scw_table[1].min() / scw_table[1].mean(), scw_table[1].max() / scw_table[1].mean(),
+        )
+
     alm_file, mask_file = resolve_planck_paths(args.data_dir)
     logger.info("Loading Planck map from %s and %s", alm_file, mask_file)
     kmap, mask, nside = load_kappa_map(alm_file=alm_file, mask_file=mask_file)
@@ -867,6 +926,7 @@ def main(argv: list[str] | None = None) -> None:
         sorted_d=sorted_d,
         r_par_max=args.rpar,
         rperp_edges=rperp_edges,
+        scw_table=scw_table,
     )
 
     serialized_args = serialize_run_config(args, output_path, rperp_edges)
@@ -951,7 +1011,7 @@ def main(argv: list[str] | None = None) -> None:
     save_checkpoint_atomic(checkpoint_path, reducer_state, serialized_args)
     logger.info("Final checkpoint saved to %s", checkpoint_path)
 
-    save_sums_atomic(sums_path, reducer_state, rperp_edges, serialized_args)
+    save_sums_atomic(sums_path, reducer_state, rperp_edges, serialized_args, args.sigma_crit_weight)
     final_map = finalize_map(reducer_state)
     pd.DataFrame(final_map).to_csv(output_path, index=True)
 
@@ -977,6 +1037,7 @@ def main(argv: list[str] | None = None) -> None:
         "rperp_max": args.rperp_max,
         "rperp_min": args.rperp_min,
         "rperp_bin_edges": [float(x) for x in rperp_edges],
+        "sigma_crit_weight": bool(args.sigma_crit_weight),
         "n_pairs_per_bin": [int(x) for x in reducer_state["pairs_per_bin"]],
         "output_sums": sums_path,
         "runtime_seconds": runtime_seconds,
