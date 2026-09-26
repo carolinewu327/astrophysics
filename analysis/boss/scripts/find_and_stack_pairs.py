@@ -33,6 +33,10 @@ import json
 import logging
 import multiprocessing as mp
 import os
+import platform
+import resource
+import subprocess
+import sys
 import time
 
 import healpy as hp
@@ -495,7 +499,55 @@ def init_reducer(
         "completed_chunks": set(),
         "chunk_ranges": np.asarray(chunk_ranges, dtype=np.int64),
         "output_path": output_path,
+        # Provenance: one record per invocation that contributed chunks.
+        "prior_invocations": [],
+        "prior_unrecorded": False,
+        "invocation": None,
     }
+
+
+def new_invocation(
+    provenance: dict[str, object],
+    n_processes: int,
+    resumed: bool,
+    started_unix: float,
+    started_at: str,
+) -> dict[str, object]:
+    """Record for the current invocation; updated as chunks complete.
+
+    The clock starts at process start-up, so runtime includes catalog and
+    map loading and checkpoint restoration, not just chunk processing.
+    """
+    return {
+        **provenance,
+        "started_at": started_at,
+        "started_unix": started_unix,
+        "resumed": resumed,
+        "n_processes": n_processes,
+        "chunks_completed": 0,
+        "finished": False,
+        "runtime_seconds": None,
+        "parent_rss_mb": None,
+        "peak_worker_rss_mb": None,
+    }
+
+
+def invocation_history(reducer_state: dict[str, object]) -> list[dict[str, object]]:
+    """Earlier invocations (from the checkpoint) plus a snapshot of this one.
+
+    The snapshot's runtime and main-process memory are as of now; the worker
+    peak is only known once the pool has closed, so it stays None for an
+    invocation that was interrupted.
+    """
+    history = list(reducer_state["prior_invocations"])
+    current = reducer_state["invocation"]
+    if current is not None:
+        snapshot = dict(current)
+        if not snapshot["finished"]:
+            snapshot["runtime_seconds"] = round(time.time() - snapshot["started_unix"], 1)
+            snapshot["parent_rss_mb"] = peak_rss_mb(1)["parent_rss_mb"]
+        history.append(snapshot)
+    return history
 
 
 def apply_chunk_result(reducer_state: dict[str, object], result: dict[str, object]) -> None:
@@ -535,6 +587,10 @@ def save_checkpoint_atomic(
             args_json=np.array(json.dumps(args_dict, sort_keys=True)),
             output_path=np.array(reducer_state["output_path"]),
             saved_at=np.array(time.time()),
+            provenance_history_json=np.array(
+                json.dumps(invocation_history(reducer_state), sort_keys=True)
+            ),
+            prior_unrecorded=np.bool_(reducer_state["prior_unrecorded"]),
         )
     os.replace(tmp_path, checkpoint_path)
 
@@ -543,7 +599,9 @@ def load_checkpoint(checkpoint_path: str) -> dict[str, object]:
     """Load a reducer checkpoint from disk.
 
     Pre-sub-bin checkpoints hold 2-D accumulators and no per-bin counts; they
-    load as a single bin.
+    load as a single bin.  Checkpoints written before provenance was recorded
+    load with ``provenance_history`` None: the code that produced their chunks
+    is unknown.
     """
     with np.load(checkpoint_path, allow_pickle=False) as data:
         sum_wk = data["total_sum_wk"]
@@ -564,6 +622,13 @@ def load_checkpoint(checkpoint_path: str) -> dict[str, object]:
             "chunk_ranges": data["chunk_ranges"],
             "args_dict": json.loads(str(data["args_json"])),
             "output_path": str(data["output_path"]),
+            "provenance_history": (
+                json.loads(str(data["provenance_history_json"]))
+                if "provenance_history_json" in data.files else None
+            ),
+            "prior_unrecorded": (
+                bool(data["prior_unrecorded"]) if "prior_unrecorded" in data.files else False
+            ),
         }
 
 
@@ -610,8 +675,61 @@ def save_sums_atomic(
             box_size_hmpc=np.float64(BOX_SIZE_HMPC),
             sigma_crit_weight=np.bool_(sigma_crit_weight),
             config_json=np.array(json.dumps(args_dict, sort_keys=True)),
+            provenance_history_json=np.array(
+                json.dumps(invocation_history(reducer_state), sort_keys=True)
+            ),
+            prior_unrecorded=np.bool_(reducer_state["prior_unrecorded"]),
         )
     os.replace(tmp_path, sums_path)
+
+
+def run_provenance() -> dict[str, object]:
+    """Code version and environment, for the metadata sidecar.
+
+    ``git_dirty`` flags uncommitted changes to tracked files, i.e. when the
+    commit hash alone does not describe the code that ran.
+    """
+    repo = os.path.dirname(os.path.abspath(__file__))
+
+    def git(*cmd: str) -> str | None:
+        try:
+            return subprocess.run(
+                ["git", *cmd], cwd=repo, capture_output=True, text=True, check=True, timeout=30
+            ).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            return None
+
+    status = git("status", "--porcelain", "--untracked-files=no")
+    return {
+        "git_commit": git("rev-parse", "HEAD"),
+        "git_dirty": None if status is None else bool(status),
+        "hostname": platform.node(),
+        "platform": platform.platform(),
+        "python_version": platform.python_version(),
+        "numpy_version": np.__version__,
+        "healpy_version": hp.__version__,
+        "astropy_version": sys.modules["astropy"].__version__,
+    }
+
+
+def peak_rss_mb(n_processes: int) -> dict[str, float | None]:
+    """Peak resident memory of this process and of its largest pool worker.
+
+    ``RUSAGE_CHILDREN`` covers children that have exited and been reaped, so it
+    reflects the pool workers only after the pool has closed.  In
+    single-process mode there are no workers (the only children are the short
+    ``git`` calls), so the worker figure is None.  ``ru_maxrss`` is in KiB on
+    Linux and bytes on macOS.  A forked worker's RSS counts the shared kappa
+    map pages it has touched, so workers' figures do not simply add up.
+    """
+    scale = 1.0 / (1024 * 1024) if sys.platform == "darwin" else 1.0 / 1024
+    worker = None
+    if n_processes > 1:
+        worker = round(resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss * scale, 1)
+    return {
+        "parent_rss_mb": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * scale, 1),
+        "peak_worker_rss_mb": worker,
+    }
 
 
 def write_metadata_json(path: str, metadata: dict[str, object]) -> None:
@@ -940,6 +1058,9 @@ def main(argv: list[str] | None = None) -> None:
 
     t0 = time.time()
     started_at = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    provenance = run_provenance()
+    logger.info("Code:               %s%s", provenance["git_commit"],
+                " (with uncommitted changes)" if provenance["git_dirty"] else "")
 
     l_arr, b_arr, d_arr, z_arr, weights_arr = load_preprocessed_catalog(args)
     sorted_indices = np.argsort(d_arr)
@@ -1003,10 +1124,25 @@ def main(argv: list[str] | None = None) -> None:
         reducer_state["total_pairs"] = checkpoint["total_pairs"]
         reducer_state["total_skipped"] = checkpoint["total_skipped"]
         reducer_state["completed_chunks"] = checkpoint["completed_chunks"]
+        if checkpoint["provenance_history"] is None:
+            # Chunks already in this checkpoint came from code we cannot name.
+            reducer_state["prior_unrecorded"] = True
+            logger.warning(
+                "Checkpoint predates provenance recording: the code version of its "
+                "%d completed chunk(s) is unknown.", len(reducer_state["completed_chunks"]),
+            )
+        else:
+            reducer_state["prior_invocations"] = checkpoint["provenance_history"]
+            reducer_state["prior_unrecorded"] = checkpoint["prior_unrecorded"]
         logger.info(
             "Resumed checkpoint with %d completed chunks.",
             len(reducer_state["completed_chunks"]),
         )
+
+    reducer_state["invocation"] = new_invocation(
+        provenance, n_processes, resumed=bool(args.resume_checkpoint),
+        started_unix=t0, started_at=started_at,
+    )
 
     # The layout above is the full catalog's, identical for every shard; the
     # shard only selects which of those chunks it owns.
@@ -1035,6 +1171,7 @@ def main(argv: list[str] | None = None) -> None:
 
     def handle_result(result: dict[str, object]) -> None:
         apply_chunk_result(reducer_state, result)
+        reducer_state["invocation"]["chunks_completed"] += 1
         completed = len(reducer_state["completed_chunks"])
         elapsed = time.time() - t0
         logger.info(
@@ -1072,6 +1209,12 @@ def main(argv: list[str] | None = None) -> None:
             for result in pool.imap_unordered(process_chunk_and_stack, pending_chunks):
                 handle_result(result)
 
+    # The pool has closed, so this invocation's worker peak is now known.
+    invocation = reducer_state["invocation"]
+    invocation.update(peak_rss_mb(n_processes))
+    invocation["runtime_seconds"] = round(time.time() - invocation["started_unix"], 1)
+    invocation["finished"] = True
+
     # Always checkpoint the final state: interval-only saves leave the last
     # (total % interval) chunks out of the checkpoint.
     save_checkpoint_atomic(checkpoint_path, reducer_state, serialized_args)
@@ -1086,6 +1229,9 @@ def main(argv: list[str] | None = None) -> None:
 
     finished_at = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     runtime_seconds = time.time() - t0
+    history = invocation_history(reducer_state)
+    commits = sorted({str(inv.get("git_commit")) for inv in history})
+    provenance_complete = not reducer_state["prior_unrecorded"]
     metadata = {
         "catalog_type": args.catalog_type,
         "checkpoint_interval": args.checkpoint_interval,
@@ -1115,6 +1261,21 @@ def main(argv: list[str] | None = None) -> None:
         "started_at": started_at,
         "total_pairs": int(reducer_state["total_pairs"]),
         "total_skipped": int(reducer_state["total_skipped"]),
+        # Top-level code, memory and runtime fields describe THIS invocation
+        # only; "invocations" holds every invocation that contributed chunks.
+        **provenance,
+        "parent_rss_mb": invocation["parent_rss_mb"],
+        "peak_worker_rss_mb": invocation["peak_worker_rss_mb"],
+        "provenance_scope": "current_invocation",
+        "invocations": history,
+        "provenance_complete": provenance_complete,
+        "git_commits_all": commits,
+        "mixed_code_versions": len(commits) > 1 or not provenance_complete,
+        "any_git_dirty": any(bool(inv.get("git_dirty")) for inv in history),
+        "runtime_seconds_all_invocations": (
+            round(sum(inv["runtime_seconds"] or 0.0 for inv in history), 1)
+            if provenance_complete else None
+        ),
     }
     write_metadata_json(metadata_path, metadata)
 
@@ -1124,6 +1285,18 @@ def main(argv: list[str] | None = None) -> None:
             f"[{_format_number(lo)},{_format_number(hi)}): {int(n)}"
             for lo, hi, n in zip(rperp_edges[:-1], rperp_edges[1:], reducer_state["pairs_per_bin"])
         ),
+    )
+    if len(history) > 1:
+        logger.info("Output combines %d invocations; code versions: %s", len(history), ", ".join(commits))
+    if metadata["mixed_code_versions"]:
+        logger.warning(
+            "Chunks in this output came from more than one code version%s.",
+            "" if provenance_complete else " (some unrecorded)",
+        )
+    worker_rss = metadata["peak_worker_rss_mb"]
+    logger.info(
+        "Peak memory (this invocation): main process %.0f MB, largest worker %s",
+        metadata["parent_rss_mb"], "n/a (single process)" if worker_rss is None else f"{worker_rss:.0f} MB",
     )
     logger.info("Saved raw per-bin sums to %s", sums_path)
     logger.info("Saved stacked map to %s", output_path)

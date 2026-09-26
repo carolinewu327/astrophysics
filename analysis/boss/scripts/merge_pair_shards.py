@@ -175,12 +175,38 @@ def main(argv: list[str] | None = None) -> None:
     final_map = finalize_map({"total_sum_wk": sum_wk, "total_sum_w": sum_w})
     pd.DataFrame(final_map).to_csv(csv_path, index=True)
 
-    shard_meta = []
-    for s in shards:
-        path = s["path"][: -len(".npz")] + ".meta.json"
-        if os.path.exists(path):
-            with open(path, encoding="utf-8") as handle:
-                shard_meta.append(json.load(handle))
+    # One record per shard, keyed by shard index, so provenance can never be
+    # attributed to the wrong shard even when a sidecar is missing.  The code
+    # history comes from the .npz itself; the sidecar adds runtime only.
+    shard_records = []
+    for s, f in zip(shards, shard_files):
+        sidecar = s["path"][: -len(".npz")] + ".meta.json"
+        meta = None
+        if os.path.exists(sidecar):
+            with open(sidecar, encoding="utf-8") as handle:
+                meta = json.load(handle)
+        else:
+            logger.warning("Shard %d: sidecar %s is missing.", int(s["shard_index"]), sidecar)
+        history = (
+            json.loads(str(s["provenance_history_json"]))
+            if "provenance_history_json" in s else None
+        )
+        complete = history is not None and not bool(s.get("prior_unrecorded", False))
+        if not complete:
+            logger.warning("Shard %d: code provenance is incomplete.", int(s["shard_index"]))
+        shard_records.append({
+            "shard_index": int(s["shard_index"]),
+            "path": f["path"],
+            "sha256": f["sha256"],
+            "sidecar_path": sidecar,
+            "sidecar_found": meta is not None,
+            "runtime_seconds": None if meta is None else meta.get("runtime_seconds_all_invocations"),
+            "provenance_complete": complete,
+            "invocations": history,
+        })
+    all_invocations = [inv for r in shard_records for inv in (r["invocations"] or [])]
+    commits = sorted({str(inv.get("git_commit")) for inv in all_invocations})
+    provenance_complete = all(r["provenance_complete"] for r in shard_records)
     metadata = {
         "merged_from": shard_files,
         "n_shards": count,
@@ -194,8 +220,16 @@ def main(argv: list[str] | None = None) -> None:
         "config": config,
         "output_sums": sums_path,
         "output_csv": csv_path,
-        "shard_runtime_seconds": [m.get("runtime_seconds") for m in shard_meta],
+        "shards": shard_records,
+        "provenance_complete": provenance_complete,
+        "git_commits_all": commits,
+        "mixed_code_versions": len(commits) > 1 or not provenance_complete,
+        "any_git_dirty": any(bool(inv.get("git_dirty")) for inv in all_invocations),
     }
+    if len(commits) > 1:
+        logger.warning("Shards ran different code versions: %s", commits)
+    if metadata["any_git_dirty"]:
+        logger.warning("At least one shard ran with uncommitted changes to tracked files.")
     with open(meta_path, "w", encoding="ascii") as handle:
         json.dump(metadata, handle, indent=2, sort_keys=True)
         handle.write("\n")
