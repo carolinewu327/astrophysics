@@ -19,10 +19,20 @@ tessellation as the single-galaxy stack.  That sharing is what lets the
 filament -- which subtracts a control built from the single stack -- be
 jackknifed coherently, deleting the same sky patch from both terms.
 
-Weighting note: pair weights are ``w1 * w2`` only.  1/Sigma_crit^2 weighting is
-deliberately *not* applied here, because these galaxy-pair stacks are combined
-with the archived random-pair maps, which were stacked without it.  Applying it
-to one side of the subtraction and not the other would be inconsistent.
+Weighting: pair weights are ``w1 * w2`` by default, which matches the archived
+random-pair maps (stacked without 1/Sigma_crit^2).  ``--sigma-crit-weight``
+multiplies in 1/Sigma_crit^2 at the pair's midpoint redshift -- the weighting
+of the single-galaxy stack and of ``find_and_stack_pairs.py
+--sigma-crit-weight``.  Use it only together with random pairs stacked the same
+way: applying it to one side of a subtraction and not the other is
+inconsistent.
+
+Separation cut: ``--rperp-min/--rperp-max`` select pairs by transverse
+separation, recomputed exactly as the pair finder does
+(``angular_separation * (Dc1 + Dc2) / 2``), so one wide pair catalog (e.g.
+3-25 h^-1 Mpc) can serve every narrower grouping without re-running the
+finder.  ``--rperp-half-open`` makes the cut ``[min, max)`` so adjacent
+groupings never share a pair.
 
 Usage
 -----
@@ -39,15 +49,16 @@ import json
 import logging
 import multiprocessing as mp
 import os
+import re
 import time
 
 import healpy as hp
 import numpy as np
 import pandas as pd
 
-from catalog import load_kappa_map, resolve_planck_paths, setup_logging
+from catalog import load_kappa_map, resolve_planck_paths, setup_logging, sigma_crit_weights
 from constants import BOX_SIZE_HMPC, FWHM_ARCMIN, NSIDE
-from geometry import fast_galactic_to_icrs, reflect_symmetrize_map
+from geometry import angular_separation, fast_galactic_to_icrs, reflect_symmetrize_map
 from jackknife import JackknifeRegions
 
 logger = logging.getLogger(__name__)
@@ -181,6 +192,92 @@ def process_chunk(chunk_meta: tuple[int, int, int]) -> dict[str, object]:
     }
 
 
+def pair_rperp(pairs: pd.DataFrame) -> np.ndarray:
+    """Transverse separation, computed exactly as ``find_pairs.py`` does."""
+    theta = angular_separation(
+        pairs["l1"].to_numpy(dtype=np.float64), pairs["b1"].to_numpy(dtype=np.float64),
+        pairs["l2"].to_numpy(dtype=np.float64), pairs["b2"].to_numpy(dtype=np.float64),
+    )
+    d_avg = (pairs["Dc1"].to_numpy(dtype=np.float64) + pairs["Dc2"].to_numpy(dtype=np.float64)) / 2.0
+    return d_avg * theta
+
+
+# find_pairs.py writes its cuts into the name: ..._{rpar}_{rperp_min}_{rperp_max}hmpc.csv
+CATALOG_CUTS_RE = re.compile(r"_(\d+(?:\.\d+)?)_(\d+(?:\.\d+)?)_(\d+(?:\.\d+)?)hmpc\.csv(?:\.gz)?$")
+
+
+def declared_cuts(path: str) -> tuple[float, float, float] | None:
+    """(rpar, rperp_min, rperp_max) from a find_pairs.py catalog name, or None."""
+    match = CATALOG_CUTS_RE.search(os.path.basename(path))
+    return None if match is None else tuple(float(x) for x in match.groups())
+
+
+def check_catalog_coverage(paths: list[str], lo: float | None, hi: float | None,
+                           allow_undeclared: bool) -> None:
+    """Refuse catalogs whose declared selection cannot supply [lo, hi].
+
+    An r_perp cut can only narrow what the pair finder selected.  Checking the
+    pairs themselves is not enough: catalogs for several narrow bins,
+    concatenated, span a wide range with gaps inside it.  So every input must
+    *declare* (in its find_pairs.py name) a range containing the request, and
+    all inputs must share one r_parallel cut.
+    """
+    if lo is None and hi is None:
+        return
+    declared = {path: declared_cuts(path) for path in paths}
+    unknown = [p for p, cuts in declared.items() if cuts is None]
+    if unknown:
+        if not allow_undeclared:
+            raise ValueError(
+                "Cannot read the r_perp selection from catalog name(s) "
+                f"{unknown}; expected find_pairs.py's ..._{{rpar}}_{{min}}_{{max}}hmpc.csv. "
+                "Pass --allow-undeclared-catalog to rely on the pair-span check alone."
+            )
+        logger.warning("Undeclared catalog selection for %s; relying on pair span only.", unknown)
+    known = {p: c for p, c in declared.items() if c is not None}
+    rpars = sorted({c[0] for c in known.values()})
+    if len(rpars) > 1:
+        raise ValueError(f"Input catalogs mix r_parallel cuts {rpars}: {known}")
+    lo_req = -np.inf if lo is None else lo
+    hi_req = np.inf if hi is None else hi
+    for path, (_, cmin, cmax) in known.items():
+        if cmin > lo_req or cmax < hi_req:
+            raise ValueError(
+                f"{os.path.basename(path)} selects r_perp [{cmin:g}, {cmax:g}], which does not "
+                f"contain the requested [{lo_req:g}, {hi_req:g}]."
+            )
+
+
+def select_rperp(pairs: pd.DataFrame, lo: float | None, hi: float | None,
+                 half_open: bool) -> tuple[pd.DataFrame, np.ndarray]:
+    """Apply the r_perp cut, then check the kept pairs reach both edges.
+
+    The span check runs on the pairs *kept*, as a backstop to
+    ``check_catalog_coverage``: pairs outside the request must not be able to
+    mask missing coverage inside it.  The kept span must reach within 5% of
+    the bin width of each requested edge.
+    """
+    rperp = pair_rperp(pairs)
+    if lo is None and hi is None:
+        return pairs, rperp
+    lo = -np.inf if lo is None else lo
+    hi = np.inf if hi is None else hi
+    keep = (rperp >= lo) & ((rperp < hi) if half_open else (rperp <= hi))
+    logger.info("r_perp cut [%g, %g%s: kept %d of %d pairs", lo, hi, ")" if half_open else "]",
+                int(keep.sum()), len(pairs))
+    if not keep.any():
+        raise ValueError("No pairs pass the r_perp cut.")
+    kept = rperp[keep]
+    if np.isfinite(lo) and np.isfinite(hi):
+        tol = 0.05 * (hi - lo)
+        if kept.min() - lo > tol or hi - kept.max() > tol:
+            raise ValueError(
+                f"Requested r_perp [{lo:g}, {hi:g}] but the kept pairs only span "
+                f"[{kept.min():g}, {kept.max():g}]; the input cannot cover this bin."
+            )
+    return pairs[keep].reset_index(drop=True), kept
+
+
 def load_pair_catalogs(paths: list[str]) -> pd.DataFrame:
     frames = []
     for path in paths:
@@ -211,12 +308,41 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
              "signal but admit more reconstruction noise. Outputs are NOT "
              "auto-tagged -- pass --label to keep products separate.")
     parser.add_argument("--jk-nside", type=int, default=10)
+    parser.add_argument(
+        "--jk-regions-path", default=None,
+        help="Tessellation .npz to reuse (default: {output-dir}/jk/regions_{dataset}_"
+             "{regions}_nside{jk-nside}.npz). Lets outputs go to a new directory while "
+             "sharing the single stack's regions.")
+    parser.add_argument("--rperp-min", type=float, default=None,
+                        help="Keep pairs with r_perp >= this (h^-1 Mpc). Default: no cut.")
+    parser.add_argument("--rperp-max", type=float, default=None,
+                        help="Keep pairs with r_perp <= this (< with --rperp-half-open).")
+    parser.add_argument("--rperp-half-open", action="store_true",
+                        help="Make the upper r_perp edge exclusive: [min, max).")
+    parser.add_argument("--allow-undeclared-catalog", action="store_true",
+                        help="Accept pair catalogs whose names do not state their r_perp "
+                             "selection; only the kept-pair span is then checked.")
+    parser.add_argument("--sigma-crit-weight", dest="sigma_crit_weight", action="store_true",
+                        help="Multiply pair weights by 1/Sigma_crit^2 at the midpoint "
+                             "redshift (default: off).")
+    parser.add_argument("--no-sigma-crit-weight", dest="sigma_crit_weight",
+                        action="store_false", help="Pair weights w1*w2 only (default).")
+    parser.set_defaults(sigma_crit_weight=False)
     parser.add_argument("--n-processes", type=int, default=None)
     parser.add_argument("--chunk-size", type=int, default=20000)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args(argv)
     args.pair_catalogs = [p.strip() for p in args.pair_catalogs.split(",") if p.strip()]
     args.regions = [r.strip() for r in args.regions.split(",") if r.strip()]
+    for name in ("rperp_min", "rperp_max"):
+        value = getattr(args, name)
+        if value is not None and not np.isfinite(value):
+            parser.error(f"--{name.replace('_', '-')} must be finite.")
+    if (args.rperp_min is not None and args.rperp_max is not None
+            and not 0 <= args.rperp_min < args.rperp_max):
+        parser.error("Need 0 <= --rperp-min < --rperp-max.")
+    if args.rperp_half_open and args.rperp_max is None:
+        parser.error("--rperp-half-open needs --rperp-max.")
     return args
 
 
@@ -231,11 +357,12 @@ def main(argv: list[str] | None = None) -> None:
     acc_path = os.path.join(jk_dir, f"acc_pairs_{args.label}_{args.dataset}_{region_label}.npz")
     csv_path = os.path.join(
         args.output_dir, f"kappa_pairs_{args.label}_{args.dataset}_{region_label}_joint.csv")
-    if os.path.exists(acc_path) and not args.overwrite:
-        logger.info("Output exists: %s (use --overwrite). Skipping.", acc_path)
+    existing = [p for p in (acc_path, csv_path) if os.path.exists(p)]
+    if existing and not args.overwrite:
+        logger.info("Output exists: %s (use --overwrite). Skipping.", ", ".join(existing))
         return
 
-    regions_path = os.path.join(
+    regions_path = args.jk_regions_path or os.path.join(
         jk_dir, f"regions_{args.dataset}_{region_label}_nside{args.jk_nside}.npz")
     if not os.path.exists(regions_path):
         raise FileNotFoundError(
@@ -247,7 +374,11 @@ def main(argv: list[str] | None = None) -> None:
     logger.info("Using tessellation %s (%d regions, digest=%s)",
                 regions_path, jk_regions.n_regions, jk_regions.digest)
 
+    check_catalog_coverage(args.pair_catalogs, args.rperp_min, args.rperp_max,
+                           args.allow_undeclared_catalog)
     pairs = load_pair_catalogs(args.pair_catalogs)
+    n_pairs_catalog = len(pairs)
+    pairs, rperp = select_rperp(pairs, args.rperp_min, args.rperp_max, args.rperp_half_open)
 
     l1 = np.radians(pairs["l1"].to_numpy(dtype=np.float64))
     b1 = np.radians(pairs["b1"].to_numpy(dtype=np.float64))
@@ -257,6 +388,13 @@ def main(argv: list[str] | None = None) -> None:
     dmid = pairs["Dmid"].to_numpy(dtype=np.float64)
     wpair = (pairs["w1"].to_numpy(dtype=np.float64)
              * pairs["w2"].to_numpy(dtype=np.float64))
+    if args.sigma_crit_weight:
+        z_mid = (pairs["z1"].to_numpy(dtype=np.float64)
+                 + pairs["z2"].to_numpy(dtype=np.float64)) / 2.0
+        scw = sigma_crit_weights(z_mid)
+        wpair = wpair * scw
+        logger.info("Applied 1/Sigma_crit^2 pair weights (relative range %.3f-%.3f)",
+                    scw.min() / scw.mean(), scw.max() / scw.mean())
 
     ra_mid, dec_mid = fast_galactic_to_icrs(np.degrees(lc), np.degrees(bc))
     labels = jk_regions.assign(ra_mid, dec_mid)
@@ -328,6 +466,13 @@ def main(argv: list[str] | None = None) -> None:
         seed_pix=jk_regions.seed_pix, jk_digest=np.array(jk_regions.digest),
         jk_nside=np.int32(jk_regions.nside), grid_size=np.int32(GRID_RES),
         box_size_hmpc=np.float64(BOX_SIZE_HMPC),
+        sigma_crit_weight=np.bool_(args.sigma_crit_weight),
+        rperp_min=np.float64(np.nan if args.rperp_min is None else args.rperp_min),
+        rperp_max=np.float64(np.nan if args.rperp_max is None else args.rperp_max),
+        rperp_half_open=np.bool_(args.rperp_half_open),
+        rperp_observed=np.array([rperp.min(), rperp.max()], dtype=np.float64),
+        n_pairs_catalog=np.int64(n_pairs_catalog),
+        jk_regions_path=np.array(regions_path),
         args_json=np.array(json.dumps(vars(args), sort_keys=True)),
     )
     logger.info("Saved per-region accumulators -> %s", acc_path)
