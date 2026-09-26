@@ -6,6 +6,13 @@ where the ``find_pairs.py -> stack_pairs.py`` workflow becomes too large to
 store or shuffle through disk. It keeps the pair-finding criteria identical to
 ``find_pairs.py`` and applies the same pair-stacking geometry as
 ``stack_pairs.py``, but accumulates the stacked map directly in memory.
+
+With ``--rperp-bin-edges`` the accepted r_perp range is split into sub-bins and
+each sub-bin keeps its own ``sum(w*kappa)`` / ``sum(w)`` accumulators, so any
+contiguous grouping of sub-bins can be formed afterwards by adding sums.  The
+pair search is identical either way: it depends only on the outer edges.  The
+raw (unsymmetrized) per-bin sums are written to ``kappa_pairs_*.npz`` next to
+the CSV; the CSV remains the reflection-symmetrized map over all bins.
 """
 
 from __future__ import annotations
@@ -59,6 +66,8 @@ SORTED_D: np.ndarray | None = None
 R_PAR_MAX: float | None = None
 R_PERP_MIN: float | None = None
 R_PERP_MAX: float | None = None
+RPERP_EDGES: np.ndarray | None = None
+N_BINS: int | None = None
 
 
 def _set_runtime_globals(
@@ -76,13 +85,12 @@ def _set_runtime_globals(
     sorted_indices: np.ndarray,
     sorted_d: np.ndarray,
     r_par_max: float,
-    r_perp_min: float,
-    r_perp_max: float,
+    rperp_edges: np.ndarray,
 ) -> None:
     """Populate module globals used by the worker path."""
     global KMAP, MASK, NSIDE, X_GRID, Y_GRID
     global L_ARR, B_ARR, D_ARR, Z_ARR, WEIGHTS_ARR, SORTED_INDICES, SORTED_D
-    global R_PAR_MAX, R_PERP_MIN, R_PERP_MAX
+    global R_PAR_MAX, R_PERP_MIN, R_PERP_MAX, RPERP_EDGES, N_BINS
 
     KMAP = kmap
     MASK = mask
@@ -99,8 +107,11 @@ def _set_runtime_globals(
     SORTED_D = sorted_d
 
     R_PAR_MAX = r_par_max
-    R_PERP_MIN = r_perp_min
-    R_PERP_MAX = r_perp_max
+    RPERP_EDGES = np.asarray(rperp_edges, dtype=np.float64)
+    N_BINS = len(RPERP_EDGES) - 1
+    # The pair search only ever sees the outer edges.
+    R_PERP_MIN = float(RPERP_EDGES[0])
+    R_PERP_MAX = float(RPERP_EDGES[-1])
 
 
 def _require_globals() -> None:
@@ -121,18 +132,33 @@ def _require_globals() -> None:
         "R_PAR_MAX": R_PAR_MAX,
         "R_PERP_MIN": R_PERP_MIN,
         "R_PERP_MAX": R_PERP_MAX,
+        "RPERP_EDGES": RPERP_EDGES,
+        "N_BINS": N_BINS,
     }
     missing = [name for name, value in required.items() if value is None]
     if missing:
         raise RuntimeError(f"Worker globals not initialized: {', '.join(missing)}")
 
 
-def stack_pairs_inline(i_final: np.ndarray, j_final: np.ndarray) -> tuple[np.ndarray, np.ndarray, int]:
-    """Stack valid pairs directly into worker-local accumulators."""
+def assign_rperp_bins(r_perp: np.ndarray, edges: np.ndarray) -> np.ndarray:
+    """Sub-bin index for each accepted r_perp.
+
+    Bins are half-open ``[edges[k], edges[k+1])`` except the last, which is
+    closed so that ``r_perp == edges[-1]`` -- accepted by the outer cut -- is
+    kept.  With a single bin this reproduces the legacy ``[min, max]`` cut.
+    """
+    idx = np.searchsorted(edges, r_perp, side="right") - 1
+    return np.minimum(idx, len(edges) - 2)
+
+
+def stack_pairs_inline(
+    i_final: np.ndarray, j_final: np.ndarray, bin_idx: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, int]:
+    """Stack valid pairs directly into worker-local per-bin accumulators."""
     _require_globals()
 
-    sum_wk = np.zeros((GRID_RES, GRID_RES), dtype=np.float64)
-    sum_w = np.zeros((GRID_RES, GRID_RES), dtype=np.float64)
+    sum_wk = np.zeros((N_BINS, GRID_RES, GRID_RES), dtype=np.float64)
+    sum_w = np.zeros((N_BINS, GRID_RES, GRID_RES), dtype=np.float64)
 
     if len(i_final) == 0:
         return sum_wk, sum_w, 0
@@ -195,8 +221,9 @@ def stack_pairs_inline(i_final: np.ndarray, j_final: np.ndarray) -> tuple[np.nda
         kappa_vals = np.where(valid_mask, kappa_vals, 0.0)
 
         weight = pair_weights[idx]
-        sum_wk += weight * kappa_vals
-        sum_w += weight * valid_mask.astype(np.float64)
+        b = bin_idx[idx]
+        sum_wk[b] += weight * kappa_vals
+        sum_w[b] += weight * valid_mask.astype(np.float64)
 
     return sum_wk, sum_w, n_skipped
 
@@ -259,9 +286,10 @@ def process_chunk_and_stack(chunk_meta: tuple[int, int, int]) -> dict[str, objec
             "chunk_id": chunk_id,
             "chunk_start": chunk_start,
             "chunk_end": chunk_end,
-            "sum_wk": np.zeros((GRID_RES, GRID_RES), dtype=np.float64),
-            "sum_w": np.zeros((GRID_RES, GRID_RES), dtype=np.float64),
+            "sum_wk": np.zeros((N_BINS, GRID_RES, GRID_RES), dtype=np.float64),
+            "sum_w": np.zeros((N_BINS, GRID_RES, GRID_RES), dtype=np.float64),
             "n_pairs": 0,
+            "n_pairs_per_bin": np.zeros(N_BINS, dtype=np.int64),
             "n_skipped": 0,
             "elapsed_seconds": elapsed,
         }
@@ -276,8 +304,9 @@ def process_chunk_and_stack(chunk_meta: tuple[int, int, int]) -> dict[str, objec
 
     i_final = i_arr[final_mask]
     j_final = j_arr[final_mask]
+    bin_idx = assign_rperp_bins(r_perp_arr[final_mask], RPERP_EDGES)
 
-    sum_wk, sum_w, n_skipped = stack_pairs_inline(i_final, j_final)
+    sum_wk, sum_w, n_skipped = stack_pairs_inline(i_final, j_final, bin_idx)
     elapsed = time.time() - t0
 
     return {
@@ -287,6 +316,7 @@ def process_chunk_and_stack(chunk_meta: tuple[int, int, int]) -> dict[str, objec
         "sum_wk": sum_wk,
         "sum_w": sum_w,
         "n_pairs": int(len(i_final)),
+        "n_pairs_per_bin": np.bincount(bin_idx, minlength=N_BINS).astype(np.int64),
         "n_skipped": int(n_skipped),
         "elapsed_seconds": elapsed,
     }
@@ -305,6 +335,11 @@ def make_output_path(output_dir: str, label: str, dataset: str, region: str) -> 
     return os.path.join(output_dir, filename)
 
 
+def make_sums_path(output_path: str) -> str:
+    """Return the raw per-bin sums path that sits next to the output CSV."""
+    return output_path[: -len(".csv")] + ".npz"
+
+
 def make_checkpoint_path(output_dir: str, label: str, dataset: str, region: str) -> str:
     """Return the default checkpoint path for a run."""
     filename = f"kappa_pairs_{label}_{dataset}_{region}.npz"
@@ -320,14 +355,53 @@ def build_chunk_ranges(n_objects: int, chunk_size: int) -> list[tuple[int, int, 
     ]
 
 
-def serialize_run_config(args: argparse.Namespace, output_path: str) -> dict[str, object]:
+def parse_rperp_edges(args: argparse.Namespace) -> np.ndarray:
+    """Resolve the r_perp sub-bin edges and fill ``args.rperp_min/max``.
+
+    ``--rperp-bin-edges`` and ``--rperp-min/--rperp-max`` are mutually
+    exclusive.  Without edges the run is a single bin ``[min, max]`` (legacy
+    defaults 18-22), which reproduces the pre-sub-bin behaviour exactly.
+    """
+    if args.rperp_bin_edges is not None:
+        if args.rperp_min is not None or args.rperp_max is not None:
+            raise ValueError("Use either --rperp-bin-edges or --rperp-min/--rperp-max, not both.")
+        edges = np.asarray(
+            [float(x) for x in args.rperp_bin_edges.split(",") if x.strip()],
+            dtype=np.float64,
+        )
+        if len(edges) < 2:
+            raise ValueError("--rperp-bin-edges needs at least two values.")
+        # Checked first: NaN compares False, so it would slip past the
+        # ordering test below.
+        if not np.isfinite(edges).all():
+            raise ValueError("--rperp-bin-edges must all be finite.")
+        if edges[0] < 0 or np.any(np.diff(edges) <= 0):
+            raise ValueError("--rperp-bin-edges must be non-negative and strictly increasing.")
+        args.rperp_min, args.rperp_max = float(edges[0]), float(edges[-1])
+        return edges
+
+    args.rperp_min = 18.0 if args.rperp_min is None else args.rperp_min
+    args.rperp_max = 22.0 if args.rperp_max is None else args.rperp_max
+    if not (np.isfinite(args.rperp_min) and np.isfinite(args.rperp_max)):
+        raise ValueError("--rperp-min and --rperp-max must be finite.")
+    if args.rperp_min < 0 or args.rperp_max <= args.rperp_min:
+        raise ValueError("Need 0 <= --rperp-min < --rperp-max.")
+    return np.asarray([args.rperp_min, args.rperp_max], dtype=np.float64)
+
+
+def serialize_run_config(
+    args: argparse.Namespace, output_path: str, edges: np.ndarray
+) -> dict[str, object]:
     """Build the subset of run config that must match on resume.
 
     The seed is included so a resumed run is forced to use the same catalog
     subset as the initial run; otherwise checkpoint accumulator state would
     be silently combined with chunks from a different subsample.
+
+    The edges are recorded only for a sub-binned run, so a single-bin run's
+    config is unchanged and pre-sub-bin checkpoints still resume.
     """
-    return {
+    config = {
         "catalog_type": args.catalog_type,
         "chunk_size": int(args.chunk_size),
         "data_dir": args.data_dir,
@@ -342,13 +416,19 @@ def serialize_run_config(args: argparse.Namespace, output_path: str) -> dict[str
         "rperp_min": float(args.rperp_min),
         "seed": int(args.seed) if args.seed is not None else None,
     }
+    if args.rperp_bin_edges is not None:
+        config["rperp_bin_edges"] = [float(x) for x in edges]
+    return config
 
 
-def init_reducer(chunk_ranges: list[tuple[int, int, int]], output_path: str) -> dict[str, object]:
+def init_reducer(
+    chunk_ranges: list[tuple[int, int, int]], output_path: str, n_bins: int
+) -> dict[str, object]:
     """Create the reducer state accumulated by the main process."""
     return {
-        "total_sum_wk": np.zeros((GRID_RES, GRID_RES), dtype=np.float64),
-        "total_sum_w": np.zeros((GRID_RES, GRID_RES), dtype=np.float64),
+        "total_sum_wk": np.zeros((n_bins, GRID_RES, GRID_RES), dtype=np.float64),
+        "total_sum_w": np.zeros((n_bins, GRID_RES, GRID_RES), dtype=np.float64),
+        "pairs_per_bin": np.zeros(n_bins, dtype=np.int64),
         "total_pairs": 0,
         "total_skipped": 0,
         "completed_chunks": set(),
@@ -361,6 +441,7 @@ def apply_chunk_result(reducer_state: dict[str, object], result: dict[str, objec
     """Merge one worker result into the reducer state."""
     reducer_state["total_sum_wk"] += result["sum_wk"]
     reducer_state["total_sum_w"] += result["sum_w"]
+    reducer_state["pairs_per_bin"] += result["n_pairs_per_bin"]
     reducer_state["total_pairs"] += int(result["n_pairs"])
     reducer_state["total_skipped"] += int(result["n_skipped"])
     reducer_state["completed_chunks"].add(int(result["chunk_id"]))
@@ -382,6 +463,7 @@ def save_checkpoint_atomic(
             handle,
             total_sum_wk=reducer_state["total_sum_wk"],
             total_sum_w=reducer_state["total_sum_w"],
+            pairs_per_bin=reducer_state["pairs_per_bin"],
             total_pairs=np.int64(reducer_state["total_pairs"]),
             total_skipped=np.int64(reducer_state["total_skipped"]),
             completed_chunks=np.asarray(
@@ -397,11 +479,24 @@ def save_checkpoint_atomic(
 
 
 def load_checkpoint(checkpoint_path: str) -> dict[str, object]:
-    """Load a reducer checkpoint from disk."""
+    """Load a reducer checkpoint from disk.
+
+    Pre-sub-bin checkpoints hold 2-D accumulators and no per-bin counts; they
+    load as a single bin.
+    """
     with np.load(checkpoint_path, allow_pickle=False) as data:
+        sum_wk = data["total_sum_wk"]
+        sum_w = data["total_sum_w"]
+        if sum_wk.ndim == 2:
+            sum_wk, sum_w = sum_wk[None], sum_w[None]
+        if "pairs_per_bin" in data.files:
+            pairs_per_bin = data["pairs_per_bin"].astype(np.int64)
+        else:
+            pairs_per_bin = np.asarray([int(data["total_pairs"])], dtype=np.int64)
         return {
-            "total_sum_wk": data["total_sum_wk"],
-            "total_sum_w": data["total_sum_w"],
+            "total_sum_wk": sum_wk,
+            "total_sum_w": sum_w,
+            "pairs_per_bin": pairs_per_bin,
             "total_pairs": int(data["total_pairs"]),
             "total_skipped": int(data["total_skipped"]),
             "completed_chunks": set(int(x) for x in data["completed_chunks"].tolist()),
@@ -412,13 +507,44 @@ def load_checkpoint(checkpoint_path: str) -> dict[str, object]:
 
 
 def finalize_map(reducer_state: dict[str, object]) -> np.ndarray:
-    """Compute the mean map and apply reflection symmetrization."""
-    total_sum_wk = reducer_state["total_sum_wk"]
-    total_sum_w = reducer_state["total_sum_w"]
+    """Compute the all-bin mean map and apply reflection symmetrization.
+
+    Sub-bins are pooled by adding sums before dividing, which reproduces a
+    single-bin run over the full range.
+    """
+    total_sum_wk = reducer_state["total_sum_wk"].sum(axis=0)
+    total_sum_w = reducer_state["total_sum_w"].sum(axis=0)
     kappa_mean = np.zeros_like(total_sum_wk)
     nonzero = total_sum_w > 0
     kappa_mean[nonzero] = total_sum_wk[nonzero] / total_sum_w[nonzero]
     return reflect_symmetrize_map(kappa_mean)
+
+
+def save_sums_atomic(
+    sums_path: str,
+    reducer_state: dict[str, object],
+    edges: np.ndarray,
+    args_dict: dict[str, object],
+) -> None:
+    """Write the final raw per-bin sums (unsymmetrized) next to the CSV."""
+    tmp_path = f"{sums_path}.tmp"
+    with open(tmp_path, "wb") as handle:
+        np.savez(
+            handle,
+            rperp_edges=np.asarray(edges, dtype=np.float64),
+            sum_wk=reducer_state["total_sum_wk"],
+            sum_w=reducer_state["total_sum_w"],
+            n_pairs=reducer_state["pairs_per_bin"],
+            total_skipped=np.int64(reducer_state["total_skipped"]),
+            completed_chunks=np.asarray(
+                sorted(reducer_state["completed_chunks"]), dtype=np.int32
+            ),
+            n_chunks_total=np.int64(len(reducer_state["chunk_ranges"])),
+            grid_res=np.int32(GRID_RES),
+            box_size_hmpc=np.float64(BOX_SIZE_HMPC),
+            config_json=np.array(json.dumps(args_dict, sort_keys=True)),
+        )
+    os.replace(tmp_path, sums_path)
 
 
 def write_metadata_json(path: str, metadata: dict[str, object]) -> None:
@@ -517,14 +643,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--rperp-min",
         type=float,
-        default=18.0,
+        default=None,
         help="Min perpendicular distance in Mpc/h (default: 18).",
     )
     parser.add_argument(
         "--rperp-max",
         type=float,
-        default=22.0,
+        default=None,
         help="Max perpendicular distance in Mpc/h (default: 22).",
+    )
+    parser.add_argument(
+        "--rperp-bin-edges",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated, strictly increasing r_perp sub-bin edges in Mpc/h, "
+            "e.g. '3,4,5,...,25'. Replaces --rperp-min/--rperp-max: the outer "
+            "edges set the pair cut and each sub-bin gets its own accumulators. "
+            "Bins are [lo, hi) except the last, which is [lo, hi]."
+        ),
     )
     parser.add_argument(
         "--n-processes",
@@ -604,6 +741,9 @@ def main(argv: list[str] | None = None) -> None:
     if args.checkpoint_interval <= 0:
         raise ValueError("--checkpoint-interval must be positive.")
 
+    rperp_edges = parse_rperp_edges(args)
+    n_bins = len(rperp_edges) - 1
+
     if args.label is None:
         args.label = f"{args.catalog_type}_{_format_number(args.rpar)}"
 
@@ -615,11 +755,19 @@ def main(argv: list[str] | None = None) -> None:
         args.region,
     )
     metadata_path = output_path.replace(".csv", ".meta.json")
+    sums_path = make_sums_path(output_path)
+    if os.path.abspath(checkpoint_path) == os.path.abspath(sums_path):
+        raise ValueError(f"--checkpoint-path must differ from the sums output {sums_path}.")
 
     output_dir = os.path.dirname(output_path)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
 
+    # The CSV is written after the raw sums, so a run interrupted during final
+    # output can leave sums/metadata without a CSV.  A fresh run must not
+    # silently replace any of them.  A resume may: it rebuilds all three from a
+    # validated checkpoint, and is refused only once the CSV exists.
+    existing_outputs = [p for p in (output_path, sums_path, metadata_path) if os.path.exists(p)]
     if args.resume_checkpoint:
         if not os.path.exists(checkpoint_path):
             raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
@@ -627,8 +775,16 @@ def main(argv: list[str] | None = None) -> None:
             raise FileExistsError(
                 f"Output already exists at {output_path}; remove it before resuming."
             )
-    elif os.path.exists(output_path) and not args.overwrite:
-        logger.info("Output already exists: %s  (use --overwrite to replace). Skipping.", output_path)
+        if existing_outputs:
+            logger.warning(
+                "Resume will rewrite partial outputs from the checkpoint: %s",
+                ", ".join(existing_outputs),
+            )
+    elif existing_outputs and not args.overwrite:
+        logger.info(
+            "Output already exists: %s  (use --overwrite to replace). Skipping.",
+            ", ".join(existing_outputs),
+        )
         return
 
     # Resolve subsampling seed BEFORE loading the catalog.
@@ -670,6 +826,8 @@ def main(argv: list[str] | None = None) -> None:
     logger.info("Subsample seed:     %s", args.seed if args.seed is not None else "(none)")
     logger.info("r_par_max:          %.3f Mpc/h", args.rpar)
     logger.info("r_perp range:       %.3f to %.3f Mpc/h", args.rperp_min, args.rperp_max)
+    logger.info("r_perp sub-bins:    %d (edges: %s)", n_bins,
+                ",".join(_format_number(e) for e in rperp_edges))
     logger.info("Processes:          %d", n_processes)
     logger.info("Chunk size:         %d", args.chunk_size)
     logger.info("Output CSV:         %s", output_path)
@@ -708,12 +866,11 @@ def main(argv: list[str] | None = None) -> None:
         sorted_indices=sorted_indices,
         sorted_d=sorted_d,
         r_par_max=args.rpar,
-        r_perp_min=args.rperp_min,
-        r_perp_max=args.rperp_max,
+        rperp_edges=rperp_edges,
     )
 
-    serialized_args = serialize_run_config(args, output_path)
-    reducer_state = init_reducer(chunk_ranges, output_path)
+    serialized_args = serialize_run_config(args, output_path, rperp_edges)
+    reducer_state = init_reducer(chunk_ranges, output_path, n_bins)
 
     if args.resume_checkpoint:
         checkpoint = load_checkpoint(checkpoint_path)
@@ -723,9 +880,12 @@ def main(argv: list[str] | None = None) -> None:
             )
         if not np.array_equal(checkpoint["chunk_ranges"], reducer_state["chunk_ranges"]):
             raise ValueError("Checkpoint chunk layout does not match the current catalog.")
+        if checkpoint["total_sum_wk"].shape[0] != n_bins:
+            raise ValueError("Checkpoint sub-bin count does not match --rperp-bin-edges.")
 
         reducer_state["total_sum_wk"] = checkpoint["total_sum_wk"]
         reducer_state["total_sum_w"] = checkpoint["total_sum_w"]
+        reducer_state["pairs_per_bin"] = checkpoint["pairs_per_bin"]
         reducer_state["total_pairs"] = checkpoint["total_pairs"]
         reducer_state["total_skipped"] = checkpoint["total_skipped"]
         reducer_state["completed_chunks"] = checkpoint["completed_chunks"]
@@ -786,6 +946,12 @@ def main(argv: list[str] | None = None) -> None:
             for result in pool.imap_unordered(process_chunk_and_stack, pending_chunks):
                 handle_result(result)
 
+    # Always checkpoint the final state: interval-only saves leave the last
+    # (total % interval) chunks out of the checkpoint.
+    save_checkpoint_atomic(checkpoint_path, reducer_state, serialized_args)
+    logger.info("Final checkpoint saved to %s", checkpoint_path)
+
+    save_sums_atomic(sums_path, reducer_state, rperp_edges, serialized_args)
     final_map = finalize_map(reducer_state)
     pd.DataFrame(final_map).to_csv(output_path, index=True)
 
@@ -810,6 +976,9 @@ def main(argv: list[str] | None = None) -> None:
         "rpar": args.rpar,
         "rperp_max": args.rperp_max,
         "rperp_min": args.rperp_min,
+        "rperp_bin_edges": [float(x) for x in rperp_edges],
+        "n_pairs_per_bin": [int(x) for x in reducer_state["pairs_per_bin"]],
+        "output_sums": sums_path,
         "runtime_seconds": runtime_seconds,
         "started_at": started_at,
         "total_pairs": int(reducer_state["total_pairs"]),
@@ -817,6 +986,14 @@ def main(argv: list[str] | None = None) -> None:
     }
     write_metadata_json(metadata_path, metadata)
 
+    logger.info(
+        "Pairs per r_perp sub-bin: %s",
+        ", ".join(
+            f"[{_format_number(lo)},{_format_number(hi)}): {int(n)}"
+            for lo, hi, n in zip(rperp_edges[:-1], rperp_edges[1:], reducer_state["pairs_per_bin"])
+        ),
+    )
+    logger.info("Saved raw per-bin sums to %s", sums_path)
     logger.info("Saved stacked map to %s", output_path)
     logger.info("Saved metadata to %s", metadata_path)
     logger.info("Completed in %.1f s (%.1f min).", runtime_seconds, runtime_seconds / 60.0)
