@@ -26,42 +26,18 @@ This is an astrophysics research project analyzing gravitational lensing converg
 
 ### `lib/` — Shared library modules
 
-- **`lib/constants.py`** — Pipeline-wide constants:
-  - `GRID_SIZE = 100`, `BOX_SIZE_HMPC = 100.0`, `FWHM_ARCMIN = 8.0`, `NSIDE = 2048`
-
-- **`lib/geometry.py`** — Pure math/coordinate transforms (no file I/O):
-  - `fast_icrs_to_galactic(ra, dec)` — RA/Dec to Galactic l/b via rotation matrix
-  - `angular_separation(l1, b1, l2, b2)` — Great-circle separation (returns radians)
-  - `symmetrize_map(kappa_map, pwr)` — Radial symmetry averaging
-  - `reflect_symmetrize_map(kappa_map)` — Reflection symmetry across Y-axis (for pair stacking)
-  - `radial_profile(arr, sigma, zoom)` — Extract 1D radial profile from 2D map
-
 - **`lib/jackknife.py`** — Equal-area HEALPix jackknife regions over a joint footprint:
   - `build_jackknife_regions(ra, dec, nside, min_fill)` — Tessellate a footprint traced by randoms. Cells above `min_fill` of the mean occupancy become region cores; partially covered edge cells are **merged into the lightest of their 4 nearest cores** (not dropped), so no object falls outside the tessellation. At `nside=10` (34.4 deg² cells) the joint CMASS footprint gives **287 regions** with ~11% RMS size scatter.
   - `JackknifeRegions` — dataclass with `assign(ra, dec)`, `save`/`load`, and a `digest` that lets the combiner reject accumulators built on different tessellations.
-  - `jackknife_error(loo)` / `jackknife_covariance(loo)` — delete-one error and covariance with the (K-1)/K factor.
-
-- **`lib/catalog.py`** — Data I/O, catalog loading, Planck map loading:
-  - `setup_logging()` — Configure root logger with timestamps
-  - `resolve_catalog_path(data_dir, dataset, region, catalog_type)` — Auto-resolve FITS file paths
-  - `resolve_planck_paths(data_dir)` — Return (alm_path, mask_path) for Planck data
-  - `load_catalog(path, weights, random_fraction, z_min, z_max, seed)` — Full catalog loader with weighting; `seed` makes subsampling reproducible (None = legacy unseeded)
-  - `load_catalog_lightweight(path, columns, fraction, z_min, z_max, seed)` — Memory-efficient loader for large random catalogs (memmap + column selection); `seed` controls reproducibility
-  - `preprocess_catalog_galactic(data, weights)` — Convert RA/Dec/Z to Galactic coords + comoving distances
-  - `load_kappa_map(alm_file, mask_file, nside, fwhm_arcmin)` — Load Planck ALM, smooth, synthesize HEALPix map
 
 ### `analysis/boss/scripts/` — Standalone CLI scripts
 
 All scripts accept `--help` for full argument documentation. Legacy Jupyter notebooks are preserved in `legacy/`.
 
-- **`find_pairs.py`** — Find galaxy or random-point pairs by separation criteria; writes a pair catalog CSV
-- **`stack_single.py`** — Stack single galaxies/randoms against the Planck κ map (with jackknife errors)
-- **`stack_pairs.py`** — Stack galaxy pairs from a pair catalog against the Planck κ map
 - **`find_and_stack_pairs.py`** — Combined find-and-stack pipeline that never materializes a pair catalog. Used for full random catalogs where the pair list would be too large to write to disk (~2B pairs / hundreds of GB). Workers stack pairs inline and return per-chunk accumulator grids, which the main process reduces into the final stacked map. Multiprocess mode requires Linux `fork()` for kappa-map sharing via copy-on-write; local serial validation works with `--n-processes 1` on any platform.
 - **`stack_single_jk.py`** — **Preferred single-object stacker for anything needing error bars.** Stacks all survey regions as one joint sample and accumulates `sum(w*κ)` / `sum(w)` *per jackknife region* in a single pass, so every leave-one-out estimate is a subtraction rather than a re-stack (287 regions at ~1× the cost of one stack, vs ~287×).
 - **`combine_jackknife.py`** — Combine galaxy + random accumulators into the corrected map, per-pixel jackknife errors, and radial profiles with a **full bin-to-bin covariance**. Supports linear, log, or explicit `--bin-edges` binning.
 - **`region_split_check.py`** — Diagnostic: re-derives North-only, South-only, unweighted-average, count-weighted, and joint profiles from the same accumulators to isolate the effect of the region-combination rule.
-- **`plot_results.py`** — Load stacked κ CSVs, compute derived maps, generate analysis plots
 
 ## Analysis Pipeline
 
@@ -108,12 +84,6 @@ python find_pairs.py --dataset BOSS --region North --catalog-type galaxy
 python find_pairs.py --dataset BOSS --region North --catalog-type random --fraction 0.10
 python find_pairs.py --dataset BOSS --region South --catalog-type galaxy --rpar 25 --rperp-min 10 --rperp-max 15
 ```
-
-**Key parameters:**
-- `--rpar`: Maximum parallel (line-of-sight) distance in Mpc/h (default: 20)
-- `--rperp-min` / `--rperp-max`: Perpendicular distance range in Mpc/h (default: 18–22)
-- `--n-processes`: Parallel workers (default: auto = 75% of cores)
-- `--chunk-size`: Galaxies per chunk (default: 10000)
 
 The script uses `imap_unordered` for load balancing (chunks complete in arbitrary order) and a vectorized `Dmid` computation. Output rows therefore appear in completion order, not chunk order — sort by full pair coordinates if you need a canonical ordering.
 
@@ -170,11 +140,6 @@ python plot_results.py --separation 20 --regions North,South
 
 The analysis uses **Galactic coordinates** (l, b) instead of equatorial (RA, Dec) to avoid coordinate singularities at high declinations.
 
-**Transformations:**
-- `fast_icrs_to_galactic()` in `lib/geometry.py`: Converts RA/Dec to Galactic l/b
-- Comoving distance: Uses Planck18 cosmology via `astropy.cosmology`
-- Physical units: Distances in h⁻¹ Mpc (comoving distance × h)
-
 ## Important Implementation Details
 
 ### Grid Orientation for Pair Stacking
@@ -194,20 +159,6 @@ Two approaches are used:
 1. **Radial symmetry** (`symmetrize_map()` in `lib/geometry.py`): Averages in radial bins about the physical `(N-1)/2` center — between pixels 49/50 for a 100×100 single stack and on pixel 50 for a 101×101 stack. Never use `N//2` for an even grid; archived simulation singles made with that convention must be regenerated, not re-symmetrized.
 2. **Reflection symmetry** (`reflect_symmetrize_map()` in `lib/geometry.py`): Averages across Y-axis — used for pair stacks to preserve asymmetry along the pair axis
 
-### Weighting Schemes
-- **BOSS CMASS**: `WEIGHT_SEEING × WEIGHT_STAR × (WEIGHT_NOZ + WEIGHT_CP - 1)`
-- **eBOSS**: `WEIGHT_NOZ × WEIGHT_SYSTOT`
-- Weights account for observational systematics (seeing, stellar density, etc.)
-- Random catalogs use uniform weights (w = 1)
-
-### Performance Optimization
-The pair-finding algorithm uses:
-- Distance-sorted galaxy lists for efficient neighbor search
-- Binary search to limit search range based on `r_par_max`
-- Two-pass angular filtering: rough cosb-corrected filter, then exact arccos
-- Vectorized angular calculations (avoid Python loops)
-- Multiprocessing with checkpoint saves every 10 chunks
-
 ### Common Issues
 
 **Theta out of bounds**: Pairs near Galactic poles may produce invalid θ values when mapping to HEALPix. These are skipped with a logged warning.
@@ -220,21 +171,3 @@ The pair-finding algorithm uses:
 
 **Coordinate wrapping**: Galactic longitude wraps at 360°. The code handles this in pair stacking, but be careful when manually computing angular separations.
 
-## File Naming Conventions
-
-- Single galaxy maps: `kappa_single_galaxy_{dataset}_{region}.csv`
-- Single random maps: `kappa_single_random_{dataset}_{region}.csv`
-- Error maps: `error_single_{dataset}_{region}.csv`
-- Pair catalogs: `data/paircatalogs/{dataset}/{type}_pairs_{dataset}_{region}_{r_par}_{r_perp_min}_{r_perp_max}hmpc.csv`
-- Pair-stacked maps: `kappa_pairs_{label}_{dataset}_{region}.csv`
-- Corrected single: `kappa_corrected_single_{dataset}.csv`
-- Corrected pairs: `kappa_corrected_pairs_{separation}_{dataset}.csv`
-- Control pair: `kappa_control_pair_{separation}_{dataset}.csv`
-- Filament: `kappa_filament_{separation}_{dataset}.csv`
-
-## Physical Constants
-
-- Cosmology: Planck18 (from astropy)
-- h = 0.6766 (Hubble parameter)
-- HEALPix nside: 2048 (resolution for Planck lensing map)
-- Smoothing FWHM: 8 arcmin (applied to Planck κ map)
