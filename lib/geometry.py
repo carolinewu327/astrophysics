@@ -381,6 +381,121 @@ def two_halo_template(
     )
 
 
+def separation_averaged_template(
+    single_map: np.ndarray,
+    x_grid: np.ndarray,
+    y_grid: np.ndarray,
+    separations: np.ndarray,
+    weights: np.ndarray,
+    coverage: np.ndarray | None = None,
+    validate: bool = True,
+) -> np.ndarray:
+    """Two-halo control averaged over the pairs' actual separations.
+
+    A wide r_perp bin holds pairs at many separations; a control built at one
+    nominal separation misplaces the halos for most of them.  This averages
+    :func:`two_halo_template` over fine separation bins, each evaluated at its
+    representative (pair-weighted mean) separation:
+
+    - ``coverage is None``: weights are global, ``sum_b w_b T_b / sum_b w_b``.
+    - ``coverage`` given, shape ``(n_bins, *x_grid.shape)`` (or flattened
+      grid): each pixel uses the valid pair weight each bin put there,
+      ``sum_b c_b(x) T_b(x) / sum_b c_b(x)`` -- the same per-pixel
+      normalization as the pair stack itself.  Pixels no pair covers are NaN.
+
+    Bins with zero weight are skipped, so their separation may be NaN.  With a
+    single separation this reduces to :func:`two_halo_template` (exactly, when
+    ``coverage`` is None).
+
+    The profile is the same as :func:`two_halo_template`'s: exact to the
+    single map's inscribed radius, sampled only by corner pixels beyond it, and
+    zero past the corners.  The bridge and side-band statistics stay well
+    inside the fully sampled region.
+    """
+    separations = np.asarray(separations, dtype=np.float64).ravel()
+    weights = np.asarray(weights, dtype=np.float64).ravel()
+    if separations.shape != weights.shape:
+        raise ValueError("separations and weights must have the same length.")
+    if not np.isfinite(weights).all() or np.any(weights < 0):
+        raise ValueError("weights must be finite and non-negative.")
+    keep = weights > 0
+    if not keep.any():
+        raise ValueError("All separation weights are zero.")
+    if not np.isfinite(separations[keep]).all() or np.any(separations[keep] < 0):
+        raise ValueError("Separations with non-zero weight must be finite and non-negative.")
+
+    profile = symmetrized_radial_interpolator(single_map, validate=validate)
+
+    def template(sep: float) -> np.ndarray:
+        offset = 0.5 * sep
+        return profile(np.hypot(x_grid + offset, y_grid)) + profile(
+            np.hypot(x_grid - offset, y_grid)
+        )
+
+    if coverage is None:
+        total = weights[keep].sum()
+        out = np.zeros(np.shape(x_grid), dtype=np.float64)
+        for sep, w in zip(separations[keep], weights[keep]):
+            out += (w / total) * template(sep)
+        return out
+
+    coverage = np.asarray(coverage, dtype=np.float64)
+    coverage = coverage.reshape((len(weights),) + np.shape(x_grid))
+    if not np.isfinite(coverage).all() or np.any(coverage < 0):
+        raise ValueError("coverage must be finite and non-negative.")
+    numerator = np.zeros(np.shape(x_grid), dtype=np.float64)
+    for sep, cov in zip(separations[keep], coverage[keep]):
+        numerator += cov * template(sep)
+    denominator = coverage[keep].sum(axis=0)
+    out = np.full(np.shape(x_grid), np.nan)
+    good = denominator > 0
+    out[good] = numerator[good] / denominator[good]
+    return out
+
+
+def separation_mix(
+    fine_w: np.ndarray,
+    fine_wr: np.ndarray,
+    fine_cov: np.ndarray | None = None,
+    exclude_region: int | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+    """Separations, weights and coverage for :func:`separation_averaged_template`.
+
+    Inputs are ``stack_pairs_jk.py``'s fine-bin summaries: ``fine_w`` and
+    ``fine_wr`` are ``(n_regions, n_bins)`` sums of w and w * r_perp,
+    ``fine_cov`` the ``(n_bins, n_pix)`` whole-sky valid-weight maps.
+
+    With ``exclude_region=k`` the weights and representative separations are
+    the exact leave-one-out values.  Coverage is not stored per region, so its
+    leave-one-out version scales each bin's whole-sky map by that bin's
+    leave-one-out weight fraction -- an approximation that assumes a region's
+    pairs cover the grid in the same pattern as all pairs in that bin.
+    """
+    fine_w = np.asarray(fine_w, dtype=np.float64)
+    fine_wr = np.asarray(fine_wr, dtype=np.float64)
+    w_all = fine_w.sum(axis=0)
+    w = w_all.copy()
+    wr = fine_wr.sum(axis=0)
+    if exclude_region is not None:
+        w = w - fine_w[exclude_region]
+        wr = wr - fine_wr[exclude_region]
+        # Guard the subtraction's rounding: an emptied bin is exactly empty.
+        w = np.where(w > 1e-12 * np.maximum(w_all, 1e-300), w, 0.0)
+    separations = np.full(w.shape, np.nan)
+    good = w > 0
+    separations[good] = wr[good] / w[good]
+
+    coverage = None
+    if fine_cov is not None:
+        coverage = np.asarray(fine_cov, dtype=np.float64)
+        if exclude_region is not None:
+            scale = np.zeros_like(w)
+            has = w_all > 0
+            scale[has] = w[has] / w_all[has]
+            coverage = coverage * scale[:, None]
+    return separations, w, coverage
+
+
 # ---------------------------------------------------------------------------
 # Pair-stack band geometry
 # ---------------------------------------------------------------------------

@@ -19,10 +19,35 @@ tessellation as the single-galaxy stack.  That sharing is what lets the
 filament -- which subtracts a control built from the single stack -- be
 jackknifed coherently, deleting the same sky patch from both terms.
 
-Weighting note: pair weights are ``w1 * w2`` only.  1/Sigma_crit^2 weighting is
-deliberately *not* applied here, because these galaxy-pair stacks are combined
-with the archived random-pair maps, which were stacked without it.  Applying it
-to one side of the subtraction and not the other would be inconsistent.
+Weighting: pair weights are ``w1 * w2`` by default, which matches the archived
+random-pair maps (stacked without 1/Sigma_crit^2).  ``--sigma-crit-weight``
+multiplies in 1/Sigma_crit^2 at the pair's midpoint redshift -- the weighting
+of the single-galaxy stack and of ``find_and_stack_pairs.py
+--sigma-crit-weight``.  Use it only together with random pairs stacked the same
+way: applying it to one side of a subtraction and not the other is
+inconsistent.
+
+Separation cut: ``--rperp-min/--rperp-max`` select pairs by transverse
+separation, recomputed exactly as the pair finder does
+(``angular_separation * (Dc1 + Dc2) / 2``), so one wide pair catalog (e.g.
+3-25 h^-1 Mpc) can serve every narrower grouping without re-running the
+finder.  ``--rperp-half-open`` makes the cut ``[min, max)`` so adjacent
+groupings never share a pair.
+
+Separation summaries: with an r_perp cut, the range is also split into fine
+bins (``--fine-bin-width``, default 0.5 h^-1 Mpc) and the stack records, for
+the pairs actually stacked,
+
+- per jackknife region and fine bin: pair count, sum(w) and sum(w * r_perp);
+- per fine bin, over the whole sky: the valid-weight map sum(w * valid).
+
+These let the separation-averaged halo control reproduce the signal's own
+separation mix and per-pixel weighting without re-stacking.  The per-region
+counts and weights give exact leave-one-out separation mixes.  The coverage
+maps are whole-sky only, so leave-one-out coverage is approximated by
+rescaling each fine bin's map by its leave-one-out weight fraction -- the
+planned approximation, checked against per-pair coverage before use.  None of
+this changes the stacked sums.
 
 Usage
 -----
@@ -39,15 +64,16 @@ import json
 import logging
 import multiprocessing as mp
 import os
+import re
 import time
 
 import healpy as hp
 import numpy as np
 import pandas as pd
 
-from catalog import load_kappa_map, resolve_planck_paths, setup_logging
+from catalog import load_kappa_map, resolve_planck_paths, setup_logging, sigma_crit_weights
 from constants import BOX_SIZE_HMPC, FWHM_ARCMIN, NSIDE
-from geometry import fast_galactic_to_icrs, reflect_symmetrize_map
+from geometry import angular_separation, fast_galactic_to_icrs, reflect_symmetrize_map
 from jackknife import JackknifeRegions
 
 logger = logging.getLogger(__name__)
@@ -69,6 +95,10 @@ SIN_T: np.ndarray | None = None
 DMID: np.ndarray | None = None
 WPAIR: np.ndarray | None = None
 REGION_ARR: np.ndarray | None = None
+# Fine-bin separation summaries; FINE_IDX is None when they are off.
+FINE_IDX: np.ndarray | None = None
+RPERP: np.ndarray | None = None
+N_FINE: int = 0
 
 
 def _set_runtime_globals(**kw) -> None:
@@ -103,8 +133,15 @@ def pair_geometry(
     return lc, bc, dl / norm, db / norm
 
 
-def stack_index_range(start: int, stop: int) -> tuple[np.ndarray, np.ndarray, int, int]:
-    """Accumulate weighted kappa sums over pairs ``[start, stop)``."""
+def stack_index_range(
+    start: int, stop: int, fine: dict[str, np.ndarray] | None = None
+) -> tuple[np.ndarray, np.ndarray, int, int]:
+    """Accumulate weighted kappa sums over pairs ``[start, stop)``.
+
+    With fine bins on, also adds the stacked pairs' per-fine-bin count,
+    sum(w), sum(w * r_perp) and valid-weight map into ``fine`` (pairs dropped by
+    the pole guard contribute to none of them).
+    """
     sum_wk = np.zeros(GRID_RES**2, dtype=np.float64)
     sum_w = np.zeros(GRID_RES**2, dtype=np.float64)
     n_used = 0
@@ -151,6 +188,14 @@ def stack_index_range(start: int, stop: int) -> tuple[np.ndarray, np.ndarray, in
         sum_w += (w * valid).sum(axis=0)
         n_used += int(ok.sum())
 
+        if fine is not None:
+            fb = FINE_IDX[lo:hi][ok]
+            wf = w[:, 0]
+            fine["count"] += np.bincount(fb, minlength=N_FINE)
+            fine["w"] += np.bincount(fb, weights=wf, minlength=N_FINE)
+            fine["wr"] += np.bincount(fb, weights=wf * RPERP[lo:hi][ok], minlength=N_FINE)
+            np.add.at(fine["cov"], fb, w * valid)
+
     return sum_wk, sum_w, n_used, n_skipped
 
 
@@ -161,8 +206,20 @@ def process_chunk(chunk_meta: tuple[int, int, int]) -> dict[str, object]:
     bounds = np.concatenate(([0], edges, [len(labels)]))
 
     regions, sums_wk, sums_w, n_used, n_pairs, n_skipped = [], [], [], [], [], 0
+    fine_count, fine_w, fine_wr = [], [], []
+    fine_cov = np.zeros((N_FINE, GRID_RES**2), dtype=np.float64) if FINE_IDX is not None else None
     for lo, hi in zip(bounds[:-1], bounds[1:]):
-        wk, w, used, skipped = stack_index_range(start + int(lo), start + int(hi))
+        fine = None
+        if FINE_IDX is not None:
+            fine = {"count": np.zeros(N_FINE, dtype=np.int64),
+                    "w": np.zeros(N_FINE, dtype=np.float64),
+                    "wr": np.zeros(N_FINE, dtype=np.float64),
+                    "cov": fine_cov}
+        wk, w, used, skipped = stack_index_range(start + int(lo), start + int(hi), fine)
+        if fine is not None:
+            fine_count.append(fine["count"])
+            fine_w.append(fine["w"])
+            fine_wr.append(fine["wr"])
         regions.append(int(labels[lo]))
         sums_wk.append(wk)
         sums_w.append(w)
@@ -178,7 +235,126 @@ def process_chunk(chunk_meta: tuple[int, int, int]) -> dict[str, object]:
         "n_used": np.asarray(n_used, dtype=np.int64),
         "n_pairs": np.asarray(n_pairs, dtype=np.int64),
         "n_skipped": n_skipped,
+        "fine_count": np.asarray(fine_count, dtype=np.int64),
+        "fine_w": np.asarray(fine_w, dtype=np.float64),
+        "fine_wr": np.asarray(fine_wr, dtype=np.float64),
+        "fine_cov": fine_cov,
     }
+
+
+def fine_bin_edges(lo: float | None, hi: float | None, width: float) -> np.ndarray | None:
+    """Fine-bin edges spanning [lo, hi], or None when summaries are off.
+
+    Summaries need a declared r_perp range, and the width must divide it
+    exactly so fine bins nest inside every grouping built on the same grid.
+    """
+    if width <= 0 or lo is None or hi is None:
+        return None
+    n = int(round((hi - lo) / width))
+    if n < 1 or abs(n * width - (hi - lo)) > 1e-9 * max(1.0, hi - lo):
+        raise ValueError(
+            f"--fine-bin-width {width:g} does not divide the r_perp range [{lo:g}, {hi:g}]."
+        )
+    # Rounded so a decimal width lands edges on the intended values:
+    # 3 + 0.1*3 is 3.3000000000000003, which would put r_perp = 3.3 in the
+    # bin below.
+    return np.round(lo + width * np.arange(n + 1, dtype=np.float64), 10)
+
+
+def fine_bin_index(rperp: np.ndarray, edges: np.ndarray) -> np.ndarray:
+    """Fine-bin index for ``[e_k, e_k+1)`` bins; the top edge folds into the last bin.
+
+    Compares against the edges themselves rather than dividing by the width,
+    which misassigns values sitting on an edge.
+    """
+    idx = np.searchsorted(edges, rperp, side="right") - 1
+    return np.clip(idx, 0, len(edges) - 2)
+
+
+def pair_rperp(pairs: pd.DataFrame) -> np.ndarray:
+    """Transverse separation, computed exactly as ``find_pairs.py`` does."""
+    theta = angular_separation(
+        pairs["l1"].to_numpy(dtype=np.float64), pairs["b1"].to_numpy(dtype=np.float64),
+        pairs["l2"].to_numpy(dtype=np.float64), pairs["b2"].to_numpy(dtype=np.float64),
+    )
+    d_avg = (pairs["Dc1"].to_numpy(dtype=np.float64) + pairs["Dc2"].to_numpy(dtype=np.float64)) / 2.0
+    return d_avg * theta
+
+
+# find_pairs.py writes its cuts into the name: ..._{rpar}_{rperp_min}_{rperp_max}hmpc.csv
+CATALOG_CUTS_RE = re.compile(r"_(\d+(?:\.\d+)?)_(\d+(?:\.\d+)?)_(\d+(?:\.\d+)?)hmpc\.csv(?:\.gz)?$")
+
+
+def declared_cuts(path: str) -> tuple[float, float, float] | None:
+    """(rpar, rperp_min, rperp_max) from a find_pairs.py catalog name, or None."""
+    match = CATALOG_CUTS_RE.search(os.path.basename(path))
+    return None if match is None else tuple(float(x) for x in match.groups())
+
+
+def check_catalog_coverage(paths: list[str], lo: float | None, hi: float | None,
+                           allow_undeclared: bool) -> None:
+    """Refuse catalogs whose declared selection cannot supply [lo, hi].
+
+    An r_perp cut can only narrow what the pair finder selected.  Checking the
+    pairs themselves is not enough: catalogs for several narrow bins,
+    concatenated, span a wide range with gaps inside it.  So every input must
+    *declare* (in its find_pairs.py name) a range containing the request, and
+    all inputs must share one r_parallel cut.
+    """
+    if lo is None and hi is None:
+        return
+    declared = {path: declared_cuts(path) for path in paths}
+    unknown = [p for p, cuts in declared.items() if cuts is None]
+    if unknown:
+        if not allow_undeclared:
+            raise ValueError(
+                "Cannot read the r_perp selection from catalog name(s) "
+                f"{unknown}; expected find_pairs.py's ..._{{rpar}}_{{min}}_{{max}}hmpc.csv. "
+                "Pass --allow-undeclared-catalog to rely on the pair-span check alone."
+            )
+        logger.warning("Undeclared catalog selection for %s; relying on pair span only.", unknown)
+    known = {p: c for p, c in declared.items() if c is not None}
+    rpars = sorted({c[0] for c in known.values()})
+    if len(rpars) > 1:
+        raise ValueError(f"Input catalogs mix r_parallel cuts {rpars}: {known}")
+    lo_req = -np.inf if lo is None else lo
+    hi_req = np.inf if hi is None else hi
+    for path, (_, cmin, cmax) in known.items():
+        if cmin > lo_req or cmax < hi_req:
+            raise ValueError(
+                f"{os.path.basename(path)} selects r_perp [{cmin:g}, {cmax:g}], which does not "
+                f"contain the requested [{lo_req:g}, {hi_req:g}]."
+            )
+
+
+def select_rperp(pairs: pd.DataFrame, lo: float | None, hi: float | None,
+                 half_open: bool) -> tuple[pd.DataFrame, np.ndarray]:
+    """Apply the r_perp cut, then check the kept pairs reach both edges.
+
+    The span check runs on the pairs *kept*, as a backstop to
+    ``check_catalog_coverage``: pairs outside the request must not be able to
+    mask missing coverage inside it.  The kept span must reach within 5% of
+    the bin width of each requested edge.
+    """
+    rperp = pair_rperp(pairs)
+    if lo is None and hi is None:
+        return pairs, rperp
+    lo = -np.inf if lo is None else lo
+    hi = np.inf if hi is None else hi
+    keep = (rperp >= lo) & ((rperp < hi) if half_open else (rperp <= hi))
+    logger.info("r_perp cut [%g, %g%s: kept %d of %d pairs", lo, hi, ")" if half_open else "]",
+                int(keep.sum()), len(pairs))
+    if not keep.any():
+        raise ValueError("No pairs pass the r_perp cut.")
+    kept = rperp[keep]
+    if np.isfinite(lo) and np.isfinite(hi):
+        tol = 0.05 * (hi - lo)
+        if kept.min() - lo > tol or hi - kept.max() > tol:
+            raise ValueError(
+                f"Requested r_perp [{lo:g}, {hi:g}] but the kept pairs only span "
+                f"[{kept.min():g}, {kept.max():g}]; the input cannot cover this bin."
+            )
+    return pairs[keep].reset_index(drop=True), kept
 
 
 def load_pair_catalogs(paths: list[str]) -> pd.DataFrame:
@@ -211,12 +387,45 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
              "signal but admit more reconstruction noise. Outputs are NOT "
              "auto-tagged -- pass --label to keep products separate.")
     parser.add_argument("--jk-nside", type=int, default=10)
+    parser.add_argument(
+        "--jk-regions-path", default=None,
+        help="Tessellation .npz to reuse (default: {output-dir}/jk/regions_{dataset}_"
+             "{regions}_nside{jk-nside}.npz). Lets outputs go to a new directory while "
+             "sharing the single stack's regions.")
+    parser.add_argument("--rperp-min", type=float, default=None,
+                        help="Keep pairs with r_perp >= this (h^-1 Mpc). Default: no cut.")
+    parser.add_argument("--rperp-max", type=float, default=None,
+                        help="Keep pairs with r_perp <= this (< with --rperp-half-open).")
+    parser.add_argument("--rperp-half-open", action="store_true",
+                        help="Make the upper r_perp edge exclusive: [min, max).")
+    parser.add_argument("--fine-bin-width", type=float, default=0.5,
+                        help="Width (h^-1 Mpc) of the fine separation bins recorded for the "
+                             "averaged control; needs --rperp-min and --rperp-max. 0 disables "
+                             "(default: 0.5).")
+    parser.add_argument("--allow-undeclared-catalog", action="store_true",
+                        help="Accept pair catalogs whose names do not state their r_perp "
+                             "selection; only the kept-pair span is then checked.")
+    parser.add_argument("--sigma-crit-weight", dest="sigma_crit_weight", action="store_true",
+                        help="Multiply pair weights by 1/Sigma_crit^2 at the midpoint "
+                             "redshift (default: off).")
+    parser.add_argument("--no-sigma-crit-weight", dest="sigma_crit_weight",
+                        action="store_false", help="Pair weights w1*w2 only (default).")
+    parser.set_defaults(sigma_crit_weight=False)
     parser.add_argument("--n-processes", type=int, default=None)
     parser.add_argument("--chunk-size", type=int, default=20000)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args(argv)
     args.pair_catalogs = [p.strip() for p in args.pair_catalogs.split(",") if p.strip()]
     args.regions = [r.strip() for r in args.regions.split(",") if r.strip()]
+    for name in ("rperp_min", "rperp_max"):
+        value = getattr(args, name)
+        if value is not None and not np.isfinite(value):
+            parser.error(f"--{name.replace('_', '-')} must be finite.")
+    if (args.rperp_min is not None and args.rperp_max is not None
+            and not 0 <= args.rperp_min < args.rperp_max):
+        parser.error("Need 0 <= --rperp-min < --rperp-max.")
+    if args.rperp_half_open and args.rperp_max is None:
+        parser.error("--rperp-half-open needs --rperp-max.")
     return args
 
 
@@ -231,11 +440,12 @@ def main(argv: list[str] | None = None) -> None:
     acc_path = os.path.join(jk_dir, f"acc_pairs_{args.label}_{args.dataset}_{region_label}.npz")
     csv_path = os.path.join(
         args.output_dir, f"kappa_pairs_{args.label}_{args.dataset}_{region_label}_joint.csv")
-    if os.path.exists(acc_path) and not args.overwrite:
-        logger.info("Output exists: %s (use --overwrite). Skipping.", acc_path)
+    existing = [p for p in (acc_path, csv_path) if os.path.exists(p)]
+    if existing and not args.overwrite:
+        logger.info("Output exists: %s (use --overwrite). Skipping.", ", ".join(existing))
         return
 
-    regions_path = os.path.join(
+    regions_path = args.jk_regions_path or os.path.join(
         jk_dir, f"regions_{args.dataset}_{region_label}_nside{args.jk_nside}.npz")
     if not os.path.exists(regions_path):
         raise FileNotFoundError(
@@ -247,7 +457,16 @@ def main(argv: list[str] | None = None) -> None:
     logger.info("Using tessellation %s (%d regions, digest=%s)",
                 regions_path, jk_regions.n_regions, jk_regions.digest)
 
+    check_catalog_coverage(args.pair_catalogs, args.rperp_min, args.rperp_max,
+                           args.allow_undeclared_catalog)
     pairs = load_pair_catalogs(args.pair_catalogs)
+    n_pairs_catalog = len(pairs)
+    pairs, rperp = select_rperp(pairs, args.rperp_min, args.rperp_max, args.rperp_half_open)
+    fine_edges = fine_bin_edges(args.rperp_min, args.rperp_max, args.fine_bin_width)
+    fine_idx = None if fine_edges is None else fine_bin_index(rperp, fine_edges)
+    if fine_edges is not None:
+        logger.info("Recording separation summaries in %d fine bins of %g h^-1 Mpc.",
+                    len(fine_edges) - 1, args.fine_bin_width)
 
     l1 = np.radians(pairs["l1"].to_numpy(dtype=np.float64))
     b1 = np.radians(pairs["b1"].to_numpy(dtype=np.float64))
@@ -257,6 +476,13 @@ def main(argv: list[str] | None = None) -> None:
     dmid = pairs["Dmid"].to_numpy(dtype=np.float64)
     wpair = (pairs["w1"].to_numpy(dtype=np.float64)
              * pairs["w2"].to_numpy(dtype=np.float64))
+    if args.sigma_crit_weight:
+        z_mid = (pairs["z1"].to_numpy(dtype=np.float64)
+                 + pairs["z2"].to_numpy(dtype=np.float64)) / 2.0
+        scw = sigma_crit_weights(z_mid)
+        wpair = wpair * scw
+        logger.info("Applied 1/Sigma_crit^2 pair weights (relative range %.3f-%.3f)",
+                    scw.min() / scw.mean(), scw.max() / scw.mean())
 
     ra_mid, dec_mid = fast_galactic_to_icrs(np.degrees(lc), np.degrees(bc))
     labels = jk_regions.assign(ra_mid, dec_mid)
@@ -266,8 +492,10 @@ def main(argv: list[str] | None = None) -> None:
                 int((per_region == 0).sum()))
 
     order = np.argsort(labels, kind="stable")
-    lc, bc, cos_t, sin_t, dmid, wpair, labels = (
-        arr[order] for arr in (lc, bc, cos_t, sin_t, dmid, wpair, labels))
+    lc, bc, cos_t, sin_t, dmid, wpair, labels, rperp = (
+        arr[order] for arr in (lc, bc, cos_t, sin_t, dmid, wpair, labels, rperp))
+    if fine_idx is not None:
+        fine_idx = fine_idx[order]
 
     alm_path, mask_path = resolve_planck_paths(args.data_dir)
     logger.info("Loading Planck map ...")
@@ -280,6 +508,9 @@ def main(argv: list[str] | None = None) -> None:
         COS_T=np.ascontiguousarray(cos_t), SIN_T=np.ascontiguousarray(sin_t),
         DMID=np.ascontiguousarray(dmid), WPAIR=np.ascontiguousarray(wpair),
         REGION_ARR=np.ascontiguousarray(labels, dtype=np.int32),
+        FINE_IDX=None if fine_idx is None else np.ascontiguousarray(fine_idx),
+        RPERP=np.ascontiguousarray(rperp),
+        N_FINE=0 if fine_edges is None else len(fine_edges) - 1,
     )
 
     chunks = [(i, s, min(s + args.chunk_size, len(labels)))
@@ -290,6 +521,11 @@ def main(argv: list[str] | None = None) -> None:
     n_pairs = np.zeros(jk_regions.n_regions, dtype=np.int64)
     total_skipped = 0
     done = 0
+    n_fine = 0 if fine_edges is None else len(fine_edges) - 1
+    fine_count = np.zeros((jk_regions.n_regions, n_fine), dtype=np.int64)
+    fine_w = np.zeros((jk_regions.n_regions, n_fine), dtype=np.float64)
+    fine_wr = np.zeros((jk_regions.n_regions, n_fine), dtype=np.float64)
+    fine_cov = np.zeros((n_fine, GRID_RES**2), dtype=np.float64)
 
     def handle(result):
         nonlocal total_skipped, done
@@ -298,6 +534,12 @@ def main(argv: list[str] | None = None) -> None:
             sum_w[reg] += result["sum_w"][k]
             n_used[reg] += int(result["n_used"][k])
             n_pairs[reg] += int(result["n_pairs"][k])
+            if n_fine:
+                fine_count[reg] += result["fine_count"][k]
+                fine_w[reg] += result["fine_w"][k]
+                fine_wr[reg] += result["fine_wr"][k]
+        if n_fine:
+            fine_cov[:] += result["fine_cov"]
         total_skipped += int(result["n_skipped"])
         done += 1
         if done % max(1, len(chunks) // 20) == 0 or done == len(chunks):
@@ -328,9 +570,23 @@ def main(argv: list[str] | None = None) -> None:
         seed_pix=jk_regions.seed_pix, jk_digest=np.array(jk_regions.digest),
         jk_nside=np.int32(jk_regions.nside), grid_size=np.int32(GRID_RES),
         box_size_hmpc=np.float64(BOX_SIZE_HMPC),
+        sigma_crit_weight=np.bool_(args.sigma_crit_weight),
+        rperp_min=np.float64(np.nan if args.rperp_min is None else args.rperp_min),
+        rperp_max=np.float64(np.nan if args.rperp_max is None else args.rperp_max),
+        rperp_half_open=np.bool_(args.rperp_half_open),
+        rperp_observed=np.array([rperp.min(), rperp.max()], dtype=np.float64),
+        n_pairs_catalog=np.int64(n_pairs_catalog),
+        jk_regions_path=np.array(regions_path),
+        fine_edges=np.zeros(0) if fine_edges is None else fine_edges,
+        fine_count=fine_count, fine_w=fine_w, fine_wr=fine_wr, fine_cov=fine_cov,
         args_json=np.array(json.dumps(vars(args), sort_keys=True)),
     )
     logger.info("Saved per-region accumulators -> %s", acc_path)
+    if n_fine:
+        tot_w, tot_wr = fine_w.sum(axis=0), fine_wr.sum(axis=0)
+        logger.info("Pair-weighted mean r_perp: %.3f h^-1 Mpc; weight share per fine bin: %s",
+                    tot_wr.sum() / tot_w.sum(),
+                    ", ".join(f"{e:g}:{f:.3f}" for e, f in zip(fine_edges[:-1], tot_w / tot_w.sum())))
 
     pd.DataFrame(reflect_symmetrize_map(mean.reshape(GRID_RES, GRID_RES))).to_csv(
         csv_path, index=True)

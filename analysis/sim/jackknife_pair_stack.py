@@ -11,6 +11,15 @@ the pair stack: matched-template rule) and held fixed across jackknife
 regions -- its own sampling noise is negligible when the single stack uses
 the full galaxy sample.
 
+``--control separation_averaged`` replaces the single-separation template with
+one averaged over the pairs' actual r_perp (fine bins of ``--fine-bin-width``,
+each at its mean separation; ``geometry.separation_averaged_template``).  The
+mock map is periodic with full coverage, so the average needs no per-pixel
+coverage.  The single stack is still held fixed, but each leave-one-out
+template is rebuilt from that sample's separation histogram, so a block with
+an unusual separation mix gets a matched control.  The default ``nominal``
+keeps the archived behaviour.
+
 Supports nested LOS cuts via --rpar-max (filters r_parallel_rsd), so one
 deep pair catalog serves every candidate cut. Maps are expected pre-smoothed;
 stacking is always fixed-separation (normalized stacking is a Phase 4
@@ -28,7 +37,8 @@ import numpy as np
 import pandas as pd
 
 from geometry import (BRIDGE_HALF_X_FRAC, CENTRAL_HALF_Y_HMPC, OFF_HI_Y_HMPC,
-                      OFF_LO_Y_HMPC, bridge_excess)
+                      OFF_LO_Y_HMPC, bridge_excess, separation_averaged_template,
+                      separation_mix)
 from sim_utils import (
     make_two_halo_template,
     open_kappa_memmap,
@@ -49,6 +59,25 @@ def jackknife_stats(theta: np.ndarray) -> tuple[float, float]:
     mean = float(np.mean(theta))
     var = (k - 1) / k * float(np.sum((theta - mean) ** 2))
     return mean, float(np.sqrt(var))
+
+
+def fine_bin_edges(lo: float, hi: float, width: float) -> np.ndarray:
+    """Fine-bin edges spanning [lo, hi]; same rule as stack_pairs_jk.py."""
+    if not np.isfinite(width) or width <= 0:
+        raise ValueError(f"--fine-bin-width must be positive, got {width:g}.")
+    n = int(round((hi - lo) / width))
+    if n < 1 or abs(n * width - (hi - lo)) > 1e-9 * max(1.0, hi - lo):
+        raise ValueError(f"--fine-bin-width {width:g} does not divide [{lo:g}, {hi:g}].")
+    return np.round(lo + width * np.arange(n + 1, dtype=np.float64), 10)
+
+
+def fine_bin_index(rperp: np.ndarray, edges: np.ndarray) -> np.ndarray:
+    """Index for ``[e_k, e_k+1)`` bins; the top edge folds into the last bin."""
+    return np.clip(np.searchsorted(edges, rperp, side="right") - 1, 0, len(edges) - 2)
+
+
+def output_paths(args: argparse.Namespace) -> list[str]:
+    return [p for p in (args.output, args.stack_output, getattr(args, "blocks_output", None)) if p]
 
 
 def run(args: argparse.Namespace) -> dict:
@@ -81,16 +110,18 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError(
             "Pair catalog lacks 'r_perp'; regenerate it with find_pairs_sim.py.")
     rperp_vals = pairs["r_perp"].to_numpy()
-    inside = (rperp_vals >= args.rperp_min) & (rperp_vals <= args.rperp_max)
+    half_open = getattr(args, "rperp_half_open", False)
+    inside = (rperp_vals >= args.rperp_min) & (
+        rperp_vals < args.rperp_max if half_open else rperp_vals <= args.rperp_max)
     if not inside.any():
         raise ValueError(
-            f"No pairs with {args.rperp_min} <= r_perp <= {args.rperp_max}; the "
+            f"No pairs with {args.rperp_min} <= r_perp {'<' if half_open else '<='} {args.rperp_max}; the "
             f"catalogue spans {rperp_vals.min():g}-{rperp_vals.max():g}. Wrong "
             "catalogue for this bin.")
     if not inside.all():
-        logger.warning("Dropping %d of %d pairs outside r_perp [%g, %g]",
+        logger.warning("Dropping %d of %d pairs outside r_perp [%g, %g%s",
                        int((~inside).sum()), len(pairs), args.rperp_min,
-                       args.rperp_max)
+                       args.rperp_max, ")" if half_open else "]")
         pairs = pairs[inside]
         rperp_vals = rperp_vals[inside]
     rperp_obs = (float(rperp_vals.min()), float(rperp_vals.max()))
@@ -123,13 +154,33 @@ def run(args: argparse.Namespace) -> dict:
     by = np.clip((pairs["pair_center_y"].to_numpy() // cell).astype(int), 0, args.blocks_per_side - 1)
     block = bx * args.blocks_per_side + by
 
+    control = getattr(args, "control", "nominal")
+    try:
+        fine_edges = fine_bin_edges(args.rperp_min, args.rperp_max,
+                                    getattr(args, "fine_bin_width", 0.5))
+    except ValueError:
+        if control == "separation_averaged":
+            raise
+        # The nominal control does not use fine bins; keep one bin so the
+        # mean separation is still recorded for any archived r_perp range.
+        fine_edges = np.array([args.rperp_min, args.rperp_max], dtype=np.float64)
+    fine_idx = fine_bin_index(pairs["r_perp"].to_numpy(dtype=np.float64), fine_edges)
+    n_fine = len(fine_edges) - 1
+
     grid = args.grid_size
     sums = []
     counts = []
+    fine_w, fine_wr = [], []
     for b in range(args.blocks_per_side ** 2):
-        sub = pairs[block == b]
+        in_block = block == b
+        sub = pairs[in_block]
         if len(sub) == 0:
             continue
+        # Equal pair weights in the mock: one snapshot, so 1/Sigma_crit^2 is
+        # a constant and cancels.
+        fine_w.append(np.bincount(fine_idx[in_block], minlength=n_fine).astype(np.float64))
+        fine_wr.append(np.bincount(fine_idx[in_block], weights=sub["r_perp"].to_numpy(dtype=np.float64),
+                                   minlength=n_fine))
         mean_map = stack_pairs(
             pairs=sub,
             kappa_map=kappa_map,
@@ -144,6 +195,8 @@ def run(args: argparse.Namespace) -> dict:
         counts.append(len(sub))
     sums = np.array(sums)
     counts = np.array(counts, dtype=np.float64)
+    fine_w = np.array(fine_w)
+    fine_wr = np.array(fine_wr)
     k = len(counts)
     logger.info("Stacked %d non-empty blocks (%d pairs)", k, int(counts.sum()))
 
@@ -160,7 +213,13 @@ def run(args: argparse.Namespace) -> dict:
             Path(args.single).name, single.shape[0], grid)
     axis = np.linspace(-0.5 * args.box_size, 0.5 * args.box_size, grid)
     x_grid, y_grid = np.meshgrid(axis, axis)
-    template = make_two_halo_template(single, x_grid, y_grid, args.rperp_center)
+    nominal_template = make_two_halo_template(single, x_grid, y_grid, args.rperp_center)
+
+    def averaged_template(exclude=None):
+        seps, weights, _ = separation_mix(fine_w, fine_wr, exclude_region=exclude)
+        return separation_averaged_template(single, x_grid, y_grid, seps, weights)
+
+    template = averaged_template() if control == "separation_averaged" else nominal_template
     norm_axis = axis / args.rperp_center
 
     def fixed_band(arr):
@@ -189,6 +248,9 @@ def run(args: argparse.Namespace) -> dict:
     full_stats["raw_bridge_excess_fixedband_kappa"] = fixed_band(full_map)
     full_stats["residual_bridge_excess_fixedband_kappa"] = fixed_band(
         full_map - template)
+    if control == "separation_averaged":
+        full_stats["residual_bridge_excess_fixedband_kappa_nominal_control"] = fixed_band(
+            full_map - nominal_template)
 
     loo_keys = None
     loo_values = []
@@ -196,6 +258,9 @@ def run(args: argparse.Namespace) -> dict:
     total_count = counts.sum()
     for b in range(k):
         loo_map = (total_sum - sums[b]) / (total_count - counts[b])
+        if control == "separation_averaged":
+            # Rebuilt from this sample's separation histogram (single fixed).
+            template = averaged_template(exclude=b)
         stats = {}
         stats.update(map_stats(loo_map, norm_axis, "raw"))
         stats.update(map_stats(loo_map - template, norm_axis, "residual"))
@@ -204,6 +269,9 @@ def run(args: argparse.Namespace) -> dict:
         stats["raw_bridge_excess_fixedband_kappa"] = fixed_band(loo_map)
         stats["residual_bridge_excess_fixedband_kappa"] = fixed_band(
             loo_map - template)
+        if control == "separation_averaged":
+            stats["residual_bridge_excess_fixedband_kappa_nominal_control"] = fixed_band(
+                loo_map - nominal_template)
         if loo_keys is None:
             loo_keys = list(stats)
         loo_values.append([stats[key] for key in loo_keys])
@@ -221,6 +289,11 @@ def run(args: argparse.Namespace) -> dict:
         "rperp_max_hmpc": args.rperp_max,
         "rperp_observed_min_hmpc": rperp_obs[0],
         "rperp_observed_max_hmpc": rperp_obs[1],
+        "rperp_half_open": bool(half_open),
+        "control": control,
+        "mean_rperp_hmpc": float(fine_wr.sum() / fine_w.sum()),
+        "fine_bin_edges_hmpc": fine_edges.tolist(),
+        "fine_bin_pairs": [int(x) for x in fine_w.sum(axis=0)],
         # Two scoring conventions live in "stats" and they are NOT
         # interchangeable.  Keys ending in _fixedband_ use the fixed physical
         # bands below and match the BOSS estimator; every other bridge/side key
@@ -272,6 +345,9 @@ def run(args: argparse.Namespace) -> dict:
             rpar_space=str(args.rpar_space),
             rperp_min=args.rperp_min,
             rperp_max=args.rperp_max,
+            rperp_half_open=bool(half_open),
+            control=str(control),
+            fine_edges=fine_edges, fine_w=fine_w, fine_wr=fine_wr,
             n_pairs=int(counts.sum()),
         )
         logger.info("Per-block accumulators -> %s (%d blocks)", args.blocks_output, k)
@@ -315,14 +391,33 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                              "to give any non-built-in estimator a jackknife error.")
     parser.add_argument("--rpar-half-open", action="store_true",
                         help="Treat the LOS cut as [min, max) instead of [min, max].")
+    parser.add_argument("--rperp-half-open", action="store_true",
+                        help="Treat the r_perp bin as [min, max) instead of [min, max], "
+                             "so adjacent groupings never share a pair.")
+    parser.add_argument("--control", choices=["nominal", "separation_averaged"], default="nominal",
+                        help="Two-halo control: one template at --rperp-center (archived "
+                             "behaviour), or averaged over the pairs' actual r_perp.")
+    parser.add_argument("--fine-bin-width", type=float, default=0.5,
+                        help="r_perp fine-bin width for the separation-averaged control "
+                             "(h^-1 Mpc); must divide the r_perp bin.")
+    parser.add_argument("--overwrite", action="store_true",
+                        help="Replace existing --output/--stack-output/--blocks-output files.")
     parser.add_argument("--seed", type=int, default=0,
                         help="Seed for --max-pairs subsampling.")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    # np.savez_compressed appends .npz to a bare name; do it here so the
+    # overwrite guard checks the file that will actually be written.
+    if args.blocks_output and not args.blocks_output.endswith(".npz"):
+        args.blocks_output += ".npz"
+    return args
 
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     setup_logging()
+    existing = [p for p in output_paths(args) if Path(p).exists()]
+    if existing and not args.overwrite:
+        raise FileExistsError("Outputs exist (use --overwrite): " + ", ".join(existing))
     result = run(args)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
