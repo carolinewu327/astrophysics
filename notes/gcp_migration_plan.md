@@ -1,6 +1,7 @@
 # GCP random-pair stacking runbook
 
-Last verified: 2026-09-24
+Last verified: 2026-09-26 (wide-bin commands rehearsed locally at 1%; the
+August commands below are the verified record of that run)
 
 Project: `astrophysics-cwu` (`1025419119877`)
 
@@ -15,6 +16,12 @@ The most recent production run measured the `r_perp = 5 Mpc/h` bin
 (`4 <= r_perp <= 6 Mpc/h`) with `r_par <= 10 Mpc/h` in BOSS North and South.
 Both jobs completed, were bundled on GCP, downloaded, extracted into the local
 repository, and checked.
+
+**Next run (2026-09): the wide-bin random run.** One pass per region over
+`r_perp = 3-25 Mpc/h` in 1 Mpc/h sub-bins, `r_par <= 5 Mpc/h`, with 1/Sigma_crit^2
+pair weights, optionally sharded across VMs. Its steps are in the sections
+marked **Wide-bin**: pilots (3), production and shard merge (4), completion
+checks (6), bundle (7). Design and test record: `notes/wide_bin_implementation_plan.md`.
 
 ---
 
@@ -40,9 +47,11 @@ Verified configuration from the August 2026 run:
 | Python environment | Miniforge environment `astro` |
 | Repository | `~/astrophysics` |
 
-At the last launch, the regional C3 CPU quota was 24, so a machine larger than
+At the August launch the regional C3 CPU quota was 24, so a machine larger than
 22 vCPUs was not available. The 22-vCPU VM was deliberately run with 16
-workers to leave memory and system headroom.
+workers to leave memory and system headroom. **The quota was raised to 128 C3
+vCPUs in us-central1 on 2026-09-26**, enough for about five 22-vCPU VMs (e.g.
+one per shard) or larger machines.
 
 ### Restart the retained VM
 
@@ -80,7 +89,8 @@ Before pulling new code, commit and push relevant local changes. Then on GCP:
 cd ~/astrophysics
 git pull --ff-only
 git rev-parse HEAD
-python -m py_compile analysis/boss/scripts/find_and_stack_pairs.py lib/catalog.py
+python -m py_compile analysis/boss/scripts/find_and_stack_pairs.py \
+  analysis/boss/scripts/merge_pair_shards.py lib/catalog.py
 ```
 
 Record the commit hash in the run log or experiment notes.
@@ -237,6 +247,46 @@ Verified pilot result from 2026-08-29:
 The small number of pilot pairs makes its map noisy. This pilot tests the
 pipeline, not the scientific signal.
 
+### Wide-bin smoke test (R2): production flags at 0.1%
+
+Same flags as production except fraction, seed and output location. Checks the
+sub-bin routing, the 1/Σ_crit² weight and the new `.npz` output on the VM.
+
+```bash
+W=analysis/boss/results/widebin_rpar5
+mkdir -p $W/validation $W/checkpoints $W/logs
+EDGES=$(seq -s, 3 25)
+LABEL=random_w3_25_rpar5_scw_pilot_frac001
+STEM=${LABEL}_BOSS_South
+
+PYTHONPATH=lib python analysis/boss/scripts/find_and_stack_pairs.py \
+  --dataset BOSS --region South --catalog-type random \
+  --fraction 0.001 --seed 12345 \
+  --rpar 5 --rperp-bin-edges "$EDGES" --sigma-crit-weight \
+  --label "$LABEL" --output-dir $W/validation \
+  --checkpoint-path "$W/checkpoints/${STEM}.npz" \
+  --checkpoint-interval 1 --n-processes 16 --chunk-size 5000 \
+  2>&1 | tee "$W/logs/${STEM}.log"
+```
+
+Pass criteria: the log shows `1/Sigma_crit^2 pair weight: ON`, `r_perp sub-bins: 22`,
+and `Pairs per r_perp sub-bin: [3,4): …` at the end; counts grow roughly with r⊥ (annulus area); the
+`.npz` exists next to the CSV. No `--overwrite`: a rerun under the same name
+stops instead of replacing it.
+
+### Wide-bin performance pilot (R3)
+
+As above with `--fraction 0.05 --label random_w3_25_rpar5_scw_pilot_frac05`
+and `--checkpoint-interval 10`. Record the stage times from the log and peak
+memory (`peak_worker_rss_mb`, `parent_rss_mb` in the metadata). Pairs scale as
+fraction², so the full run has ~400× the pilot's pairs; the search stage does
+not scale that way. Use the pilot to decide how many shards/VMs to use.
+
+Rehearsed locally on 2026-09-26 at 1% (South unsharded, North as two shards
+with 4 processes, then merged): identical to serial runs to 1e-15, all log
+lines present, section-6 check and section-7 bundle work as written. On macOS
+`seq -s,` leaves a trailing comma (`...,25,`); the parser ignores it.
+
 ### Optional checkpoint/resume smoke test
 
 Interrupt a pilot only after at least one checkpoint message appears, then use
@@ -344,41 +394,52 @@ Do not launch North and South simultaneously on the 22-vCPU VM. They would
 oversubscribe CPU and memory. Complete one, validate and bundle it, then run the
 other.
 
-### Template for the next, larger selection
-
-Set these values for the new selection. Use a new label and paths so an older
-result or checkpoint cannot be overwritten accidentally. Run South first, then
-change only `RUN_REGION` to `North` after South passes validation.
+### Wide-bin production (R4): r⊥ 3–25 in 1 h⁻¹Mpc sub-bins, r∥ ≤ 5, 1/Σ_crit²
 
 ```bash
-RUN_REGION=South
-RUN_RPAR=10
-RUN_RPERP_MIN=3
-RUN_RPERP_MAX=7
-RUN_LABEL=random_5wide_rpar10_frac100
-RUN_STEM="${RUN_LABEL}_BOSS_${RUN_REGION}"
+W=analysis/boss/results/widebin_rpar5
+mkdir -p $W/checkpoints $W/logs
+EDGES=$(seq -s, 3 25)
+RLABEL=random_w3_25_rpar5_scw_frac100
+REGION=South            # then North
+SHARD=0/1               # e.g. 0/2 and 1/2 on two VMs for North
+SUFFIX=$([ "$SHARD" = 0/1 ] || echo "_shard${SHARD%/*}of${SHARD#*/}")
+STEM=${RLABEL}_BOSS_${REGION}${SUFFIX}
+LOGS=$W/logs
+
+{ git rev-parse HEAD; date -u; hostname; nproc; free -h; df -h .; } > $LOGS/${STEM}_env.txt
+vmstat -t 300 > $LOGS/${STEM}.vmstat & VMSTAT_PID=$!
 
 PYTHONPATH=lib python analysis/boss/scripts/find_and_stack_pairs.py \
-  --dataset BOSS \
-  --region "$RUN_REGION" \
-  --catalog-type random \
-  --fraction 1.0 \
-  --rpar "$RUN_RPAR" \
-  --rperp-min "$RUN_RPERP_MIN" \
-  --rperp-max "$RUN_RPERP_MAX" \
-  --label "$RUN_LABEL" \
-  --output-dir analysis/boss/results \
-  --checkpoint-path "analysis/boss/results/checkpoints/${RUN_STEM}.npz" \
-  --checkpoint-interval 10 \
-  --n-processes 16 \
-  --chunk-size 5000 \
-  --overwrite \
-  2>&1 | tee "analysis/boss/results/logs/${RUN_STEM}.log"
+  --dataset BOSS --region $REGION --catalog-type random --fraction 1.0 \
+  --rpar 5 --rperp-bin-edges "$EDGES" --sigma-crit-weight \
+  --shard $SHARD --label "$RLABEL" --output-dir $W \
+  --checkpoint-path "$W/checkpoints/${STEM}.npz" \
+  --checkpoint-interval 10 --n-processes 16 --chunk-size 5000 \
+  2>&1 | tee $LOGS/${STEM}.log
+
+kill $VMSTAT_PID
 ```
 
-The `3-7` values above are an example of a widened separation-5 bin, not a
-science decision. Replace them with the approved cuts, and run pilots with
-those exact values before using `--fraction 1.0`.
+Notes:
+- Every shard of one region must use identical flags apart from `--shard`
+  (same edges, chunk size, fraction, label). The merge refuses anything else.
+- No `--overwrite` anywhere. New outputs live only under `widebin_rpar5/`.
+- `--n-processes 16` is for `c3-standard-22`; scale with the machine.
+
+### Merge shards (only when a region was sharded)
+
+On the VM (or locally after downloading all shard bundles):
+
+```bash
+PYTHONPATH=lib python analysis/boss/scripts/merge_pair_shards.py \
+  --inputs $W/kappa_pairs_${RLABEL}_BOSS_North_shard0of2.npz,$W/kappa_pairs_${RLABEL}_BOSS_North_shard1of2.npz \
+  --output $W/kappa_pairs_${RLABEL}_BOSS_North.npz
+```
+
+It checks that the shards are exactly 0..N−1, share one configuration, and
+together cover every chunk once; it writes the unsharded `.npz`, `.csv` and
+`.meta.json` (with each shard's SHA-256 and provenance).
 
 ### Resume a production job
 
@@ -388,6 +449,11 @@ output directory, checkpoint path, and chunk size. Replace `--overwrite` with
 
 If a final output CSV already exists, the script intentionally refuses to
 resume. Confirm whether that CSV is complete before moving it aside.
+
+Wide-bin runs: resume keeps each earlier invocation's code version in the
+metadata (`invocations`, `mixed_code_versions`), and may rewrite a partial
+`.npz`/`.meta.json` but never a finished CSV. A sharded run resumes each shard
+with its own `--shard` and checkpoint path.
 
 ---
 
@@ -467,9 +533,10 @@ pair-processing portion. Treat the result as a range: the latest North and
 South jobs demonstrate that throughput also changes with footprint and load.
 
 The existing 22-vCPU/88-GiB VM can run a larger pair selection; it will mainly
-take longer. Moving to `c3-standard-44` requires raising the current 24-vCPU
-C3 regional quota first. If that is approved, begin with 32-36 workers rather
-than all 44, and repeat the pilot: multiprocessing speedup is not guaranteed to
+take longer. With the 128-vCPU quota (2026-09-26) the options are more VMs (one
+shard each, `--shard K/N`, then `merge_pair_shards.py`) or a larger machine. On
+`c3-standard-44`, begin with 32-36 workers rather than all 44, and repeat the
+pilot: multiprocessing speedup is not guaranteed to
 be linear, and each worker has its own candidate-pair arrays and 101x101
 accumulators.
 
@@ -541,11 +608,55 @@ Expected latest-run metadata:
 | South | 2,149 / 2,149 | 84,077,920 | 14,887.7 s |
 | North | 6,023 / 6,023 | 252,484,638 | 129,587.6 s |
 
+### Wide-bin completion checks
+
+Log must contain `Saved stacked map to …csv`, `Saved metadata to …meta.json`,
+`Completed in …`, `Saved raw per-bin sums to …npz`, `1/Sigma_crit^2 pair weight: ON`,
+and `Pairs per r_perp sub-bin: …`.
+
+```bash
+python - <<'PY'
+import json
+from pathlib import Path
+import numpy as np
+
+W = Path("analysis/boss/results/widebin_rpar5")
+for meta_path in sorted(W.glob("kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_*.meta.json")):
+    meta = json.loads(meta_path.read_text())
+    if "merged_from" in meta:                      # merged shards
+        assert meta["n_chunks_completed"] == meta["n_chunks_total"]
+        print(meta_path.name, "merged from", meta["n_shards"], "shards",
+              f"pairs={meta['total_pairs']:,}", "mixed code:", meta["mixed_code_versions"])
+    else:
+        if meta["shard"] == "0/1":                 # a shard holds only its share
+            assert meta["n_chunks_completed"] == meta["n_chunks_catalog"]
+        assert meta["rpar"] == 5.0 and meta["sigma_crit_weight"] is True
+        assert meta["rperp_bin_edges"] == [float(x) for x in range(3, 26)]
+        print(meta_path.name, f"shard={meta['shard']}",
+              f"chunks={meta['n_chunks_completed']}/{meta['n_chunks_catalog']}",
+              f"pairs={meta['total_pairs']:,}", f"skipped={meta['total_skipped']:,}",
+              f"hours={meta['runtime_seconds_all_invocations']/3600:.2f}",
+              f"commit={meta['git_commit'][:8]} dirty={meta['git_dirty']}")
+    sums = np.load(str(meta_path).replace(".meta.json", ".npz"))
+    assert sums["sum_wk"].shape == (22, 101, 101)
+    assert np.isfinite(sums["sum_wk"]).all() and (sums["sum_w"].sum(0) > 0).all()
+    counts = sums["n_pairs"]
+    print("  pairs per bin (should rise ~linearly with r_perp):", counts.tolist())
+PY
+```
+
+The glob also picks up shard files (`…_shard0of2.meta.json`); their chunk
+completeness is checked by `merge_pair_shards.py`, which refuses an unfinished
+shard. `git_dirty` should be `false` on the VM.
+
+Tested locally (2026-09-26) on the 1% N+S runs and a merged 2-shard run.
+
 ---
 
 ## 7. Bundle and download
 
-Keep four artifacts per region:
+August runs kept four artifacts per region (wide-bin runs keep seven; see
+"Wide-bin bundle" below):
 
 1. final map CSV;
 2. metadata JSON;
@@ -599,6 +710,32 @@ Inspect before downloading:
 tar -tzf "$HOME/random_5_rpar10_frac100_BOSS_North_bundle.tar.gz"
 sha256sum "$HOME/random_5_rpar10_frac100_BOSS_North_bundle.tar.gz"
 ```
+
+### Wide-bin bundle: seven files per region or shard
+
+Per `STEM` (region or shard), from `~/astrophysics` with `W` and `STEM` set as in the launch:
+
+```bash
+tar -czf "$HOME/${STEM}_bundle.tar.gz" \
+  "$W/kappa_pairs_${STEM}.npz" \
+  "$W/kappa_pairs_${STEM}.csv" \
+  "$W/kappa_pairs_${STEM}.meta.json" \
+  "$W/checkpoints/${STEM}.npz" \
+  "$W/logs/${STEM}.log" \
+  "$W/logs/${STEM}_env.txt" \
+  "$W/logs/${STEM}.vmstat"
+sha256sum "$HOME/${STEM}_bundle.tar.gz" | tee "$HOME/${STEM}_bundle.tar.gz.sha256"
+tar -tzf "$HOME/${STEM}_bundle.tar.gz"
+```
+
+`tar` stops if a listed file is missing: `_env.txt` and `.vmstat` come from the
+two launch lines around the run (Linux `free`/`vmstat -t`), so if either failed
+on the VM, drop that file from the list rather than skipping the bundle.
+
+The `.npz` next to the CSV is the **main product** (raw per-sub-bin sums,
+unsymmetrized); the CSV is a quick-look map only. The final checkpoint is now
+current (written after the last chunk); older runs' checkpoints were stale.
+Keep shard bundles until the merge is verified locally.
 
 ### Download option A: Browser SSH
 
@@ -673,6 +810,17 @@ will.
 - `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, and `MKL_NUM_THREADS` are set to 1
   so every multiprocessing worker does not start its own numerical thread
   pool.
+- Wide-bin additions (2026-09):
+  - `--rperp-bin-edges` routes each pair into `[e_i, e_i+1)` sub-bins (top one
+    closed) in one pass; accumulators are `(n_bins, 101, 101)`. Search cost
+    depends on r_par, not on the r_perp range.
+  - `--sigma-crit-weight` multiplies each pair weight by 1/Sigma_crit^2 at the
+    pair's mean redshift (4096-point table over the catalog z range).
+  - `--shard K/N` keeps chunks with `id % N == K`; the chunk layout is the same
+    for every shard. Fractional multi-shard runs require `--seed`.
+  - A final checkpoint is written after the last chunk (August checkpoints
+    are stale: North 6,020 of 6,023 chunks).
+  - Existing outputs are refused unless `--overwrite`.
 - Full random production must use `find_and_stack_pairs.py`. The older
   `find_pairs.py -> CSV -> stack_pairs.py` route remains appropriate only for
   smaller pair catalogs and validation.
@@ -682,6 +830,7 @@ Relevant tracked files:
 | File | Role |
 |---|---|
 | `analysis/boss/scripts/find_and_stack_pairs.py` | combined full-random pair finder and stacker |
+| `analysis/boss/scripts/merge_pair_shards.py` | validate and sum shard outputs |
 | `analysis/boss/scripts/find_pairs.py` | CSV pair finder for smaller runs |
 | `analysis/boss/scripts/stack_pairs.py` | stack an existing pair catalog |
 | `lib/catalog.py` | catalog and Planck-map loading |
