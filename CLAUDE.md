@@ -114,12 +114,16 @@ python find_and_stack_pairs.py --dataset BOSS --region South --catalog-type rand
 
 **Key behaviors:**
 - Loads the kappa map and mask as module globals *before* `Pool()` creation. Multiprocess mode explicitly requests `fork()` (via `mp.get_context("fork")`) so workers can inherit the kappa map via copy-on-write. This is the intended production mode on Linux. Local validation should use `--n-processes 1`; multiprocess macOS may work but is not the production target.
-- Atomic checkpoint writes (`os.replace()`); resume via `--resume-checkpoint`. The checkpoint stores the set of completed chunk IDs (not just a "last chunk"), which is required for `imap_unordered`.
+- Atomic checkpoint writes (`os.replace()`); resume via `--resume-checkpoint`. The checkpoint stores the set of completed chunk IDs (not just a "last chunk"), which is required for `imap_unordered`. Runs before 2026-09 never saved a final checkpoint, so their checkpoints are stale and their raw sums survive nowhere; only the symmetrized CSV is valid.
 - `--seed` controls catalog subsampling for `--fraction < 1.0`. If omitted, a fresh seed is auto-generated and saved in the checkpoint so resume uses the *same* subset. Resume across `--fraction < 1` runs without a seed would silently mix accumulator state from different subsamples.
 - Z is upgraded to float64 inside this script (vs the float32 from BOSS FITS). This produces ~5e-6 differences in the final 101×101 kappa map vs the legacy two-step pipeline (well below physical noise ~1e-3). The new script is more accurate; the old reference is the artifact.
 - Sidecar `.meta.json` written next to the output CSV with full run provenance (timing, chunk counts, seed, all CLI args).
 
 **Output:** `analysis/boss/results/kappa_pairs_{label}_{dataset}_{region}.csv` (same naming as `stack_pairs.py`)
+
+### 3c. Wide-bin pair analysis (2026-09)
+
+r⊥ groupings (4–6, 6–15, 15–25 and splits) at r∥ ≤ 5 with 1/Σ_crit² weighting and a separation-averaged control. Design, run sheet, and test record: `notes/wide_bin_implementation_plan.md`. All its products live under `widebin_rpar5/` directories and never overwrite archived results; `--separations` in `combine_filament_jackknife.py` still reproduces the archived 5/10/20 numbers exactly.
 
 ### 4. Generate plots and analysis (`plot_results.py`)
 Loads all stacked CSV maps, computes derived maps, and generates 8 map plots + 3 profile plots. Works entirely from CSV files (no FITS data needed).
