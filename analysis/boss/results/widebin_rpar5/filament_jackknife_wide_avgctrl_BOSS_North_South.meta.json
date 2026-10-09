@@ -1,0 +1,162 @@
+{
+  "args": {
+    "bridge_centers": "",
+    "centers": {
+      "g10_15": 12.5,
+      "g15_25": 20.0,
+      "g4_6": 5.0,
+      "g6_10": 8.0,
+      "g6_15": 10.0
+    },
+    "control": "separation_averaged",
+    "dataset": "BOSS",
+    "galaxy_label_template": "galaxy_{grouping}_rpar5_scw",
+    "groupings": [
+      "g4_6",
+      "g6_15",
+      "g15_25",
+      "g6_10",
+      "g10_15"
+    ],
+    "no_symmetrize_single": false,
+    "output_dir": "analysis/boss/results/widebin_rpar5",
+    "overwrite": false,
+    "random_subbins_label": "random_w3_25_rpar5_scw_frac100",
+    "regions": [
+      "North",
+      "South"
+    ],
+    "results_dir": "analysis/boss/results",
+    "separations": [],
+    "single_random_tag": "_scw_frac100",
+    "single_tag": "_scw",
+    "single_weighting": {
+      "galaxy": true,
+      "random": true
+    },
+    "symmetrize": false,
+    "tag": ""
+  },
+  "inputs": {
+    "g10_15": {
+      "galaxy_pairs": "analysis/boss/results/widebin_rpar5/jk/acc_pairs_galaxy_g10_15_rpar5_scw_BOSS_North_South.npz",
+      "random_pairs": [
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_North.npz",
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_South.npz"
+      ],
+      "random_subbin_edges": [
+        10.0,
+        11.0,
+        12.0,
+        13.0,
+        14.0,
+        15.0
+      ]
+    },
+    "g15_25": {
+      "galaxy_pairs": "analysis/boss/results/widebin_rpar5/jk/acc_pairs_galaxy_g15_25_rpar5_scw_BOSS_North_South.npz",
+      "random_pairs": [
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_North.npz",
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_South.npz"
+      ],
+      "random_subbin_edges": [
+        15.0,
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0,
+        21.0,
+        22.0,
+        23.0,
+        24.0,
+        25.0
+      ]
+    },
+    "g4_6": {
+      "galaxy_pairs": "analysis/boss/results/widebin_rpar5/jk/acc_pairs_galaxy_g4_6_rpar5_scw_BOSS_North_South.npz",
+      "random_pairs": [
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_North.npz",
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_South.npz"
+      ],
+      "random_subbin_edges": [
+        4.0,
+        5.0,
+        6.0
+      ]
+    },
+    "g6_10": {
+      "galaxy_pairs": "analysis/boss/results/widebin_rpar5/jk/acc_pairs_galaxy_g6_10_rpar5_scw_BOSS_North_South.npz",
+      "random_pairs": [
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_North.npz",
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_South.npz"
+      ],
+      "random_subbin_edges": [
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0
+      ]
+    },
+    "g6_15": {
+      "galaxy_pairs": "analysis/boss/results/widebin_rpar5/jk/acc_pairs_galaxy_g6_15_rpar5_scw_BOSS_North_South.npz",
+      "random_pairs": [
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_North.npz",
+        "analysis/boss/results/widebin_rpar5/kappa_pairs_random_w3_25_rpar5_scw_frac100_BOSS_South.npz"
+      ],
+      "random_subbin_edges": [
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0,
+        11.0,
+        12.0,
+        13.0,
+        14.0,
+        15.0
+      ]
+    }
+  },
+  "outputs": {
+    "g10_15": {
+      "err": "analysis/boss/results/widebin_rpar5/error_filament_galaxy_g10_15_rpar5_scw_avgctrl_BOSS_North_South_joint.csv",
+      "map": "analysis/boss/results/widebin_rpar5/kappa_filament_galaxy_g10_15_rpar5_scw_avgctrl_BOSS_North_South_joint.csv"
+    },
+    "g15_25": {
+      "err": "analysis/boss/results/widebin_rpar5/error_filament_galaxy_g15_25_rpar5_scw_avgctrl_BOSS_North_South_joint.csv",
+      "map": "analysis/boss/results/widebin_rpar5/kappa_filament_galaxy_g15_25_rpar5_scw_avgctrl_BOSS_North_South_joint.csv"
+    },
+    "g4_6": {
+      "err": "analysis/boss/results/widebin_rpar5/error_filament_galaxy_g4_6_rpar5_scw_avgctrl_BOSS_North_South_joint.csv",
+      "map": "analysis/boss/results/widebin_rpar5/kappa_filament_galaxy_g4_6_rpar5_scw_avgctrl_BOSS_North_South_joint.csv"
+    },
+    "g6_10": {
+      "err": "analysis/boss/results/widebin_rpar5/error_filament_galaxy_g6_10_rpar5_scw_avgctrl_BOSS_North_South_joint.csv",
+      "map": "analysis/boss/results/widebin_rpar5/kappa_filament_galaxy_g6_10_rpar5_scw_avgctrl_BOSS_North_South_joint.csv"
+    },
+    "g6_15": {
+      "err": "analysis/boss/results/widebin_rpar5/error_filament_galaxy_g6_15_rpar5_scw_avgctrl_BOSS_North_South_joint.csv",
+      "map": "analysis/boss/results/widebin_rpar5/kappa_filament_galaxy_g6_15_rpar5_scw_avgctrl_BOSS_North_South_joint.csv"
+    },
+    "summary": {
+      "csv": "analysis/boss/results/widebin_rpar5/filament_jackknife_wide_avgctrl_BOSS_North_South.csv",
+      "meta": "analysis/boss/results/widebin_rpar5/filament_jackknife_wide_avgctrl_BOSS_North_South.meta.json"
+    }
+  },
+  "provenance": {
+    "astropy_version": "7.1.0",
+    "git_commit": "08916a4da77a1506b78863df6a778ca4552ada88",
+    "git_dirty": false,
+    "healpy_version": "1.18.1",
+    "hostname": "Mac",
+    "numpy_version": "2.3.0",
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "python_version": "3.11.13"
+  },
+  "single_accumulators": [
+    "analysis/boss/results/jk/acc_single_galaxy_scw_BOSS_North_South.npz",
+    "analysis/boss/results/jk/acc_single_random_scw_frac100_BOSS_North_South.npz"
+  ]
+}
