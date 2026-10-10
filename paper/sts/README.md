@@ -49,7 +49,19 @@ python analysis/boss/scripts/widebin_paper_figures.py --paper --overwrite
 | `boss_single_and_pair_maps.pdf` | 5 | BOSS single stack and three pair stacks | done |
 | `obs_vs_sim_quadrupole_maps.pdf` | 6 | Observed and mock residual maps | done |
 | `band_profiles_obs_vs_sim.pdf` | 7 | B(X), BOSS against the mock, with residual strip | done |
-| `filament_snr_vs_smoothing.pdf` | 8 | Bridge S/N at 8, 6 and 4 arcmin | not yet made |
+| `filament_snr_vs_smoothing.pdf` | 8 | Bridge S/N at 8, 6 and 4 arcmin | done (separate command, below) |
+
+Figure 8 has its own script. It needs the 6 and 4 arcmin galaxy-pair stacks,
+which are made once (see "Smoothing scan" in the wide-bin README):
+
+```bash
+python analysis/boss/scripts/widebin_smoothing_scan.py --overwrite
+```
+
+It also writes the numbers to
+`analysis/boss/results/widebin_rpar5/smoothing_scan_wide_BOSS.csv`. The random
+stacks are the 8 arcmin ones at every smoothing, as in the submitted figure;
+the caption or text should say so.
 
 File names are kept from the submitted version so the `\includegraphics`
 lines carry over unchanged. `sim_pair_vs_control_maps_sep10.pdf` now shows the
@@ -75,8 +87,7 @@ All in `analysis/boss/results/widebin_rpar5/`:
 
 ## Still to do
 
-1. Figure 8: stack the three bins at 6 and 4 arcmin (galaxy pairs only,
-   local; the submitted figure also reused the 8 arcmin randoms), then plot.
+1. ~~Figure 8.~~ Done 2026-10-09.
 2. Copy the `.tex` sections and the Figure 1 files from `styau/`, then update
    methods, captions, Table 1, abstract and summary for the wide bins.
 3. Mock tests still at the old bins: line-of-sight sweep, non-physical pair

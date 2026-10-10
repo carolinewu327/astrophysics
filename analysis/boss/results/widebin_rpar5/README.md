@@ -200,6 +200,32 @@ What these scripts read (none of it is re-stacked):
 | `analysis/sim/results/hod_pairs/stack_rperp{5,10,20}_matched.*`, `stack_rperp{5,10,20}_blocks.npz` | archived (paper bins) | csv/json yes, blocks no |
 | `analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv` | archived | yes |
 
+## Smoothing scan (manuscript Figure 8)
+
+Bridge S/N at 8, 6 and 4 arcmin. Only the galaxy-pair stacks are re-made at
+each smoothing (about 13 minutes for all six). The single-galaxy stacks at 6
+and 4 arcmin already exist in `analysis/boss/results/jk/`. The random stacks
+are the 8 arcmin ones at every smoothing, as in the submitted figure.
+
+```bash
+for F in 6 4; do for G in 4_6 6_15 15_25; do
+  LO=${G%_*}; HI=${G#*_}
+  HALF=$([ "$HI" = 25 ] || echo --rperp-half-open)
+  python analysis/boss/scripts/stack_pairs_jk.py \
+    --pair-catalogs $GW/galaxy_pairs_BOSS_North_5.0_3.0_25.0hmpc.csv,$GW/galaxy_pairs_BOSS_South_5.0_3.0_25.0hmpc.csv \
+    --label galaxy_g${G}_rpar5_scw_fwhm${F} --rperp-min $LO --rperp-max $HI $HALF \
+    --sigma-crit-weight --fine-bin-width 0.5 --n-processes 6 --fwhm-arcmin $F \
+    --output-dir $W --jk-regions-path $TESS \
+    2>&1 | tee $W/logs/galaxy_g${G}_rpar5_scw_fwhm${F}.log
+done; done
+
+python analysis/boss/scripts/widebin_smoothing_scan.py
+```
+
+Output: `paper/sts/Figure/filament_snr_vs_smoothing.pdf` and
+`$W/smoothing_scan_wide_BOSS.csv`. The 8 arcmin rows reproduce the main result
+table exactly, which is the check that the script matches step 5.
+
 ## If you change something, what to rerun
 
 | Change | Rerun |
