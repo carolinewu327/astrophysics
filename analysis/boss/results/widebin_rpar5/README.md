@@ -184,9 +184,9 @@ What these scripts read (none of it is re-stacked):
 | Input | From | In git |
 |---|---|---|
 | `$W/jk/acc_pairs_galaxy_g*_rpar5_scw_*.npz` | step 2 | no (45 MB each) |
-| `$W/kappa_pairs_${RLABEL}_BOSS_{North,South}.npz` | step 3 | no (3.5 MB each) |
+| `$W/kappa_pairs_${RLABEL}_BOSS_{North,South}.npz` | step 3 | yes |
 | `$HW/stack_g*_rpar5_avgctrl{.json,_map.csv}` | step 4 | yes |
-| `$HW/stack_g*_rpar5_avgctrl_blocks.npz` | step 4 | no (1 MB each) |
+| `$HW/stack_g*_rpar5_avgctrl_blocks.npz` | step 4 | yes (the five main bins) |
 | `analysis/boss/results/jk/acc_single_*_scw*_BOSS_North_South.npz` | archived | no |
 | `analysis/boss/results/jk/acc_pairs_galaxy_{5,10,20_rpar10}_*.npz` | archived (paper bins) | no |
 | `analysis/sim/results/hod_pairs/stack_rperp{5,10,20}_matched.*`, `stack_rperp{5,10,20}_blocks.npz` | archived (paper bins) | csv/json yes, blocks no |
