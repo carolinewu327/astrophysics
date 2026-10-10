@@ -336,8 +336,6 @@ redshifts assigned from the observed galaxy distribution. The randoms
 therefore share the galaxies' redshift distribution $n(z)$ but contain no clustering. We apply the
 same $0.4<z<0.7$ cut and use the full catalogs, $40.9$ million points over
 both caps, for every random stack. 
-%Replacing the full catalog by a 10 percent subsample shifts the $10\,\hinvMpc$ bridge excess by $5\times10^{-4}$, comparable to the measured signal.
-% CHECK: combine_filament_jackknife.py docstring.
 Random points carry unit systematic weight and, in the single-galaxy stacks,
 the same lensing-efficiency weight as the galaxies.
 
@@ -593,16 +591,6 @@ where $\bar \mathbf{x}$ is the mean of the leave-one-out values. The square root
 
 To fit the amplitude $A$ of a fixed template $\mathbf{s}$ to an observed
 vector $\mathbf{d}$, we minimize
-%\begin{equation}
-%  \begin{aligned}
-%  \chi^{2}(A) &=(\mathbf{d}-A\mathbf{s})^{\mathsf T}\mathsf{C}^{-1}
-%                 (\mathbf{d}-A\mathbf{s}), \\
-%  \hat A &=\frac{\mathbf{s}^{\mathsf T}\mathsf{C}^{-1}\mathbf{d}}
-%                 {\mathbf{s}^{\mathsf T}\mathsf{C}^{-1}\mathbf{s}}, \qquad
-%  \sigma_{A}=\left(\mathbf{s}^{\mathsf T}\mathsf{C}^{-1}\mathbf{s}\right)^{-1/2}.
-%  \end{aligned}
-%  \label{eq:amplitude}
-%\end{equation}
 \begin{equation}
   \chi^{2}(A) =(\mathbf{d}-A\mathbf{s})^{\mathsf T}\mathsf{C}^{-1}
                  (\mathbf{d}-A\mathbf{s}), 
@@ -771,10 +759,6 @@ an approximate comparison, but would still differ from the estimator used by
   \label{fig:band_profiles_obs_sim}
 \end{figure*}
 
-%None of the three bridge excesses exceeds $3\sigma$. The
-%$10\,\hinvMpc$ sample has a positive excess of $2.3\sigma$ and lies
-%$1.4\sigma$ above the mock prediction. The other two measurements are
-%consistent with zero.
 To see the significance of detecting the central and off-center band profiles, we perform a $\chi^{2}$ test of the compressed $22$-element central and off-center band profile against zero with
 the full covariance, which gives $\chi^{2}=35.0$, $20.7$, and $32.4$ for $22$
 degrees of freedom (corresponding to nominal $p$ values of $p=0.04$, $0.54$, and $0.07$). The $p=0.04$ result at $5\,\hinvMpc$ applies to the full profile, including bins that contain the galaxies, and therefore does not constitute a bridge detection.
@@ -803,8 +787,6 @@ $\left(-1.6,\ +0.4,\ +0.2\right)\times10^{-4}$, consistent with zero.
 %\subsection{Comparison with the simulation and with previous work}
 %\label{sec:compare}
 
-%The bridge statistic in Table~\ref{tab:bridge} provides the direct comparison between the data and mock because both analyses use the same bands, bridge window, and smoothing. At all three separations, the observational uncertainties exceed the predicted bridge amplitudes, and the measurements are consistent with both zero and the mock.
-
 
 
 The residual maps also test how well the control describes the paired haloes.
@@ -822,9 +804,6 @@ These comparisons constrain the isotropic residual from which the
 axis-aligned signal is separated. They do not directly measure the bridge
 statistic, which subtracts the off-center band in Equation~(\ref{eq:band}).
 % TODO: compare corrected single profiles in the 10--20, 15--25, and 20--40 h^-1 Mpc bands with jackknife errors.
-
-%\citet{deGraaff2019} measured $\bar\kappa=(5.8\pm3.1)\times10^{-4}$ in the bridge region of pairs pooled over $6$--$14\,\hinvMpc$. Their statistic differs from ours in four ways: pairs are rescaled to unit separation before stacking, the bridge region is defined on the rescaled grid, the halo model is fitted to the pair stack in a $60^\circ$ sector about the direction perpendicular to the pair axis, and the map is smoothed to $10$ arcmin. Their central value is close to our $10\,\hinvMpc$ result, but the two estimators differ. Their sample contains about $2.2$ times as many pairs as our $10\,\hinvMpc$ sample; independent-pair scaling alone would reduce the error by a factor of $1.5$. An inverse-variance-weighted combination of our three samples would provide an approximate comparison, but would still differ from the estimator used by \citet{deGraaff2019}.
-% TODO: quote the pooled value if this comparison is retained.
 
 %A $95$ percent upper limit on the bridge excess can be converted to surface density using $\Sigma_{\rm crit}$ and subsequently to linear mass densityalong the bridge.
 % TODO: compute the upper limits and compare them with Epps & Hudson (2017) and de Graaff et al. (2019).
