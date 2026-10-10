@@ -24,51 +24,6 @@
 Dark matter distribution around pairs of dark matter haloes encodes information about the gravitational interaction between haloes and probes the associated filamentary structure. In this work, we use the BOSS CMASS galaxy sample and Planck 2018 cosmic microwave background (CMB) lensing map to study the matter distribution around galaxy pairs. We produce stacked CMB lensing $\kappa$ maps around galaxy pairs, in transverse pair separation bins centered
 at $5$, $10$, and $20\,\hinvMpc$. With comparison to the maps from control pairs, obtained by superposition of $\kappa$ distribution around single galaxies, a quadrupole pattern in the matter distribution around galaxy pairs is revealed for the first time, with excess around the pair connection line and deficit around the perpendicular bisector. Such a pattern is consistent with the expectation from cosmological $N$-body simulations, pointing to an origin from tidal interaction. There is hint of matter excess in between galaxy pairs, associated with filaments, and an increased galaxy pair sample and/or CMB lensing reconstruction with improved precision would be necessary for a firm detection.
 
-\begin{comment}
-We search for gravitational lensing associated with cosmic-web filaments by
-stacking the Planck 2018 CMB lensing convergence map on pairs of BOSS CMASS
-galaxies at $z\simeq0.55$. We stack pairs on a fixed comoving grid, without
-rescaling them to a common separation, in transverse-separation bins centered
-at $5$, $10$, and $20\,\hinvMpc$. We subtract a unit-amplitude control formed
-by placing the observed single-galaxy profile at the two galaxy positions and
-define the bridge excess as the difference between a central band along the
-pair axis and two flanking bands. This residual can also contain differences
-between the halo and environmental signals of paired and average galaxies. We
-combine the North and South Galactic caps and estimate the profile covariance
-with a $287$-region spatial jackknife. Applying the same signal estimator to a
-CMASS-like BigMDPL mock predicts bridge excesses of
-$(6.3,\,4.9,\,2.2)\times10^{-4}$ at these separations. The observed bridge
-excesses are $(5.4\pm9.1,\,11.9\pm5.1,\,1.2\pm2.2)\times10^{-4}$, corresponding to
-$0.6\sigma$, $2.3\sigma$, and $0.6\sigma$. No bridge excess exceeds
-$3\sigma$, and all three measurements are consistent with both zero and the
-mock prediction. The predicted amplitudes are smaller than the observational
-errors at every separation. Resolving their separation dependence requires a
-lower-noise convergence map.
-\end{comment}
-
-\begin{comment}
-We search for the lensing signal of cosmic-web filaments by stacking the
-Planck CMB lensing convergence map on pairs of BOSS CMASS galaxies. Unlike
-previous pair-stacking work, we do not rescale pairs to a common separation:
-we stack on a fixed physical grid in three separation bins centred at 5, 10,
-and 20 $h^{-1}$ Mpc, so the residual can be tracked as a function of halo
-separation. The two halos are removed with a control map built from the
-observed single-galaxy stack, decomposed into a compact core and an extended
-tail whose amplitudes are fitted outside the pair. Every choice in the
-estimator was fixed beforehand in a matched simulation, built from BigMDPL
-halos populated to reproduce the CMASS number density. North and South are
-stacked as one joint sample, and uncertainties come from a 287-region spatial
-jackknife in which every fitted parameter is re-fitted. We measure bridge
-convergences of $(1.74 \pm 11.29)$, $(8.94 \pm 7.45)$, and
-$(4.39 \pm 4.60) \times 10^{-4}$ at the three separations, or $0.15\sigma$,
-$1.20\sigma$, and $0.95\sigma$. We therefore do not detect a filament signal.
-The expected quadrupole pattern is visible in the difference maps and matches
-the simulation in amplitude, and the control passes its null tests, but the
-uncertainty is set almost entirely by noise in the Planck map: repeating the
-measurement with no control at all changes the error by less than 7\%. The
-simulation predicts a bridge below our noise level, so this null is the
-expected outcome rather than a tension.
-\end{comment}
 \end{abstract}
 
 \keywords{\uat{Galaxies}{573} --- \uat{Cosmology}{343}}
@@ -296,46 +251,6 @@ with previous work, and the robustness tests. Section~\ref{sec:discussion}
 summarizes the results and discusses their implications.
 
 
-\begin{comment}
-The paper is organised as follows. Section~\ref{sec:data} describes the
-CMASS and random catalogues and the Planck lensing map.
-Section~\ref{sec:method} presents the pair selection, stacking, control
-construction, and error estimation. Section~\ref{sec:mocks} describes the
-BigMDPL mock catalogue and the simulated convergence maps.
-Section~\ref{sec:results} reports the stacked maps, the separation and
-line-of-sight dependence of the residual signal, and the comparison with the
-mock prediction. Section~\ref{sec:discussion} discusses systematics and the
-implications for the matter content of filaments, and
-Section~\ref{sec:conclusions} concludes.
-}
-
-\todo[inline]{
-Previous stacked weak-lensing measurements of cosmic-web filaments can be divided broadly according to whether they use background galaxies or the CMB as the lensing source.
-
-Clampitt et al. (2016), Epps \& Hudson (2017), and Kondo et al. (2020) fall into the first category, which uses galaxy shapes as the source. Clampitt et al. (2016) stacked the shear field around pairs of SDSS luminous red galaxies at $z\approx0.25$, selecting projected separations of $6$--$14\,\hinvMpc$ and line-of-sight separations below $6\,\hinvMpc$. Approximately $8000\,\mathrm{deg}^{2}$, they reported a $4.5\sigma$ detection. They used a four-point estimator that analytically cancels the tangential-shear contribution of the two spherically symmetric host halos, isolating the bridge between them. Using CFHTLenS source shapes, Epps \& Hudson (2017) studied the BOSS LOWZ and CMASS pairs at a mean redshift of $\langle z\rangle\approx0.42$. They reported a $5\sigma$ excess after subtracting the convergence stack of non-physical pairs from that of physical pairs.Kondo et al. (2020) paired BOSS CMASS galaxies at z $\approx$ 0.55 with first-year Subaru Hyper Suprime-Cam shapes. Despite an overlap footprint of only ~140 degrees squared containing 14,422 CMASS galaxies, the depth of HSC imaging yielded a 3.9 sigma detection. Their mock analysis showed that intrinsic variation between filaments and projected large-scale structure contributed approximately 60\% of the covariance, with source shape noise contributing the remainder.
-
-A complementary approach uses the CMB as the background source. The CMB source plane lies at $z_\ast\simeq1090$, and its broad lensing kernel probes matter over a wide redshift range. CMB lensing avoids galaxy shape noise and intrinsic alignments and is available over a large fraction of the sky, but the Planck reconstruction has substantial reconstruction noise, limited angular resolution, and possible foreground-related systematics.Other studies have measured CMB lensing associated with filaments identified directly from the spectroscopic galaxy distribution. He et al. (2018) identified filaments directly with a density-ridge algorithm applied to the CMASS distribution, built an intensity map from the resulting ridge catalog, and cross-correlated it with the Planck convergence map, obtaining $5\sigma$. Tanimura et al. (2020) took a similar approach with DisPerSE, stacking Planck $\kappa$ on 24,544 filaments of length 30-100 Mpc identified in LOWZ+CMASS and reaching $8.1\sigma$ in convergence. These significances are not directly comparable to pair-stacking measurements because the studies probe longer, differently selected structures and use different estimators; pair selection can also dilute the mean signal when candidate pairs are not physically connected.
-
-The study by de Graaff et al. (2019) is the closest predecessor to this work. They stacked a Planck CMB-lensing convergence map around pairs drawn from the same parent BOSS CMASS catalogs used here. They selected 1,020,334 pairs with transverse comoving separations of $6$--$14\, \hinvMpc$ and line-of-sight separations below $5\,\hinvMpc$. Their pipeline rotates each pair to a common orientation, rescales it to a normalized separation, projects the surrounding map onto a rectangular grid, and reflects each cutout to exchange the two pair members. Halo contributions are removed by fitting an isotropic radial profile within a 60 degree cone perpendicular to the pair axis and subtracting the resulting 2D model. They measured a mean filament convergence of $\kappa = (0.58 \pm 0.31) \times 10^{-3}$, corresponding to a marginal $1.9\sigma$ detection. 
-
-We do not claim a novel class of data combination: de Graaff et al. previously
-combined BOSS CMASS pairs with a Planck CMB-lensing reconstruction. Our analysis differs from theirs in several aspects. 
-
-First, we resolve the measurement in pair separation rather than integrating over it. While de Graaff rescales every pair to a normalized separation before stacking, we stack on a fixed comoving grid of $101\times101$ pixels spanning $100\times100\, (\hinvMpc)^2$, using disjoint separation bins centered at $5$, $10$, and $20\, \hinvMpc$. Although the finite width of each bin modestly smears the bridge, this construction allows us to measure the separation dependence of the residual signal.
-
-Second, we model the entire measurement in simulation. We construct a CMASS-like mock catalog from BigMDPL and apply matched pair selection, map smoothing, stacking, and halo-subtraction operations to the simulated convergence maps. This provides a separation-dependent $\Lambda$CDM reference that can be compared directly with the observed stacks.
-
-Third, we use an independent halo-subtraction method. Where de Graaff et al. fit an isotropic profile to the observed stack itself, we subtract a control map built by displacing the single-galaxy stack to $\pm d/2$ along the pair axis, following the spirit of Epps \& Hudson (2017). The methods have different weaknesses: profile fitting can remove part of the bridge, while control subtraction may not accurately represent paired galaxies. 
-
-Fourth, we test different line-of-sight cuts instead of adopting the 5-6 $\hinvMpc$ cut used in previous pair-stacking studies. Larger cuts increase the sample size but also admit more unassociated pairs, while peculiar velocities can move pairs across the threshold. We therefore measure how the cut affects the contamination and the recovered signal. 
-
-We use the Planck 2018 minimum-variance lensing reconstruction at $N_{\rm side} =2048$ and apply an $8$-arcmin Gaussian smoothing kernel, rather than the $10$-arcmin smoothing adopted by de Graaff et al. This is a modest resolution difference because the reconstruction remains noise dominated on small angular scales.
-\todo[inline]{
-in this work, CMB lensing, directly probe the convergence $\kappa$ or the surface matter density around galaxy pairs
-
-structure of this paper}
-\end{comment}
-
 \section{Data}
 \label{sec:data}
 
@@ -527,38 +442,6 @@ Similar to the CMB lensing map, the simulation$\kappa$ map is smoothed with a pe
 %Mock pairs are selected in redshift space from a random 50 percent subsample of the catalog, which reduces the pair count while preserving the halo-mass selection in expectation. The projection axis serves as the line of sight, and we map each galaxy to redshift space by shifting its coordinate along this axis by $(1+z)\,v_{\parallel}/H(z)$, with $v_{\parallel}$ denoting the peculiar-velocity component along the same axis. We evaluate the line-of-sight separation cut from these shifted coordinates. Transverse separations are computed with periodic boundaries. Nonphysical pairs, close in projection but separated along the line of sight in real space by $20$--$120\,\hinvMpc$, are selected from the same catalog. They are not close in three dimensions and therefore provide a null test of the control.
 
 
-\begin{comment}
-\subsection{BOSS CMASS Galaxy Data}
-
-\todo[inline]{footprint, total area, redshift distribution.} Galaxy positions come from the CMASS sample of the Baryon Oscillation Spectroscopic Survey (BOSS), SDSS-III, data release 12. CMASS means “constant mass”: color and magnitude constraints select massive red galaxies of nearly uniform stellar mass. They sit in heavy halos, and that mass makes them useful as a heavier halo bends more light, so the lensing signal per galaxy is larger. We used both sky regions, North and South, restricted to $0.4 < z < 0.7$, giving 792,294 galaxies. Each galaxy carries a survey weight which corrects for blurring, foreground stars, and redshift failures. We add a lensing weight of $1/\Sigma_\mathrm{crit}^2$, with the CMB as the source plane — inverse-variance weighting that favors redshifts where lensing is most efficient. Positions are converted to galactic coordinates. North and South are stacked as one joint sample rather than averaged. 
-
-\subsection{CMB Lensing Data}
-
-\todo[inline]{mention smoothing.} We use the minimum-variance version of Planck’s 2018 lensing reconstruction (COM\_Lensing\_4096\_R3.00). To turn it into a usable map, we smooth it by a Gaussian of 8-arcmin FWHM, synthesize it to a HEALPix map at nside 2048, and mask the sky Planck deems unreliable. Because the smoothing scale is over three times the size of our pixel, neighboring pixels are not independent. Treating them as such understates the profile errors, so all errors here use the full bin-to-bin covariance. 
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{pair.pdf}
-    \includegraphics[width=0.45\linewidth]{pair.pdf}
-    \caption{
-    Left: footprint of CMB lensing $\kappa$ map and CMASS galaxies (can use same panel, different colors), in Galactic Coordinate system. Right redshift distribution of CMASS galaxies
-    }
-    \label{fig:footprint_zdist}
-\end{figure}
-
-Figure~\ref{fig:footprint_zdist} is to show the footprint and CMB-$\kappa$ and CMASS galaxies (left) and redshift distribution of CMASS galaxies (right).
-\subsection{$N$-body simulation and mock catalog}
-\label{sec:sim}
-
-\todo[inline]{
-We use the BigMDPL (Big MultiDark Planck) cosmological $N$-body simulation in the MultiDark simulation suite \citep{Klypin2016,Riebe2013}. ...
-dark matter halos and down-sampled dark matter particles
-construction of CMASS galaxy mock catalog.
-}
-The simulation uses the BigMDPL (Big MultiDark Planck), a dark-matter only $2500 \, \hinvMpc$ box with $3840^3$ particles of $2.36 \times 10^{10} \, h^{-1} \, \text{M}_\odot$ and a Planck cosmology ($\Omega_{\text{m}} = 0.307$, $h = 0.677$). We use the snapshot at $z = 0.547$, which matches the median CMASS redshift. Halos come from the Rockstar finder, and we keep host halos above $\log_{10} M_{\text{vir}} = 12.5$. The galaxy mock catalog is created by using a halo occupation distribution with $\sigma = 0.94$ and $\log_{10} M_{\text{cut}} = 13.246$, set so the mock's galaxy density matches the observed $3 \times 10^{-4} \, (h/\text{Mpc})^3$. The simulated $\kappa$ map is produced by projecting particles through the full depth of the box onto a grid of $0.1 \, \hinvMpc$ pixels, converted to $\kappa$, and smoothed the same as Planck. The mock pairs are selected using redshift rather than true distance, so the $r_{\parallel}$ cut removes the same kinds of pairs it removes in the data. Non-physical pairs, or pairs close in projection but genuinely far apart along the line of sight, are also found in the simulation. These galaxies should have no filaments between them, and serve as our null test and check on the control.
-
-\end{comment}
-
 \section{Methods}
 \label{sec:method}
 
@@ -582,34 +465,6 @@ We construct samples of galaxy pairs according to the line-of-sight and transver
 where $D_{\rm c,1}$ and $D_{\rm c,2}$ are the comoving distances of the two galaxies and $\theta_{12}$ is their angular separation (in radian) satisfying $r_{\parallel}\leq r_{\parallel,{\rm max}}$ and
 $r_{\perp,{\rm min}}\leq r_{\perp}\leq r_{\perp,{\rm max}}$.
 We use three  $r_\perp$ bins, $4$--$6$, $9$--$11$, and $18$--$22\,\hinvMpc$, referred to below as the $5$, $10$, and $20\,\hinvMpc$ pair samples, with line-of-sight cuts of $r_{\parallel,{\rm max}}=5\,\hinvMpc$ for the $5\,\hinvMpc$ sample and $10\,\hinvMpc$ for the other two. Each pair is assigned the comoving distance $D_{\rm mid}$ at the mean redshift of its members. Random pairs are drawn from the full random catalogs using the same redshift range and transverse- and line-of-sight separation cuts.
-
-\if{0} {
-For each galaxy, we compute the comoving distance $D_{\rm c}=\chi(z)\,h$ from
-its spectroscopic redshift. We define two galaxies as a pair if their
-line-of-sight and transverse separations,
-\begin{equation}
-  r_{\parallel} = |D_{{\rm c},1}-D_{{\rm c},2}|, \qquad
-  r_{\perp} = \theta_{12}\,\frac{D_{{\rm c},1}+D_{{\rm c},2}}{2},
-  \label{eq:separations}
-\end{equation}
-where $\theta_{12}$ is their great-circle angular separation, satisfy
-$r_{\parallel}\leq r_{\parallel,{\rm max}}$ and
-$r_{\perp,{\rm min}}\leq r_{\perp}\leq r_{\perp,{\rm max}}$. Because
-$r_{\parallel}$ is inferred from redshifts, it includes the contribution from
-the pairwise peculiar velocity (Section~\ref{sec:intro}). We
-use three transverse bins, $4$--$6$, $9$--$11$, and $18$--$22\,\hinvMpc$,
-referred to below as the $5$, $10$, and $20\,\hinvMpc$ samples, with
-line-of-sight cuts of $r_{\parallel,{\rm max}}=5\,\hinvMpc$ for the
-$5\,\hinvMpc$ sample and $10\,\hinvMpc$ for the other two. The cuts were
-fixed on the mock before the observed stacks were examined
-(Section~\ref{sec:sim_expect}). Each unordered pair is counted once. A
-galaxy may belong to several pairs, and we apply no isolation criterion. The
-spatial jackknife accounts for the resulting correlations among pairs. Each
-pair is assigned the comoving distance
-$D_{\rm mid}=\chi(\bar z)\,h$ at the mean redshift of its members. Random
-pairs are drawn from the full random catalogs using the same redshift range
-and transverse- and line-of-sight separation cuts.
-}\fi
 
 %\subsection{Stacking in the pair frame}
 %\label{sec:stacking}
@@ -666,30 +521,6 @@ center.
 
 %with the axes aligned with Galactic longitude and latitude and the weight $w$ of Because these stacks have no preferred direction, we symmetrize them radially by averaging pixels in annuli about the physical center of the grid, which for an even grid lies between the four central pixels.
 
-\if{0} {
-
-\subsection{Joint footprint and random subtraction}
-\label{sec:joint}
-
-We combine the North and South caps as a single weighted sample in
-Equation~(\ref{eq:stack}), rather than averaging the two cap maps. Because
-$73$ percent of the galaxies lie in the North, an equal-weight average of the
-cap maps would give each Southern galaxy $2.7$ times the weight of a Northern
-galaxy and assign half of the combined weight to the noisier Southern map.
-Galaxies and random points are stacked with the same weights, and the
-corrected single-galaxy map is their difference,
-$\hat\kappa_{\rm g}-\hat\kappa_{\rm r}$. The random-point map absorbs the
-mean convergence of the footprint and any offset associated with the mask
-or the mean field of the reconstruction.
-
-We stack random pairs separately in each cap and combine the resulting maps
-with weights proportional to the pair counts. We subtract this random-pair
-map from the galaxy-pair map and hold it fixed in the error analysis. Across
-the three samples, its bridge statistic has magnitude at most
-$4.1\times10^{-5}$, compared with jackknife errors on the data of at least
-$2.2\times10^{-4}$.
-} \fi
-
 %\subsection{Control for the halo contributions}
 \subsection{Control Pair Map and Band Statistic}
 \label{sec:control}
@@ -718,21 +549,6 @@ This residual map is used to study the matter distribution pattern around galaxy
 paired galaxies. 
 %We call it a residual map, rather than a filament map, because imperfect halo subtraction and differences between paired and average galaxy environments can also contribute.
 
-\if{0} {
-\ZZ{better position for the following paragraph is in the relevant section when the features are discussed.}
-The control represents the mean isotropic signal of two CMASS galaxies placed
-at the pair positions. It does not remove differences between the
-environments of paired and average galaxies. These differences remain in
-$F$ as residual convergence around the galaxies and as structure aligned
-with the pair axis. The single-galaxy stack includes the lensing-efficiency
-weight, whereas the pair stack does not. The two therefore have different
-redshift weightings, a mismatch that is not corrected in the present
-analysis. We process the mock with the same control and band statistic
-(Section~\ref{sec:sim_expect}). We do not fit the amplitude of $T$ to the
-pair stack because such a fit could absorb signal aligned with the pair axis.
-Section~\ref{sec:robust} tests this effect on the mock.
-}\fi
-
 %\subsection{Band statistic}
 %\label{sec:bands}
 
@@ -750,39 +566,6 @@ $0\leq X<40\,\hinvMpc$, and the endpoint at $X=40\,\hinvMpc$ forms the
 eleventh bin. The binning reduces the dimension of the covariance while
 retaining resolution comparable to the smoothing scale.
 
-\if{0} {
-We compress $F$ into a one-dimensional profile along the pair axis. At each
-$X$, we average $F$ within a central band, $|Y|\leq1.5\,\hinvMpc$, and an
-off-center band, $1.5\leq|Y|\leq10.5\,\hinvMpc$, and take their difference,
-\begin{equation}
-  B(X) = \langle F(X,Y)\rangle_{|Y|\leq1.5}
-       - \langle F(X,Y)\rangle_{1.5\leq|Y|\leq10.5}.
-  \label{eq:band}
-\end{equation}
-The band widths are fixed in comoving units, so all three separation samples
-use the same physical bands. We assign fractional weights to rows that cross
-a band boundary, according to the fraction of each row within the band. On
-the $101$-point grid, the central and off-center bands contain three and
-eighteen complete rows, respectively. The difference suppresses components
-that vary slowly with $Y$, including an offset common to both bands. We
-define the bridge excess as the mean of $B(X)$ over the interval
-$|X|\leq0.35\,d$, which ends $0.15\,d$ from each galaxy. For
-covariance-based fits, we further compress the profile into a vector of the
-central- and off-center-band means in eleven bins of
-$4\,\hinvMpc$ along $X\geq0$, $22$ numbers in all. The first ten bins span
-$0\leq X<40\,\hinvMpc$, and the endpoint at $X=40\,\hinvMpc$ forms the
-eleventh bin. The binning reduces the dimension of the covariance while
-retaining resolution comparable to the smoothing scale.
-
-Smoothing on $3.3\,\hinvMpc$ scales moves part of a narrow bridge signal into
-the off-center band. Equation~(\ref{eq:band}) therefore defines a filtered
-observable rather than the unsmoothed peak convergence. We apply the same
-filter to the data and mock. In the mock, the ratio of the bridge statistic
-to the central-band excess provides a transfer factor between the two
-quantities.
-% TODO: quote the transfer factor (bridge excess / central-band excess) from the mock.
-}\fi
-
 \subsection{Error and covariance estimates}
 \label{sec:errors}
 
@@ -792,7 +575,6 @@ The joint footprint is divided into $K=287$ contiguous regions of
 approximately equal size, constructed from HEALPix cells with
 $N_{\rm side}=10$.
 % with an RMS size scatter of $11$ percent.
-% \ZZ{why is there a size scatter? all HEALPix pixels should have the same size. Do you mean the number of galaxies in each pixel?}
 % CHECK: 287 and 11% are quoted in CLAUDE.md and code docstrings; the regions file is not in the repo.
 %No region straddles the two caps. We assign galaxies and random points to
 %regions by their positions and pairs by their midpoints. The same regions are
@@ -808,26 +590,6 @@ covariance is calculated as
   \label{eq:jackknife}
 \end{equation}
 where $\bar \mathbf{x}$ is the mean of the leave-one-out values. The square roots of the diagonal elements are used as error bars shown in the relevant plots. 
-
-\if{0} {
-We repeat the full
-sequence of Equations~(\ref{eq:control})--(\ref{eq:band}) in every
-realization. In particular, the control is reconstructed from the
-leave-one-out single-galaxy stack and subtracted from the corresponding pair
-stack, thereby propagating its uncertainty into the bridge error. Only the
-random-pair map is held fixed.
-
-The $8$-arcmin smoothing scale spans more than three grid pixels. Treating
-pixels or $1\,\hinvMpc$ bins as independent therefore
-understates the error on a band mean by a factor of $2.2$ to $2.6$ on the
-joint stack. % CHECK: CLAUDE.md and fit_sim_template.py docstring.
-All quoted errors on band quantities are jackknife errors on the quantity
-itself, and all fits use $\mathsf{C}$. For $K=287$ and a $22$-element vector,
-the nominal Hartlap factor is $0.920$. Applying it to $\mathsf{C}^{-1}$ would
-increase the fitted amplitude errors by $4.3$ percent. We do not apply it
-because the leave-one-out jackknife samples are correlated rather than
-independent covariance realizations.
-}\fi
 
 To fit the amplitude $A$ of a fixed template $\mathbf{s}$ to an observed
 vector $\mathbf{d}$, we minimize
@@ -854,39 +616,6 @@ which has the solution and error bar
 \end{equation}
 %We test for an additive constant by nesting a model with a free offset.
 
-\if{0} {
-\subsection{The simulated pipeline}
-\label{sec:sim_pipeline}
-
-We repeat the analysis of Sections~\ref{sec:stacking}--\ref{sec:bands} on the
-simulated convergence map described in Section~\ref{sec:sim}. Mock pairs are
-selected in redshift space using the same $r_{\perp}$ bins and
-$r_{\parallel}$ cuts as the data. Mock pairs and individual mock galaxies
-are unweighted. The single-galaxy stack includes every mock galaxy, and the
-control is constructed by superposition as in the observational analysis.
-The periodic, zero-mean map requires no random-pair subtraction. We estimate
-errors using a delete-one jackknife over a $5\times5$ tiling of the box face,
-with $500\,\hinvMpc$ blocks assigned by pair midpoint and the same $(K-1)/K$
-estimator. The control is fixed across the mock jackknife realizations. The
-mock errors therefore include block-to-block variation in the pair stack but
-not sampling uncertainty in the single-galaxy stack.
-
-We use three additional mock tests. First, a line-of-sight sweep repeats
-the pair selection with $r_{\parallel,{\rm max}}=5$, $10$, $20$, and
-$30\,\hinvMpc$ and records, for each cut, the completeness (the fraction of
-truly associated pairs, real-space $|r_{\parallel}|\leq20\,\hinvMpc$, that
-survive the redshift-space cut), the interloper fraction (the fraction of
-selected pairs whose real-space separation exceeds $20\,\hinvMpc$), and a
-bridge-sensitivity metric. We fixed the production cuts before examining the
-observational stacks.
-% CHECK: state the cut-selection rule after reconciling los_contamination_table.py and rpar_scan.py.
-Second, a nonphysical-pair test stacks mock pairs with real-space
-line-of-sight separations of $20$--$40$, $40$--$60$, $60$--$90$, and
-$90$--$120\,\hinvMpc$ and checks whether the control leaves a residual bridge.
-Third, a sensitivity grid varies the smoothing, the $r_{\parallel}$ cut, the
-bin half-width, and the halo mass of the tracer sample.
-}\fi
-
 \section{Expected signal from the simulation}
 \label{sec:sim_expect}
 
@@ -898,18 +627,6 @@ $r_{\perp}=10\,\hinvMpc$ with its control constructed from the stack with single
 Taking the difference of the two maps, we obtain the residual map with pair separation $r_\perp=$ 5, 10, and 20 $\hinvMpc$, as shown in Figure~\ref{fig:sim_residual_maps}. 
 The residual maps all display a quadrupole pattern, with a negative signal close to the $Y$ axis and a positive signal close to the $X$ axis. Such a pattern is consistent with a tidal origin --- as a result of the tidal interaction of galaxy pairs, dark matter distribution tends to be stretched along the pair connecting line and to be squashed along the perpendicular direction. The ridge between the pair of galaxies is the filament-associated component targeted by the analysis. As a result of tidal effect, in the outskirt of the pair and close to the $X$ axis, the stretched matter distribution also shows up. We note that near the positions of the galaxies, the pixel value does not go to zero, as a result of both the tidal effect and pair environment effect.
 
-\if{0} {
-After control subtraction, all
-three separation bins show a positive ridge between the galaxies and a
-deficit perpendicular to the pair axis (Figure~\ref{fig:sim_residual_maps}).
-This pattern arises because the matter distribution around the selected mock
-pairs is anisotropic. The ridge between the galaxies is the
-filament-associated component targeted by the analysis, while the full
-residual also contains signal associated with the paired haloes and their
-environments. The band difference in Equation~(\ref{eq:band}) measures the
-contrast between the axial and perpendicular residuals.
-}\fi
-
 \begin{figure*}
   \centering
   \includegraphics[width=0.9\linewidth]{Figure/sim_pair_vs_control_maps_sep10.pdf}
@@ -917,7 +634,6 @@ contrast between the axial and perpendicular residuals.
   %that for a controlits
   %unit-amplitude control, Equation~(\ref{eq:control}) (right), on a common
   %color scale.
-  %\ZZ{why it is called unit-amplitude?}
   }
   \label{fig:sim_pair_vs_control}
 \end{figure*}
@@ -931,17 +647,6 @@ contrast between the axial and perpendicular residuals.
 
 Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For the $5\hinvMpc$ pairs, the central band becomes negative, which is likely caused by the environment effect of close pairs. The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirt. For the $10\hinvMpc$ and $20\hinvMpc$ pairs, the central band profiles are largely positive. Near the galaxy positions, the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|<0.35$ times the pair separation, is $\left(6.32\pm0.36,\ 4.91\pm0.21,\ 2.18\pm0.12\right)\times10^{-4}$ for the $r_{\perp}=5$, $10$, and $20\,\hinvMpc$ pairs. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
 
-\if{0} {
-The
-mock bridge excess is
-$\left(6.32\pm0.36,\ 4.91\pm0.21,\ 2.18\pm0.12\right)\times10^{-4}$ at
-$r_{\perp}=5$, $10$, and $20\,\hinvMpc$. The corresponding $25$-block
-jackknife signal-to-noise ratios are $17.7$, $22.9$, and $18.1$.
-The decline with separation is consistent with decreases in both the
-connected-pair fraction and the mean bridge density. The mock residual also
-contains an approximately isotropic component at the galaxy positions and an
-anisotropic component along the pair axis.
-}\fi
 % TODO: quote the mock residual at the halo positions and the midpoint kappa.
 
 \begin{figure*}
@@ -1001,7 +706,6 @@ At distances $\gtrsim 15\hinvMpc$ to the pair center, the observed maps tend to 
 %\label{sec:bridge}
 
 Figure~\ref{fig:band_profiles_obs_sim} shows the band profile $B(X)$, the difference between central and off-center average profile defined in Equation~(\ref{eq:band}). Although the observe profiles are noisier, there is general agreement with the simulated profile, with excess in between the pairs. We first computed the bridge excess as the average of $B(X)$ within $|X|<0.35d$ (indicated by the shaded regions in Fig.~\ref{fig:band_profiles_obs_sim}) and estimate the uncertainty based on the jackknife error bars. We find that none of the three bridge excesses exceeds $3\sigma$. The $10\,\hinvMpc$ sample has a positive excess of $2.3\sigma$ and lies $1.4\sigma$ above the mock prediction. The other two measurements are consistent with zero. The results are listed in Table~\ref{tab:bridge}.
-%\ZZ{Notes for later discussion: I am somewhat puzzled -- the bridge clearly shows up and the data points within the bridge region are almost coherently positive, but why we have a low significance? Using the 20Mpc/h profile as an example, I see there are 13 points in the bridge region, 7 independent points due to symmetry (did you use the 7 points for the fit?). If I simply use the 7 points, take the error bars as $\sim$3, and neglect the covariance, I would obtain an error bar in the bridge excess at a level of $\sim$3/sqrt(7) $\sim$ 1.13, smaller than 2.22 listed in Table 1. Maybe the covariance is significant? A test can be done by finding the excess only using the diagonal elements of the covariance matrix. (we will have increased number of pairs in the final run, which can likely increase the significance.)}
 
 %Table~\ref{tab:bridge} gives the bridge excess and jackknife error for each sample, together with the mock prediction for the same statistic. Figure~\ref{fig:band_profiles_obs_sim} compares the observed and mock band profiles.
 
@@ -1074,7 +778,6 @@ an approximate comparison, but would still differ from the estimator used by
 To see the significance of detecting the central and off-center band profiles, we perform a $\chi^{2}$ test of the compressed $22$-element central and off-center band profile against zero with
 the full covariance, which gives $\chi^{2}=35.0$, $20.7$, and $32.4$ for $22$
 degrees of freedom (corresponding to nominal $p$ values of $p=0.04$, $0.54$, and $0.07$). The $p=0.04$ result at $5\,\hinvMpc$ applies to the full profile, including bins that contain the galaxies, and therefore does not constitute a bridge detection.
-%\ZZ{notes: going to $40\hinvMpc$ seems to be too large, which started to be %dominated by noise. let's consider to reduce the range.}
 
 Fitting the mock residual profile to the observed profile over the full
 $22$-element vector using Equation~(\ref{eq:amplitude}) gives
@@ -1124,7 +827,6 @@ statistic, which subtracts the off-center band in Equation~(\ref{eq:band}).
 % TODO: quote the pooled value if this comparison is retained.
 
 %A $95$ percent upper limit on the bridge excess can be converted to surface density using $\Sigma_{\rm crit}$ and subsequently to linear mass densityalong the bridge.
-% \ZZ{ add this once we do comparison with Epps\&Hudson}
 % TODO: compute the upper limits and compare them with Epps & Hudson (2017) and de Graaff et al. (2019).
 
 \subsection{Robustness tests}
@@ -1152,7 +854,6 @@ smoothing scale and do not tune it separately for each separation.
 lensing-efficiency weight from the single-galaxy stacks.
 % TODO: report the changes in the control and bridge excess.
 %Combining the two caps with equal weight, rather than as a joint stack, produced the apparent dip found in earlier versions of the analysis.
-%\ZZ{I think the joint stack is the way to go.}
 % TODO: report the shift in the corrected single profile at 20 h^-1 Mpc.
 
 \paragraph{Random-pair sample.} Replacing the full random catalog by a
@@ -1217,245 +918,6 @@ did, would then constrain the gas temperature of the bridge as well as its
 mass. Finally, subsets of the CMASS pairs overlap the HSC, DES, and KiDS shape
 catalogs. A joint galaxy-shear and CMB-lensing analysis would test the bridge
 using two independent source planes. % CHECK: quantify overlap and add survey citations. 
-
-\begin{comment}
-\section{Theoretical Expectation}
-
-\subsection{Method}
-
-\todo[inline]{method of computing $\kappa$ from simulation, single galaxies, galaxy pairs; including equations.}
-
-When we see the extra lensing between galaxies, we must determine how much of it comes from the filament and the residual coming from the galaxy halos’ own overlap in the middle. To claim a filament signal we first must predict how much lensing two isolated halos would put there on their own, and then subtract that. This prediction is what we call the template, or control, and the simulation is where we build it and find out whether it works. The simulation is necessary because in the real sky there is no way to check the filament/halo distribution between the two galaxies, while in the simulation there is. We use the BigMDPL box, 2500 $\hinvMpc$ on a side at redshift 0.547, identify the dark matter halos in it, and place galaxies in them tuned to match the number density of the real BOSS CMASS sample. Because we can compute the lensing directly from the simulated matter, we know the true answer for every test we run. 
-
-\begin{equation}
-\Sigma(r_{p,i})
-= \frac{\sum_{k=1}^{N_h} N_{p,k}\left(|r_p-r_{p,i}|<\Delta r_p/2\right) M_{p,{\rm eff}} /N_h}{\pi [(r_{p,i}+\Delta r_p/2)^2-(r_{p,i}-\Delta r_p/2)^2]}  - \frac{N_{p,{\rm tot}} M_{p,{\rm eff}}}{L^2},
-\label{eqn:sim_Sig}
-\end{equation}
-
-Equation~(\ref{eqn:sim_Sig}) is an example
-
-\subsection{Characterizing $\kappa$ Map from Galaxy Pairs}
-
-Before measuring anything on the sky, we use the simulation to gauge how much filament is actually present after the control is subtracted. 
-
-Figure~\ref{fig:sim_pair_vs_control_maps_sep10} shows the simulated pair stack at r\_perp = 10 $\hinvMpc$ beside its single-based control. The control is made up of two copies of the measured single-galaxy profile placed at $\pm r_\perp / 2$ along the pair axis (with no fitted parameters). This is the map we would expect if each galaxy carried its own isolated halo and nothing lay between. On the shared color scale the two panels look almost identical–highlighting the difficulty of the measurement. The filament is a small residual between two large and similar maps, so the accuracy of the control matters a lot. 
-
-Subtracting the control from the observed map leaves a clever pattern at all three separations (Figure~\ref{fig:sim_quadrupole_diff_maps}): positive along the pair axis between the galaxies, and negative above and below it. The residual also contains the fact that a halo with a companion is not identical to an isolated halo–but its shape is what makes the measurement possible. A filament lies along the axis while the deficit sits off it. 
-
-Instead of working with a full 2D residual map, we collapse it into two profiles along the pair axis (Figure~\ref{fig:sim_band_profiles_all_seps}): a central band covering $|Y| \le 1.5 \, \hinvMpc$, where a filament would lie, and an off-center band covering $1.5 \le |Y| \le 10.5 \, \hinvMpc$, bracketing it. Their difference cancels anything that varies slowly with Y, including any large-scale offset the two bands share, and turns the map into one number per position along the axis. Rows at the band boundaries are given fractional weights according to how much of each row falls inside the band, so the statistic does not depend on where the pixel edges land. 
-
-The single-galaxy band profile is not a single object. We split it at $r_{\text{c}} = 3 \, \hinvMpc$ into a core, the measured profile inside that radius, and a tail, which is a Gaussian continuation matched to the profile's value and slope at the boundary $\sigma = 3.23 \, \hinvMpc$). These two pieces contribute very differently depending on separation. At the midpoint between the galaxies, the core supplies 100\% of the control at $r_\perp = 5$, 71\% at $r_\perp = 10$, and only 3.6\% at $r_\perp = 20$. At small separations the signal is dominated by the galaxies’ own inner profiles, and at large separations it is made of their outskirts. A control with one amplitude cannot get both regions right, so we fit the core and tail amplitudes separately, using only the region outside the pair where no filament can contribute. 
-
-Fitted this way, the paired halos come out to: $A_{\text{core}} = 1.06$, $1.02$, $1.01$ and $A_{\text{tail}} = 0.96$, $1.02$, $1.05$ at $r_\perp = 5, 10, 20$. The residual left in the bridge is $-1.56 \pm 1.13$, $+1.23 \pm 1.94$, and $+0.50 \pm 1.30$ ($\times 10^{-4}$), with errors from a delete-one jackknife over 25 blocks of the simulation box. The simulation does not predict a large signal in this statistic–a useful expectation to carry into the observational results. 
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{Figure/sim_pair_vs_control_maps_sep10.pdf}
-    \caption{
-    Figure to show true pair $\kappa$ map (a) and single-based control $\kappa$ map (b), use $10\hinvMpc$ pairs as an example
-    }
-    \label{fig:sim_pair_vs_control_maps_sep10}
-\end{figure}
-
-Figure to show the difference (a-b) map to illustrate the quadrupole pattern, one row with 5, 10, and 20$\hinvMpc$ from left to right
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{Figure/sim_quadrupole_diff_maps.pdf}
-    \caption{
-    Figure to show the difference (a-b) map to illustrate the quadrupole pattern, one row with 5, 10, and 20$\hinvMpc$ from left to right
-    }
-    \label{fig:sim_quadrupole_diff_maps}
-\end{figure}
-
-Figure to show the central-band, off-center-band, and difference based on the (a-b) map, 5, 10, 20$\hinvMpc$, from left to right
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{Figure/sim_band_profiles_all_seps.pdf}
-    \caption{
-    Figure to show the central-band, off-center-band, and difference based on the (a-b) map, 5, 10, 20$\hinvMpc$, from left to right
-    }
-    \label{fig:sim_band_profiles_all_seps}
-\end{figure}
-
-Figure to show central band profile for single superposition, show the decomposition
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{Figure/band_core_tail_decomposition.pdf}
-    \caption{
-    Figure to show central band profile for single superposition, show the decomposition
-    }
-    \label{fig:footprint_zdist}
-\end{figure}
-
-Figure to show 5, 10, 20$\hinvMpc$ measured pair central band vs fitted control pair profiles (3 panels from left to right) , with difference in bottom smaller panel of each top panel
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{Figure/band_core_tail_fitted_central.pdf}
-    \caption{
-    Figure to show 5, 10, 20$\hinvMpc$ measured pair central band vs fitted control pair profiles (3 panels from left to right) , with difference in bottom smaller panel of each top panel
-    }
-    \label{fig:footprint_zdist}
-\end{figure}
-
-\section{Measurement Results}
-
-\subsection{Methods}
-
-\todo[inline]{including equations.} We rotate and stack hundreds of thousands of galaxy pairs along the same axis in the same positions to reduce noise and isolate the filament signal. The rotation ensures that each pair’s bridge is aligned and not smeared in a ring. For every pair of galaxies we compute two separations, both in comoving $\hinvMpc$ – r\_perp (separation across the line of sight) and r\_par (separation along the line of sight). A pair enters a sample if r\_perp falls in the chosen bin (4–6, 9–11, or 18–22 $\hinvMpc$) and r\_par is below the cut. A galaxy can appear in more than one pair, and we do not remove these. For each pair we lay down a square grid, 100 $\hinvMpc$ on a side, sampled at 101 × 101 points. That gives exactly 1 $\hinvMpc$ between grid points. The grid is oriented so that X runs along the line joining the two galaxies. The galaxies sit at $X = -r_\perp/2$ and $X = +r_\perp/2$. We find the midpoint and rotation angle, then convert grid points to sky positions by rotating each grid point by $\theta$, dividing by the pair’s comoving distance, and adding to the midpoint’s coordinates, resulting in Galactic longitude and latitude. We work in Galactic coordinates rather than RA/Dec throughout. Each grid point's (l, b) is converted to the HEALPix convention and mapped to the pixel of the Planck map containing it, and that pixel's $\kappa$ value is read off. At nside = 2048 the pixels are about 1.7 arcmin, comfortably finer than the 1 $\hinvMpc$ grid spacing, so no interpolation is needed. The stack is a weighted mean, computed separately for every pixel. The stacked map has four-fold symmetry built into the physics. We average four quadrants: the value at $(+X, +Y)$ is replaced by the mean of $(+X, +Y)$, $(-X, +Y)$, $(+X, -Y)$, and $(-X, -Y)$. Every value in the final map is an average of four measurements of the same physical quantity, which reduces the noise. This is different from symmetrization used for single galaxies, which averages in circular rings. The same procedure is run on pairs drawn from the random catalogs — same separation cuts, same rotation, same weighting. The randoms contain survey footprints but no real structure, so subtracting it leaves the galaxy signal. 
-
-\subsubsection{Pair selection}
-
-A pair is defined by two comoving separations, r\_perp, perpendicular to the line of sight, and r\_par, along the line of sight. r\_perp is what we bin on: 4–6, 9–11, 18–22 $\hinvMpc$, called the 5, 10, and 20 $\hinvMpc$ samples. r\_par has to be small for a physically connected pair ($\le 5 \, \hinvMpc$ at $5$; $\le 10 \, \hinvMpc$ at $10$ and $20$). 
-
-\subsubsection{Joint N+S estimator}
-\todo[inline]{no need to talk about what wrong before, just describe what's currently implemented, also check the statement about random catalogs}
-BOSS CMASS covers two disconnected parts of the sky, the larger Northern one and a smaller Southern one. They have to be combined into a single measurement. The earlier profiles stacked each region separately and then averaged the two with equal weight, which is the wrong thing to do because the Northern section contains far more galaxies, meaning its measurement is more precise. Weighing the two equally produced a visible artifact–an apparent dip at 20 $\hinvMpc$ that looked like a physical feature but was purely a result of the weighing. The current analysis addresses this problem by stacking every galaxy from both regions into a single running total. Nothing is separated, so the need for averaging is gone. The same applies to random catalogs, which are stacked jointly in the same way, so the galaxy-minus-random subtraction is between two consistently constructed quantities.  
-
-\subsubsection{Spatial jackknife and covariance}
-
-Because we are measuring the sky, the measurement cannot be repeated to see how much it scatters. The delete-one jackknife gets an error from a single dataset instead by dividing the sky into many patches, repeating the whole measurement with one patch removed at a time, and using the scatter across those repeats as the uncertainty. If the answer barely moves each time a patch is dropped, the measurement is robust. The standard $(K-1)/K$ factor converts that scatter into an error, correcting for the fact that the repeats overlap heavily. To build each patch, we utilize the fact that the sky is divided into equal-area HEALPix cells of about 34 square degrees. Cells containing enough galaxies become patch centers; cells only partly covered at the survey’s ragged edge are merged into the nearest neighboring patch, so no galaxy falls outside. This yields 287 patches of roughly equal size that span both the north and the south regions. The stack is accumulated separately for each patch in a single pass, so leaving a patch out means just subtracting its running total from the total. All 287 repeats then cost just as much as one stack. The reported map is galaxies minus randoms. Both galaxies and randoms share a single layout, so every leave-one-out estimate is a valid version of the subtracted map, and the error applies to the quantity reported. The analysis computes the full covariance, not just how much each bin scatters, but how much each pair of bins scatters together, and uses it whenever bins are combined. The full covariance is needed because the profile has many bins along the pair axis, each with its own jackknife error. Combining them as if they were independent would be wrong, because the Planck map is smoothed over about 3.3 $\hinvMpc$ while the bins are 1 $\hinvMpc$ wide, so a single blur spans three bins and neighbouring bins rise and fall together. Finally, the fitted quantities are refitted in every repeat. Any parameter estimated from the data is re-estimated inside each leave-one-out realization rather than fixed at its full-sample value. Holding a fitted parameter leaves its uncertainty out and makes a method appear ten times more precise than it actually is (as determined in one of our control tests). 
-
-Note: Planck’s $\kappa$ map is noise-dominated at these scales. After smoothing, the pixels are not independent anymore (8-arcmin beam is more than three times the size of one pixel), so treating pixels as independent understates the error. 
-
-\subsection{Results}
-
-We apply the estimator fixed in simulation – fitted core+tail control, r\_c = 3 $\hinvMpc$, no additive constant – to BOSS CMASS. The samples contain 217,702, 459,051, and 1,282,969 pairs at $r_\perp = 5$, $10$, and $20$ $\hinvMpc$. NOTE: The $r_\perp = 10$ and $20$ samples use a line-of-sight cut of r\_par $\le 10 \hinvMpc$; the $r_\perp = 5$ sample uses r\_par $\le 5$. All errors come from the 287-patch delete-one jackknife, with every fitted parameter re-fitted inside each realization. 
-
-Figure Z shows the symmetrized single-galaxy stack besides three pair stacks. Figure A compares the observed difference maps with the simulated ones. The observed maps show the same broad quadrupole seen in simulation–excess along the pair axis, deficit above and below–but at much lower signal-to-noise, because the Planck reconstruction is noise-dominated at these scales. 
-
-The core amplitude of the fitted control comes out to close to one at all three separations: $A_{\text{core}} = 0.84 \pm 0.11$, $0.99 \pm 0.13$, and $1.08 \pm 0.11$. Halos in observed pairs are therefore consistent with isolated halos of the same profile, matching the simulation. It is important to note that two things do not match. The tail amplitude is systematically low – $A_{\text{tail}} = 0.78 \pm 0.29$, $0.52 \pm 0.26$, and $0.50 \pm 0.28$, against 0.96–1.05 in simulation – meaning the real single-galaxy profile falls off faster at a larger radius than the mock does. The fitted core width is also narrower, $\sigma = 2.90 \hinvMpc$ observed against 3.23 predicted, about 10\% smaller. Both point the same way: the mock galaxies sit in slightly more extended halos than the real CMASS sample. 
-
-The bridge residual between galaxies after subtracting the fitted control
-
-\begin{table}[ht]
-    \centering
-    \caption{Mean bridge convergence and its significance, measured on the
-             central band of the pair stack after subtracting the fitted
-             core+tail control. The bridge window is $|X| \leq r_\perp/4$.
-             Errors are from the 287-region delete-one jackknife, with every
-             fitted parameter re-fitted in each realization.}
-    \label{tab:bridge}
-    \begin{tabular}{ccc}
-        \hline
-        $r_\perp$ [$\hinvMpc$] & Bridge $\kappa$ [$10^{-4}$] & Significance \\
-        \hline
-        5  & $+1.74 \pm 11.29$ & $0.15\sigma$ \\
-        10 & $+8.94 \pm 7.45$  & $1.20\sigma$ \\
-        20 & $+4.39 \pm 4.60$  & $0.95\sigma$ \\
-        \hline
-    \end{tabular}
-\end{table}
-
-All three are consistent with zero. The values are positive, and the $r_\perp = 10$ point is the largest, but none reaches the level at which we would claim a measurement. Testing the individual bins against zero with a $\chi^2$ and the full covariance does not change the conclusion. No separation exceeds $1.9\sigma$ once the excluded region around each galaxy is at least one beam width wide.
-
-To ensure the control is accurate, we checked outside the fitted region and discerned that the residual is consistent with zero at all three separations, so there's no evidence that the control under or over-subtracts. The scatter of the residual away from the halos is 3.27, 3.24, and 2.04, comparable to the quoted bridge errors, which confirms that the errors reflect real map noise rather than fit instability. The residuals at the halo positions themselves are $+3.37 \pm 4.72$, $+12.46 \pm 5.56$, and $+0.45 \pm 3.82$. The $r_\perp = 10$ halo residual is the one mild outlier, at $2.2\sigma$. 
-
-The errors are large because of the Planck map. Measuring the same bridge window on the unfitted central band with no control and no fitted parameters yields errors of $(10.57, 7.35 \text{ and } 4.84) \times 10^{-4}$, within 7\% of the quoted values at every separation. Fitting the control is effectively free. 
-
-The simulation predicts a bridge of $-1.56 \pm 1.13$, $+1.23 \pm 1.94$, and $+0.50 \pm 1.30$ in the same statistic. The observations are consistent with these values, but the observational errors are 4-9 times larger, so the measurement cannot distinguish the signal from zero. For context, de Graaff et al. (2019) measured the same quantity on the same lens sample and source, reporting $\kappa = (5.8 \pm 3.1) \times 10^{-4}$ at $1.9\sigma$. Their central value is comparable to ours at $r_\perp = 10$ ($+8.94$), but their error is 2.4 times smaller, largely because they pool all pairs from 6 to 14 $\hinvMpc$ into one rescaled measurement rather than resolving separation as we do. 
-
-
-Figure show stacked symmetrized single, 5, 10, 20 pair $\kappa$
-maps (left-right), 4 panels
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{boss_single_and_pair_maps.pdf}
-    \caption{
-    Figure show stacked symmetrized single, 5, 10, 20 pair $\kappa$
-    maps (left-right), 4 panels
-    }
-    \label{fig:footprint_zdist}
-\end{figure}
-
-Figure to show (a-b) maps, left observed, right theoretical, three rows for 5, 10, and 20$\hinvMpc$
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{Figure/obs_vs_sim_quadrupole_maps.pdf}
-    \caption{
-    Figure to show (a-b) maps, left observed, right theoretical, three rows for 5, 10, and 20$\hinvMpc$
-    }
-    \label{fig:footprint_zdist}
-\end{figure}
-
-Figure to show central band profile for observed single superposition, show the decomposition
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{Figure/boss_band_core_tail_decomposition.pdf}
-    \caption{
-    Figure to show central band profile for observed single superposition, show the decomposition
-    }
-    \label{fig:footprint_zdist}
-\end{figure}
-
-Figure to show 5, 10, 20$\hinvMpc$ observed pair central band vs fitted control observed pair profiles (3 panels from left to right) , with difference in bottom smaller panel of each top panel
-
-\begin{figure}
-   \centering
-    \includegraphics[width=0.45\linewidth]{Figure/boss_band_core_tail_central.pdf}
-    \caption{
-    Figure to show 5, 10, 20$\hinvMpc$ observed pair central band vs fitted control observed pair profiles (3 panels from left to right) , with difference in bottom smaller panel of each top panel
-    }
-    \label{fig:footprint_zdist}
-\end{figure}
-
-need some thoughts on comparing observation and theory, we may have more figures
-
-\section{Summary and Discussion} 
-\label{sec:summary}
-
-We stacked the Planck lensing map on 217,702, 459,051, and 1,282,969 CMASS
-galaxy pairs at transverse separations of 5, 10, and 20 $h^{-1}$ Mpc,
-subtracted a control built from the galaxies' own single-galaxy stack, and
-measured what was left between them.
-
-\textbf{We do not detect a filament.} The bridge is consistent with zero at all
-three separations, at $0.15\sigma$, $1.20\sigma$, and $0.95\sigma$. This does
-not change when the individual profile bins are tested against zero with the
-full covariance instead of averaged, nor when the quadrupole is measured
-directly from the difference maps.
-
-\textbf{The limit is the map, not the method.} Removing the control entirely
-and measuring the same window on the raw band changes the error by less than
-7\%. Fitting the control is effectively free, so no improvement to the template
-can shrink the error bar. Only more pairs or a less noisy convergence map can.
-
-\textbf{The control behaves.} The fitted core amplitude is consistent with one
-at every separation, so halos in observed pairs look like isolated halos of the
-same profile, as in the simulation. Outside the fitted region the residual is
-consistent with zero, and non-physical pairs return no signal.
-
-\textbf{Two mismatches with the mock are worth noting.} The fitted tail
-amplitude is low ($0.50$--$0.78$ against $0.96$--$1.05$ predicted) and the core
-is about 10\% narrower than predicted ($\sigma = 2.90$ against $3.23$
-$h^{-1}$ Mpc). Both point the same way: the mock galaxies sit in slightly more
-extended halos than the real CMASS sample. This affects the shape of the
-control, not the conclusion, but it suggests the HOD could be tuned on the
-lensing profile rather than the number density alone.
-
-\textbf{One methodological result generalises beyond this work.} When removing
-the halo positions from a bridge measurement, the excluded region must be at
-least as wide as the smoothing scale. Excluding only $\pm 1$ $h^{-1}$ Mpc,
-against a Planck beam of 3.3 $h^{-1}$ Mpc, left enough halo signal inside the
-window to produce an apparent $2.4\sigma$ bridge that vanished once the
-exclusion reached a full beam width.
-
-\textbf{Improvements.} Because the error is dominated by map noise, it falls as
-the sample grows, so widening the separation bins is the most direct gain
-available with existing data. Beyond that, the deeper convergence maps from
-ACT, SPT-3G, and eventually CMB-S4 offer far lower noise over the CMASS
-footprint, and a measurement of this kind is likely to become possible there
-before it becomes possible with Planck. Using a single line-of-sight cut across
-all three separation bins would also make the samples directly comparable.
-
-\end{comment}
 
 \begin{acknowledgments}
 We are grateful to Prof.\ Zheng Zheng for his guidance throughout this
