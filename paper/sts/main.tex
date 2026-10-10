@@ -631,16 +631,16 @@ which has the solution and error bar
 
 We first analyze the stacked $\kappa$ maps based on the mock galaxy catalog and the $\kappa$ map from the $N$-body simulation, which provide a reference model to guide our observational measurements and analysis. 
 
-Figure~\ref{fig:sim_pair_vs_control} compares the mock pair stack at
-$r_{\perp}=10\,\hinvMpc$ with its control constructed from the stack with single galaxies. The two maps are nearly indistinguishable on a common color scale because the difference is small relative to the signal around the galaxies. A close look reveal that the pair stack appear to be more squashed along the $Y$ direction than the control stack.
+Figure~\ref{fig:sim_pair_vs_control} compares the mock pair stack for the
+$6$--$15\,\hinvMpc$ bin with its control constructed from the stack with single galaxies. The two maps are nearly indistinguishable on a common color scale because the difference is small relative to the signal around the galaxies. A close look reveal that the pair stack appear to be more squashed along the $Y$ direction than the control stack.
 
-Taking the difference of the two maps, we obtain the residual map with pair separation $r_\perp=$ 5, 10, and 20 $\hinvMpc$, as shown in Figure~\ref{fig:sim_residual_maps}. 
+Taking the difference of the two maps, we obtain the residual maps for the three $r_{\perp}$ bins, as shown in Figure~\ref{fig:sim_residual_maps}. 
 The residual maps all display a quadrupole pattern, with a negative signal close to the $Y$ axis and a positive signal close to the $X$ axis. Such a pattern is consistent with a tidal origin --- as a result of the tidal interaction of galaxy pairs, dark matter distribution tends to be stretched along the pair connecting line and to be squashed along the perpendicular direction. The ridge between the pair of galaxies is the filament-associated component targeted by the analysis. As a result of tidal effect, in the outskirt of the pair and close to the $X$ axis, the stretched matter distribution also shows up. We note that near the positions of the galaxies, the pixel value does not go to zero, as a result of both the tidal effect and pair environment effect.
 
 \begin{figure*}
   \centering
   \includegraphics[width=0.9\linewidth]{Figure/sim_pair_vs_control_maps_sep10.pdf}
-  \caption{Stacked convergence map from mock galaxy pairs with separation $r_{\perp}=10\,\hinvMpc$ (left) and a control map constructed by superposition of maps of single mock galaxies (right), on a common color scale.
+  \caption{Stacked convergence map from mock galaxy pairs with separation $6\leq r_{\perp}<15\,\hinvMpc$ (left) and the control map constructed by superposition of maps of single mock galaxies, averaged over the separations of the pairs as in Equation~(\ref{eq:control}) (right), on a common color scale. Crosses mark the galaxy positions at the nominal separation $d=10\,\hinvMpc$.
   %that for a controlits
   %unit-amplitude control, Equation~(\ref{eq:control}) (right), on a common
   %color scale.
@@ -651,11 +651,11 @@ The residual maps all display a quadrupole pattern, with a negative signal close
 \begin{figure*}
   \centering
   \includegraphics[width=0.9\linewidth]{Figure/sim_quadrupole_diff_maps.pdf}
-  \caption{Mock residual maps for pairs with transverse separation $r_{\perp}=5$, $10$, and $20\,\hinvMpc$ (left to right), showing the ridge along the pair axis and the deficit perpendicular to it. Galaxy positions are marked. A residual map is the difference between the stacked map for galaxy pairs and that from superposition of single galaxy map at the pair separation.}
+  \caption{Mock residual maps for pairs in the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins (left to right), showing the ridge along the pair axis and the deficit perpendicular to it. Crosses mark the galaxy positions at the nominal separations $d=5$, $10$, and $20\,\hinvMpc$. A residual map is the difference between the stacked map for galaxy pairs and the control map of Equation~(\ref{eq:control}). Each panel has its own color scale and extent.}
   \label{fig:sim_residual_maps}
 \end{figure*}
 
-Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For the $5\hinvMpc$ pairs, the central band becomes negative, which is likely caused by the environment effect of close pairs. The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirt. For the $10\hinvMpc$ and $20\hinvMpc$ pairs, the central band profiles are largely positive. Near the galaxy positions, the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|<0.35$ times the pair separation, is $\left(6.32\pm0.36,\ 4.91\pm0.21,\ 2.18\pm0.12\right)\times10^{-4}$ for the $r_{\perp}=5$, $10$, and $20\,\hinvMpc$ pairs. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
+Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For the $4$--$6\,\hinvMpc$ bin, the central band becomes negative, which is likely caused by the environment effect of close pairs. The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirt. For the $6$--$15\,\hinvMpc$ bin, the central band profile between the galaxies is weakly positive, and for the $15$--$25\,\hinvMpc$ bin it is clearly positive. In all three bins, the off-center band profile between the galaxies is negative. It dominates the difference profile in the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, while the two bands contribute comparably in the $15$--$25\,\hinvMpc$ bin. Near the galaxy positions, the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|\leq0.35\,d$ with $d$ the nominal separation, is $\left(5.97\pm0.35,\ 4.91\pm0.21,\ 2.18\pm0.11\right)\times10^{-4}$ for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
 
 % TODO: quote the mock residual at the halo positions and the midpoint kappa.
 
@@ -663,17 +663,20 @@ Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For th
   \centering
   \includegraphics[width=0.9\linewidth]{Figure/sim_band_profiles_all_seps.pdf}
   \caption{Central-band mean profile, off-center-band mean profile, and their difference
-  $B(X)$ from the mock residual maps at the three pair separations. The shaded
-  window is $|X|\leq0.35\,d$. See text for details.}
+  $B(X)$ from the mock residual maps for the three $r_{\perp}$ bins. The shaded
+  window is $|X|\leq0.35\,d$, and the dotted lines mark the galaxy positions
+  at the nominal separation $d$. See text for details.}
   \label{fig:sim_band_profiles}
 \end{figure*}
 
 The nonphysical mock pairs show no bridge in any line-of-sight band,
 confirming that the control does not itself generate a ridge.
+% TODO (wide bins): the nonphysical-pair test was run at the narrow bins of the submitted version with the single-separation control. Rerun for 4-6, 6-15, 15-25 with the averaged control.
 % TODO: per-band residual bridge excess +/- error from nonphysical_pair_test_*.csv.
 The line-of-sight sweep supports the production cuts. At
 $r_{\perp}=5\,\hinvMpc$ the bridge signal first rises and then falls as the
 cut is widened, while at $10\,\hinvMpc$ it falls.
+% TODO (wide bins): the line-of-sight sweep was run at the narrow bins of the submitted version; the two sentences above describe those runs. Rerun for the wide bins, which all use r_par <= 5, and rewrite.
 % TODO: completeness / interloper fraction / sensitivity per cut from rpar_scan.csv and los_sweep_summary.csv.
 
 \section{Results}
