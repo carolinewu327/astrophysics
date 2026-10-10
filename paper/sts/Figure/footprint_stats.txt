@@ -1,0 +1,23 @@
+Redshift selection: 0.4 < z < 0.7
+Planck lensing mask sky fraction: 0.6706
+
+[North]
+  N galaxies                 : 579,089
+  Sum of weights             : 617,001.0
+  Median z                   : 0.5393
+  Weighted mean z            : 0.5450
+  On unmasked Planck pixel   : 558,777 (96.49 %)
+
+[South]
+  N galaxies                 : 213,205
+  Sum of weights             : 230,526.9
+  Median z                   : 0.5399
+  Weighted mean z            : 0.5448
+  On unmasked Planck pixel   : 201,971 (94.73 %)
+
+[Total]
+  N galaxies                 : 792,294
+  Sum of weights             : 847,528.0
+  Median z                   : 0.5394
+  Weighted mean z            : 0.5450
+  On unmasked Planck pixel   : 760,748 (96.02 %)
