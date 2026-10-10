@@ -161,6 +161,14 @@ python analysis/boss/scripts/widebin_control_profiles.py         # pair stack vs
 python analysis/boss/scripts/widebin_paper_figures.py --wide-only  # Figs 2-7
 ```
 
+The same script makes the manuscript's figures. With `--paper` it writes
+Figs 2-7 for the wide bins, in paper style, to `paper/sts/Figure/`
+(see `paper/sts/README.md`):
+
+```bash
+python analysis/boss/scripts/widebin_paper_figures.py --paper --overwrite
+```
+
 | Output (in `$W/comparison/`) | In the write-up | Script |
 |---|---|---|
 | `bridge_study_archived_vs_wide.csv` | Table 1 paper vs wide; profile tests (chi^2, fitted amplitudes) | `widebin_vs_archived.py` |

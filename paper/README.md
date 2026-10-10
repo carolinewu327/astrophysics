@@ -1,5 +1,10 @@
 # Paper: Filaments between Dark Matter Halos from CMB Lensing
 
+> **This file documents `paper/styau/`, the submitted version (narrow bins
+> 4-6, 9-11, 18-22). That folder is frozen: do not edit it or regenerate
+> figures into it.** The wide-bin version being prepared for journal
+> publication lives in `paper/sts/` and has its own `paper/sts/README.md`.
+
 Manuscript sources, final figures, and the record of which script makes
 which figure. Prose is edited in Overleaf (project
 `Filaments_from_CMB_Lensing`); this directory holds the snapshots that are

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""The manuscript's figures, archived bins beside wide bins.
+"""The manuscript's figures for the wide bins, alone or beside the archived bins.
+
+This is the source of the figures in paper/sts/Figure/ (run with --paper), and
+of the archived-vs-wide comparison figures in widebin_rpar5/comparison/.
 
 Redraws Figures 2-7 of paper/styau (the submitted draft) twice, once per
 binning, in one image per figure so the two can be read side by side:
@@ -23,16 +26,24 @@ With --wide-only, figures 2-6 show the wide bins alone (files *_wide.*) and the
 reader compares them with the manuscript; figure 7 keeps both binnings, since
 B(X) is the measurement itself.
 
+With --paper, all six figures show the wide bins alone, panel titles are bare
+labels, and the files keep the names the manuscript's \\includegraphics lines
+use.  They are written as PDF only into paper/sts/Figure/ (--output-dir to
+change).  paper/styau/ is the submitted version and is never written.
+
 Also writes the residual at the galaxy positions (the "2e-3 vs 0.9e-3" sentence
 of section 5.1) for both binnings.
 
-Outputs go to widebin_rpar5/comparison/paper_figures/; nothing in the archive or
-paper/ is written.
+Outputs go to widebin_rpar5/comparison/paper_figures/, or paper/sts/Figure/
+under --paper; nothing in the archive or paper/styau/ is written.
 
 Usage
 -----
-    PYTHONPATH=lib:analysis/boss/scripts:analysis/sim python \\
-        analysis/boss/scripts/widebin_paper_figures.py
+    export PYTHONPATH=lib:analysis/boss/scripts:analysis/sim
+    S=analysis/boss/scripts/widebin_paper_figures.py
+    python $S --paper       # figures 2-7 for the manuscript -> paper/sts/Figure/
+    python $S               # archived beside wide           -> comparison/paper_figures/
+    python $S --wide-only   # wide alone, annotated titles   -> comparison/paper_figures/*_wide.*
 """
 
 from __future__ import annotations
@@ -71,6 +82,15 @@ ROWS = [("5", "g4_6", "4-6", "4-6"), ("10", "g6_15", "9-11", "6-15"), ("20", "g1
 VERSIONS = ("archived", "wide")
 SHOW = VERSIONS      # binnings drawn in figures 2-6; ("wide",) under --wide-only
 SUFFIX = ""          # "_wide" under --wide-only
+FIG7_SHOW = VERSIONS  # binnings drawn in figure 7; ("wide",) under --paper
+PAPER = False        # --paper: manuscript file names and bare panel labels
+STEMS = {2: "fig2_mock_pair_vs_control", 3: "fig3_mock_residual_maps", 4: "fig4_mock_band_profiles",
+         5: "fig5_boss_single_and_pair_maps", 6: "fig6_obs_vs_mock_residual_maps",
+         7: "fig7_band_profiles_obs_vs_mock"}
+# Names of the manuscript's own figures (figure manifests in paper/README.md and paper/sts/README.md).
+PAPER_STEMS = {2: "sim_pair_vs_control_maps_sep10", 3: "sim_quadrupole_diff_maps",
+               4: "sim_band_profiles_all_seps", 5: "boss_single_and_pair_maps",
+               6: "obs_vs_sim_quadrupole_maps", 7: "band_profiles_obs_vs_sim"}
 ZOOM_FIG5 = 26.0
 
 
@@ -148,7 +168,15 @@ def wide_sample(wide_dir, sim_dir, sim_single, singles, name, bin_text, random_l
             "sim_B_err": jackknife_error(np.asarray(sim_loo))[1]}
 
 
+def stem(n):
+    if PAPER:
+        return PAPER_STEMS[n]
+    return STEMS[n] + ("" if n == 7 else SUFFIX)
+
+
 def row_label(version, s):
+    if PAPER:
+        return rf"$r_\perp$ = {s['bin'].replace('-', '–')} $h^{{-1}}$Mpc"
     return f"{version}  r$_\\perp$ = {s['bin']}"
 
 
@@ -165,13 +193,14 @@ def fig2(S, out):
         norm = LogNorm(vmin=max(min(a.min(), b.min()), 1e-5) * 1e4, vmax=max(a.max(), b.max()) * 1e4)
         ctl_name = "control at R" if v == "archived" else "control averaged over pairs"
         for c, (arr, lab) in enumerate(((a, "true pair stack"), (b, ctl_name))):
+            text = f"({'ab'[c]}) {lab}" if PAPER else f"mock, {row_label(v, s)}: {lab}"
             ax = axes[r, c]
             im = ax.imshow(arr * 1e4, origin="lower", extent=ext, cmap="magma_r", norm=norm)
             mark(ax, s["sep"], GREEN)
             label_axes(ax)
-            title(ax, f"mock, {row_label(v, s)}: {lab}")
+            title(ax, text)
         fig.colorbar(im, ax=axes[r], label=r"$\kappa$  [$10^{-4}$]", shrink=0.9)
-    save(fig, out / f"fig2_mock_pair_vs_control{SUFFIX}")
+    save(fig, out / stem(2))
 
 
 def fig3(S, out):
@@ -188,9 +217,9 @@ def fig3(S, out):
                            vmin=-lim, vmax=lim)
             mark(ax, S[v][key]["sep"])
             label_axes(ax)
-            title(ax, f"mock, {row_label(v, S[v][key])}")
+            title(ax, row_label(v, S[v][key]) if PAPER else f"mock, {row_label(v, S[v][key])}")
         fig.colorbar(im, ax=axes[:, c], label=r"$\kappa$  [$10^{-4}$]", shrink=0.6 if len(SHOW) > 1 else 0.88)
-    save(fig, out / f"fig3_mock_residual_maps{SUFFIX}")
+    save(fig, out / stem(3))
 
 
 def fig4(S, out):
@@ -215,16 +244,17 @@ def fig4(S, out):
             ax.set_xlim(-half, half)
             ax.set_xlabel(r"$X$ along the pair axis  [$h^{-1}$ Mpc]")
             ax.set_ylabel(r"$\kappa$  [$10^{-4}$]")
-            title(ax, f"mock, {row_label(v, s)}")
+            title(ax, row_label(v, s) if PAPER else f"mock, {row_label(v, s)}")
             if r == 0 and c == 0:
                 ax.legend(loc="lower left", fontsize=8, frameon=False)
             tidy(ax)
-    save(fig, out / f"fig4_mock_band_profiles{SUFFIX}")
+    save(fig, out / stem(4))
 
 
 def fig5(single, S, out):
     """Observed single stack and the pair stacks; one linear scale throughout."""
-    panels = [(r, c + 1, f"pairs, {row_label(v, S[v][key])}", S[v][key]["pair"], S[v][key]["axis"],
+    panels = [(r, c + 1, (f"({'bcd'[c]}) " if PAPER else "") + f"pairs, {row_label(v, S[v][key])}",
+               S[v][key]["pair"], S[v][key]["axis"],
                S[v][key]["sep"]) for r, v in enumerate(SHOW) for c, (key, *_rest) in enumerate(ROWS)]
     s_axis = axis_for_map(single)
     vmax = max([float(crop(a, ax_, ZOOM_FIG5)[0].max()) for *_, a, ax_, _ in panels]
@@ -236,7 +266,7 @@ def fig5(single, S, out):
                            interpolation="nearest")
     axes[0, 0].plot([0], [0], ls="none", marker="+", ms=10, mew=1.6, color=GREEN)
     label_axes(axes[0, 0])
-    title(axes[0, 0], "single galaxies" + (" (both binnings)" if len(SHOW) > 1 else ""))
+    title(axes[0, 0], ("(a) " if PAPER else "") + "single galaxies" + (" (both binnings)" if len(SHOW) > 1 else ""))
     for r in range(1, len(SHOW)):
         axes[r, 0].axis("off")
     for r, c, lab, arr, axis, sep in panels:
@@ -247,7 +277,7 @@ def fig5(single, S, out):
         label_axes(axes[r, c])
         title(axes[r, c], lab)
     fig.colorbar(im, ax=axes, label=r"$\kappa$  [$10^{-4}$]", shrink=0.6 if len(SHOW) > 1 else 0.9)
-    save(fig, out / f"fig5_boss_single_and_pair_maps{SUFFIX}")
+    save(fig, out / stem(5))
 
 
 def fig6(S, out):
@@ -265,17 +295,18 @@ def fig6(S, out):
                                    interpolation="nearest")
             mark(axes[r, c], s["sep"])
             label_axes(axes[r, c])
-            title(axes[r, c], f"{row_label(v, s)}, {which}")
+            title(axes[r, c], f"{row_label(v, s)} — {which}" if PAPER else f"{row_label(v, s)}, {which}")
         fig.colorbar(im, ax=axes[r], label=r"$\kappa$  [$10^{-4}$]", shrink=0.88)
-    save(fig, out / f"fig6_obs_vs_mock_residual_maps{SUFFIX}")
+    save(fig, out / stem(6))
 
 
 def fig7(S, out):
     """B(X), BOSS against the mock, with (BOSS - mock)/sigma strips."""
-    fig, axes = plt.subplots(4, 3, figsize=(13.8, 10.8), height_ratios=[3, 1, 3, 1],
+    n = len(FIG7_SHOW)
+    fig, axes = plt.subplots(2 * n, 3, figsize=(13.8, 5.4 * n), height_ratios=[3, 1] * n,
                              constrained_layout=True, squeeze=False)
     for c, (key, *_rest) in enumerate(ROWS):
-        for r, v in enumerate(VERSIONS):
+        for r, v in enumerate(FIG7_SHOW):
             s = S[v][key]
             axis, sep = s["axis"], s["sep"]
             prof, err = band_profile(s["res"], axis), s["B_err"]
@@ -320,10 +351,10 @@ def fig7(S, out):
             bot.grid(True, axis="y", color=GRID, linewidth=0.6)
             tidy(bot)
         # one y-range per column so the two binnings compare directly
-        lims = [axes[2 * r, c].get_ylim() for r in range(2)]
-        for r in range(2):
+        lims = [axes[2 * r, c].get_ylim() for r in range(n)]
+        for r in range(n):
             axes[2 * r, c].set_ylim(min(l[0] for l in lims), max(l[1] for l in lims))
-    save(fig, out / "fig7_band_profiles_obs_vs_mock")
+    save(fig, out / stem(7))
 
 
 def galaxy_residuals(S):
@@ -344,10 +375,11 @@ def galaxy_residuals(S):
 
 
 def save(fig, base):
-    for e in ("png", "pdf"):
+    base.parent.mkdir(parents=True, exist_ok=True)
+    for e in (("pdf",) if PAPER else ("png", "pdf")):
         fig.savefig(f"{base}.{e}", bbox_inches="tight", dpi=150)
     plt.close(fig)
-    logger.info("Saved %s.png", base)
+    logger.info("Saved %s", base)
 
 
 def main(argv=None):
@@ -361,18 +393,25 @@ def main(argv=None):
     p.add_argument("--single-random-tag", default="_scw_frac100")
     p.add_argument("--wide-only", action="store_true",
                    help="Figures 2-6 for the wide bins alone (*_wide files); figure 7 keeps both.")
+    p.add_argument("--paper", action="store_true",
+                   help="Manuscript versions: wide bins only in all six figures, bare panel labels, "
+                        "the manuscript's file names, PDF only, written to paper/sts/Figure/.")
+    p.add_argument("--output-dir", default=None,
+                   help="Default: <wide-dir>/comparison/paper_figures, or paper/sts/Figure "
+                        "under --paper.")
     p.add_argument("--overwrite", action="store_true")
     args = p.parse_args(argv)
     setup_logging()
 
-    global SHOW, SUFFIX
+    global SHOW, SUFFIX, FIG7_SHOW, PAPER
     if args.wide_only:
         SHOW, SUFFIX = ("wide",), "_wide"
+    if args.paper:
+        PAPER, SHOW, FIG7_SHOW = True, ("wide",), ("wide",)
     wide_dir, sim_dir = Path(args.wide_dir), Path(args.sim_dir)
-    out = wide_dir / "comparison" / "paper_figures"
-    targets = [out / f"fig{n}_{stem}{SUFFIX}.png" for n, stem in
-               ((2, "mock_pair_vs_control"), (3, "mock_residual_maps"), (4, "mock_band_profiles"),
-                (5, "boss_single_and_pair_maps"), (6, "obs_vs_mock_residual_maps"))]
+    default_out = Path("paper/sts/Figure") if PAPER else wide_dir / "comparison" / "paper_figures"
+    out = Path(args.output_dir) if args.output_dir else default_out
+    targets = [out / f"{stem(n)}.pdf" for n in ((2, 3, 4, 5, 6, 7) if PAPER else (2, 3, 4, 5, 6))]
     if any(t.exists() for t in targets) and not args.overwrite:
         raise FileExistsError(f"Figures exist in {out} (use --overwrite)")
     out.mkdir(parents=True, exist_ok=True)
@@ -400,7 +439,8 @@ def main(argv=None):
     fig5(single, S, out)
     fig6(S, out)
     fig7(S, out)
-    galaxy_residuals(S).to_csv(out / "residual_at_galaxies.csv", index=False)
+    if not PAPER:
+        galaxy_residuals(S).to_csv(out / "residual_at_galaxies.csv", index=False)
     logger.info("Saved -> %s", out)
 
 
