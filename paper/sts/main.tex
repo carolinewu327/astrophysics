@@ -688,13 +688,13 @@ In this section, we present the measurements of the matter distribution around B
 \subsection{Measurements of the $\kappa$ map of galaxy pairs and Comparison to Simulations}
 \label{sec:obs_stacks}
 
-With $217{,}702$, $459{,}051$, and $1{,}282{,}969$ pairs at $r_{\perp}=5$, $10$, and $20\,\hinvMpc$, we measure the stacked $\kappa$ distribution around them. Figure~\ref{fig:boss_maps} shows the single-galaxy stack and the
+With $217{,}702$, $1{,}159{,}266$, and $1{,}644{,}128$ pairs in the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins, we measure the stacked $\kappa$ distribution around them. Figure~\ref{fig:boss_maps} shows the single-galaxy stack and the
 three pair stacks, all corrected by subtracting the stacks and random points/pairs and symmetrized according to the reflection symmetry about $X$ and $Y$ axis. All the maps show clear detection of the matter distribution, concentrated at the positions of galaxies.
 
 %The three BOSS samples contain $217{,}702$, $459{,}051$, and $1{,}282{,}969$ pairs at $r_{\perp}=5$, $10$, and $20\,\hinvMpc$. Figure~\ref{fig:boss_maps} shows the corrected single-galaxy stack and the three corrected pair stacks. 
 Figure~\ref{fig:obs_vs_sim_maps} compares the
 observed and simulated residual maps, obtained by subtracting the control pair maps constructed by superpositions of single galaxy map. 
-At distances $\gtrsim 15\hinvMpc$ to the pair center, the observed maps tend to be dominated by noise. At smaller distances, a quadrupole pattern shows up, with a broad $X$-axis-aligned excess and an off-axis deficit, a trend consistent with that expected from simulated maps. The change of the quadrupole pattern with pair separation, e.g., a stronger residual at galaxy positions for $10\hinvMpc$ pairs, also follows that in the simulated maps.
+At distances $\gtrsim 15\hinvMpc$ to the pair center, the observed maps tend to be dominated by noise. At smaller distances, a quadrupole pattern shows up, with a broad $X$-axis-aligned excess and an off-axis deficit, a trend consistent with that expected from simulated maps. The off-axis deficit is seen in all three bins, while the axis-aligned excess is clearest in the $6$--$15\,\hinvMpc$ bin, where it peaks near the galaxy positions.
 
 %These residual maps are the observational estimators of filament-associated convergence, but may also contain %imperfectly subtracted halo and environmental contributions. The observed maps contain a broad axis-aligned excess and an off-axis deficit, although both features have low signal-to-noise in the Planck reconstruction.
 
@@ -702,52 +702,57 @@ At distances $\gtrsim 15\hinvMpc$ to the pair center, the observed maps tend to 
   \centering
   \includegraphics[width=0.9\linewidth]{Figure/boss_single_and_pair_maps.pdf}
   \caption{Convergence maps from BOSS CMASS single-galaxy stack (left) and pair
-  stacks at pair separation $r_{\perp}=5$, $10$, and $20\,\hinvMpc$.}
+  stacks for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins, on a
+  common color scale. Crosses mark the galaxy positions at the nominal
+  separations.}
   \label{fig:boss_maps}
 \end{figure*}
 
 \begin{figure*}
   \centering
   \includegraphics[width=0.7\linewidth]{Figure/obs_vs_sim_quadrupole_maps.pdf}
-  \caption{Observed (left) and simulated (right) residual maps for pairs with separation
-  $r_{\perp}=5$, $10$, and $20\,\hinvMpc$ (top to bottom), on a common
-  color scale per row.}
+  \caption{Observed (left) and simulated (right) residual maps for pairs in the
+  $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins (top to bottom), on a common
+  color scale per row. Crosses mark the galaxy positions at the nominal
+  separations.}
   \label{fig:obs_vs_sim_maps}
 \end{figure*}
 
 %\subsection{Bridge convergence}
 %\label{sec:bridge}
 
-Figure~\ref{fig:band_profiles_obs_sim} shows the band profile $B(X)$, the difference between central and off-center average profile defined in Equation~(\ref{eq:band}). Although the observe profiles are noisier, there is general agreement with the simulated profile, with excess in between the pairs. We first computed the bridge excess as the average of $B(X)$ within $|X|<0.35d$ (indicated by the shaded regions in Fig.~\ref{fig:band_profiles_obs_sim}) and estimate the uncertainty based on the jackknife error bars. We find that none of the three bridge excesses exceeds $3\sigma$. The $10\,\hinvMpc$ sample has a positive excess of $2.3\sigma$ and lies $1.4\sigma$ above the mock prediction. The other two measurements are consistent with zero. The results are listed in Table~\ref{tab:bridge}.
+Figure~\ref{fig:band_profiles_obs_sim} shows the band profile $B(X)$, the difference between central and off-center average profile defined in Equation~(\ref{eq:band}). Although the observe profiles are noisier, there is general agreement with the simulated profile, with excess in between the pairs. We first computed the bridge excess as the average of $B(X)$ within $|X|\leq0.35\,d$ (indicated by the shaded regions in Fig.~\ref{fig:band_profiles_obs_sim}) and estimate the uncertainty based on the jackknife error bars. We find that none of the three bridge excesses exceeds $3\sigma$. The $6$--$15\,\hinvMpc$ bin has a positive excess of $2.4\sigma$ and lies $1.1\sigma$ above the mock prediction. The other two measurements are consistent with zero. The results are listed in Table~\ref{tab:bridge}.
 
 %Table~\ref{tab:bridge} gives the bridge excess and jackknife error for each sample, together with the mock prediction for the same statistic. Figure~\ref{fig:band_profiles_obs_sim} compares the observed and mock band profiles.
 
 The bridge statistic in Table~\ref{tab:bridge} provides the direct comparison
 between the data and mock because both analyses use the same bands, bridge
-window, and smoothing. At all three separations, the observational
-uncertainties exceed the predicted bridge amplitudes, and the measurements
-are consistent with both zero and the mock.
+window, and smoothing. The predicted bridge amplitudes are $0.7$, $1.3$,
+and $1.0$ times the observational uncertainties in the three bins, so the
+mock signal is at the level of the noise. All three measurements are
+consistent with the mock, and those in the $4$--$6$ and $15$--$25\,\hinvMpc$
+bins are also consistent with zero.
 
 \citet{deGraaff2019} measured
 $\bar\kappa=(5.8\pm3.1)\times10^{-4}$ in the bridge region of pairs pooled
-over $6$--$14\,\hinvMpc$. Their statistic differs from ours in four ways:
+over $6$--$14\,\hinvMpc$, close to our $6$--$15\,\hinvMpc$ bin. Their statistic differs from ours in four ways:
 pairs are rescaled to unit separation before stacking, the bridge region is
 defined on the rescaled grid, the halo model is fitted to the pair stack in
 a $60^\circ$ sector about the direction perpendicular to the pair axis, and
-the map is smoothed to $10$ arcmin. Their central value is close to our
-$10\,\hinvMpc$ result, but the two estimators differ. Their
-sample contains about $2.2$ times as many pairs as our $10\,\hinvMpc$
-sample; independent-pair scaling alone would reduce the error by a factor of
-$1.5$.
-An inverse-variance-weighted combination of our three samples would provide
-an approximate comparison, but would still differ from the estimator used by
-\citet{deGraaff2019}.
-% TODO: quote the pooled value if this comparison is retained.
+the map is smoothed to $10$ arcmin. Their value is consistent with our
+result of $(9.2\pm3.9)\times10^{-4}$ in that bin, but the two estimators
+differ. Their sample contains about $1.0$ million pairs, comparable to the
+$1.16$ million in our bin, and the two errors are similar.
+% CHECK: the 1.0 million is 2.2 x 459,051, from the ratio quoted in the submitted version; confirm against de Graaff et al. (2019).
+An inverse-variance-weighted combination of our three bins, neglecting the
+covariance between them, gives $(3.7\pm1.9)\times10^{-4}$.
+% TODO: recompute the combined value with the joint jackknife covariance of the three bins (bridge_study_pooled.csv treats them as independent).
 
 \begin{table}
   \centering
   \caption{Bridge excess, defined as the average of Equation~(\ref{eq:band})
-  over $|X|\leq0.35\,d$, for the three BOSS samples and the mock. Observed
+  over $|X|\leq0.35\,d$ with $d$ the nominal separation, for the three
+  BOSS bins and the mock. Observed
   errors are from the $287$-region delete-one jackknife, with the control
   reconstructed in every realization; mock errors are from the $25$-block
   jackknife. The final column gives the observed-minus-mock difference divided
@@ -755,12 +760,12 @@ an approximate comparison, but would still differ from the estimator used by
   \label{tab:bridge}
   \begin{tabular}{cccccc}
     \hline
-    $r_{\perp}$ & $N_{\rm pairs}$ & Observed & S/N & Mock & Obs.$-$Mock \\
+    $r_{\perp}$ bin & $N_{\rm pairs}$ & Observed & S/N & Mock & Obs.$-$Mock \\
     $[\hinvMpc]$ & & $[10^{-4}]$ & & $[10^{-4}]$ & $[\sigma]$ \\
     \hline
-    5  & $217{,}702$   & $5.38\pm9.08$  & $0.6$ & $6.32\pm0.36$ & $-0.1$ \\
-    10 & $459{,}051$   & $11.91\pm5.10$ & $2.3$ & $4.91\pm0.21$ & $+1.4$ \\
-    20 & $1{,}282{,}969$ & $1.24\pm2.22$  & $0.6$ & $2.18\pm0.12$ & $-0.4$ \\
+    $4$--$6$   & $217{,}702$     & $5.44\pm9.01$ & $0.6$ & $5.97\pm0.35$ & $-0.1$ \\
+    $6$--$15$  & $1{,}159{,}266$ & $9.23\pm3.92$ & $2.4$ & $4.91\pm0.21$ & $+1.1$ \\
+    $15$--$25$ & $1{,}644{,}128$ & $1.63\pm2.30$ & $0.7$ & $2.18\pm0.11$ & $-0.2$ \\
     \hline
   \end{tabular}
 \end{table}
@@ -769,14 +774,14 @@ an approximate comparison, but would still differ from the estimator used by
   \centering
   \includegraphics[width=0.9\linewidth]{Figure/band_profiles_obs_vs_sim.pdf}
   \caption{Observed band profiles $B(X)$ with jackknife errors (points) and
-  mock profiles at the three pair separations.
+  mock profiles for the three $r_{\perp}$ bins.
   %with box-jackknife errors (shaded) at the three pair separations.
   %Observed errors are from a delete-one jackknife over $287$ sky regions. Mock
   %errors are from the $25$-block box jackknife, with the superposed-singles
   %control held fixed across realizations. 
   The gray region marks the bridge
-  window, $|X| \leq 0.35\,d$, with $d$ the pair separation, and the dotted green lines mark the galaxy
-  positions. The lower panels show the observed-minus-mock difference in
+  window, $|X| \leq 0.35\,d$, with $d$ the nominal separation, and the green bands mark the range of galaxy
+  positions, $r_{\perp,{\rm min}}/2\leq|X|\leq r_{\perp,{\rm max}}/2$. The lower panels show the observed-minus-mock difference in
   units of the observational error, with dashed lines at $\pm2$. Mock pairs
   are selected in the same transverse bins as the BOSS pairs. 
   %The mock errors include statistical scatter within a single realization but not HOD uncertainty.
