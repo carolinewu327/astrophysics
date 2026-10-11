@@ -86,6 +86,7 @@ All in `analysis/boss/results/widebin_rpar5/`:
 | Bridge excess, error, S/N, pair counts, mean r_perp | `filament_jackknife_wide_avgctrl_BOSS_North_South.csv` |
 | Mock prediction, observed minus mock, chi^2, fitted amplitudes, noise floor | `comparison/bridge_study_archived_vs_wide.csv` (rows with `version = wide`) |
 | Pooled bridge excess | `comparison/bridge_study_pooled.csv` |
+| Residual at the mean galaxy position, with jackknife error, data and mock | `comparison/paper_figures/residual_at_galaxies.csv` |
 | Bridge excess as the window moves away from the galaxies | `validation/halo_cut/halo_cut_scan.csv` |
 
 ## Tests quoted in the text
@@ -251,13 +252,16 @@ new random-pair run at r_par <= 10.
    it with the wide-bin result. Open question for Zheng: is a data run at
    r_par <= 10 worth a second GCP random run? The fitted-control test is in the same state.
    The sensitivity grid is not in the text.
-4. Residual at the galaxy positions. The "2e-3 observed against 0.9e-3 mock"
-   sentence and the HOD speculation built on it are removed from Section 5.1
-   and the appendix. The text now says the observed residual is within about
-   one per-pixel jackknife error of zero in all three bins, with a `% TODO`
-   to quote values. Still open: `residual_at_galaxies.csv` has no error
-   columns, and its observed values differ from the `kappa_filament_*` maps
-   (0.75 against 0.64e-3 for 6-15, -0.46 against -1.18e-3 for 4-6).
+4. ~~Residual at the galaxy positions.~~ Resolved 2026-10-11.
+   `residual_at_galaxies.csv` now has jackknife errors and a defined position
+   (half the mean pair separation, interpolated on the pair axis); regenerate
+   with `python analysis/boss/scripts/widebin_paper_figures.py --residuals-only --overwrite`.
+   Wide bins, observed (mock), units 1e-3: 4-6 -0.34 +/- 0.78 (0.15);
+   6-15 0.68 +/- 0.57 (0.12); 15-25 0.55 +/- 0.51 (0.07). All within 1.2
+   sigma of zero, so the sentence in Section 5.1 stands. The earlier mismatch
+   with the `kappa_filament_*` maps was a convention difference, not an error:
+   those maps are not reflection-symmetrized, so +X and -X differ (0.64 and
+   0.87 at 6-15); the table uses the symmetrized map, which is their mean.
 5. ~~Halo-cut script.~~ Done 2026-10-10 (above). The "Bridge window"
    paragraph in `main.tex` quotes `halo_cut_scan.csv`, including the mock
    in the same windows; its `% CHECK` and `% TODO` are removed. Still open:

@@ -31,8 +31,8 @@ labels, and the files keep the names the manuscript's \\includegraphics lines
 use.  They are written as PDF only into paper/sts/Figure/ (--output-dir to
 change).  paper/styau/ is the submitted version and is never written.
 
-Also writes the residual at the galaxy positions (the "2e-3 vs 0.9e-3" sentence
-of section 5.1) for both binnings.
+Also writes the residual at the mean galaxy position, with its jackknife error,
+for both binnings (residual_at_galaxies.csv; --residuals-only writes just that).
 
 Outputs go to widebin_rpar5/comparison/paper_figures/, or paper/sts/Figure/
 under --paper; nothing in the archive or paper/styau/ is written.
@@ -112,6 +112,11 @@ def label_axes(ax):
     ax.set_ylabel(r"$Y$  [$h^{-1}$ Mpc]")
 
 
+def at_galaxy(arr, axis, x):
+    """Value on the pair axis (Y = 0) at X = x, linearly interpolated between grid points."""
+    return float(np.interp(x, axis, arr[int(np.argmin(np.abs(axis)))]))
+
+
 def title(ax, text):
     ax.set_title(text, loc="left", color=INK, fontsize=10.5, pad=5)
 
@@ -125,7 +130,11 @@ def archived_sample(results_dir, sim_dir, sim_single, key, bin_text, single_tag,
     gx, gy = np.meshgrid(sim_axis, sim_axis)
     sim_ctl = two_halo_template(sim_single, gx, gy, float(key))
     loo = np.asarray([band_profile(m.reshape(t["filament"].shape), t["axis"]) for m in t["loo"]["filament"]])
+    gal_x = t["sep"] / 2     # narrow symmetric bin: the mean galaxy position is the bin centre
+    gal_loo = np.asarray([at_galaxy(m.reshape(t["filament"].shape), t["axis"], gal_x)
+                          for m in t["loo"]["filament"]])
     return {"bin": bin_text, "sep": t["sep"], "n_pairs": t["n_pairs"], "axis": t["axis"],
+            "gal_x": gal_x, "gal_err": float(jackknife_error(gal_loo[:, None])[1][0]),
             "pair": t["physical"], "res": t["filament"], "B_err": jackknife_error(loo)[1],
             "sim_axis": sim_axis, "sim_pair": sim_pair, "sim_ctl": sim_ctl, "sim_res": sim_res,
             "sim_B_err": sim_band_error(key, sim_axis, sim_ctl)}
@@ -147,8 +156,10 @@ def wide_sample(wide_dir, sim_dir, sim_single, singles, name, bin_text, random_l
 
     res = fil(pt, st, separation_mix(*fine))
     axis = axis_for_map(res)
-    loo = np.asarray([band_profile(fil(pl[k], sl[k], separation_mix(*fine, exclude_region=k)), axis)
-                      for k in range(sl.shape[0])])
+    loo_maps = [fil(pl[k], sl[k], separation_mix(*fine, exclude_region=k)) for k in range(sl.shape[0])]
+    loo = np.asarray([band_profile(m, axis) for m in loo_maps])
+    gal_x = float(pair["fine_wr"].sum() / pair["fine_w"].sum()) / 2   # half the mean pair separation
+    gal_loo = np.asarray([at_galaxy(m, axis, gal_x) for m in loo_maps])
     phys = reflect_symmetrize_map(pt.reshape(res.shape)) - rand
 
     base = sim_dir / "hod_pairs" / "widebin_rpar5" / f"stack_{name}_rpar5_avgctrl"
@@ -163,6 +174,7 @@ def wide_sample(wide_dir, sim_dir, sim_single, singles, name, bin_text, random_l
                                                    .astype(np.float32)) - sim_ctl, sim_axis)
                for b in range(len(counts)) if counts.sum() - counts[b] > 0]
     return {"bin": bin_text, "sep": center, "n_pairs": int(pair["n_pairs"].sum()), "axis": axis,
+            "gal_x": gal_x, "gal_err": float(jackknife_error(gal_loo[:, None])[1][0]),
             "pair": phys, "res": res, "B_err": jackknife_error(loo)[1],
             "sim_axis": sim_axis, "sim_pair": sim_pair, "sim_ctl": sim_ctl, "sim_res": sim_pair - sim_ctl,
             "sim_B_err": jackknife_error(np.asarray(sim_loo))[1]}
@@ -358,17 +370,28 @@ def fig7(S, out):
 
 
 def galaxy_residuals(S):
-    """Residual at the galaxy positions (X = +/-R/2, Y = 0) and the map maximum, data and mock."""
+    """Residual on the pair axis at the mean galaxy position, data and mock.
+
+    The maps are reflection-symmetrized, so the value is the mean of the two
+    galaxies' pixels; an unsymmetrized map (the kappa_filament_* CSVs) differs
+    between +X and -X by about one per-pixel error.  The position is half the
+    mean pair separation, interpolated between grid points, and the error is the
+    jackknife error of that interpolated value.  In a wide bin the galaxies span
+    a range of X, so the peak along the axis is reported as well.
+    """
     rows = []
     for v in VERSIONS:
         for key, *_rest in ROWS:
             s = S[v][key]
-            i0 = int(np.argmin(np.abs(s["axis"])))
-            ig = int(np.argmin(np.abs(s["axis"] - s["sep"] / 2)))
-            j0 = int(np.argmin(np.abs(s["sim_axis"])))
-            jg = int(np.argmin(np.abs(s["sim_axis"] - s["sep"] / 2)))
-            rows.append({"version": v, "bin": s["bin"], "obs_at_galaxy": s["res"][i0, ig],
-                         "mock_at_galaxy": s["sim_res"][j0, jg],
+            obs = at_galaxy(s["res"], s["axis"], s["gal_x"])
+            m = (s["axis"] >= 0) & (s["axis"] <= s["sep"])
+            row = s["res"][int(np.argmin(np.abs(s["axis"])))]
+            rows.append({"version": v, "bin": s["bin"], "x_galaxy_hmpc": s["gal_x"],
+                         "obs_at_galaxy": obs, "obs_at_galaxy_err": s["gal_err"],
+                         "obs_at_galaxy_sigma": obs / s["gal_err"],
+                         "mock_at_galaxy": at_galaxy(s["sim_res"], s["sim_axis"], s["gal_x"]),
+                         "obs_axis_peak": float(row[m].max()),
+                         "obs_axis_peak_x_hmpc": float(s["axis"][m][int(np.argmax(row[m]))]),
                          "obs_max_within_R": crop(s["res"], s["axis"], s["sep"])[0].max(),
                          "mock_max_within_R": crop(s["sim_res"], s["sim_axis"], s["sep"])[0].max()})
     return pd.DataFrame(rows)
@@ -399,6 +422,8 @@ def main(argv=None):
     p.add_argument("--output-dir", default=None,
                    help="Default: <wide-dir>/comparison/paper_figures, or paper/sts/Figure "
                         "under --paper.")
+    p.add_argument("--residuals-only", action="store_true",
+                   help="Write residual_at_galaxies.csv and draw no figure.")
     p.add_argument("--overwrite", action="store_true")
     args = p.parse_args(argv)
     setup_logging()
@@ -412,6 +437,8 @@ def main(argv=None):
     default_out = Path("paper/sts/Figure") if PAPER else wide_dir / "comparison" / "paper_figures"
     out = Path(args.output_dir) if args.output_dir else default_out
     targets = [out / f"{stem(n)}.pdf" for n in ((2, 3, 4, 5, 6, 7) if PAPER else (2, 3, 4, 5, 6))]
+    if args.residuals_only:
+        targets = [out / "residual_at_galaxies.csv"]
     if any(t.exists() for t in targets) and not args.overwrite:
         raise FileExistsError(f"Figures exist in {out} (use --overwrite)")
     out.mkdir(parents=True, exist_ok=True)
@@ -432,6 +459,10 @@ def main(argv=None):
         logger.info("R=%s: archived %d pairs, wide %d pairs", key, S["archived"][key]["n_pairs"],
                     S["wide"][key]["n_pairs"])
 
+    if args.residuals_only:
+        galaxy_residuals(S).to_csv(out / "residual_at_galaxies.csv", index=False)
+        logger.info("Saved %s", out / "residual_at_galaxies.csv")
+        return
     single = boss_single(args.results_dir, "BOSS", ["North", "South"], args.single_tag, args.single_random_tag)
     fig2(S, out)
     fig3(S, out)
