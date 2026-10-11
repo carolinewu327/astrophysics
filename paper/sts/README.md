@@ -86,7 +86,9 @@ All in `analysis/boss/results/widebin_rpar5/`:
 | Bridge excess, error, S/N, pair counts, mean r_perp | `filament_jackknife_wide_avgctrl_BOSS_North_South.csv` |
 | Mock prediction, observed minus mock, chi^2 before and after the amplitude fit, fitted amplitudes, the free constant with its error, noise floor | `comparison/bridge_study_archived_vs_wide.csv` (rows with `version = wide`) |
 | Pooled bridge excess: inverse-variance mean with its error neglecting and including the covariance between bins, the bin-to-bin correlations, and the minimum-variance combination | `comparison/bridge_study_pooled.csv` |
-| Residual at the mean galaxy position, with jackknife error, data and mock | `comparison/paper_figures/residual_at_galaxies.csv` |
+| Residual at the mean galaxy position and at the pair midpoint, with jackknife errors, data and mock; pair-stack convergence at the midpoint | `comparison/paper_figures/residual_at_galaxies.csv` (`widebin_paper_figures.py --residuals-only`) |
+| Jackknife regions: 287, with 10.5 per cent RMS scatter in occupancy | `analysis/boss/results/jk/regions_BOSS_North_South_nside10.npz` (18 KB; read `region_of_pix` and `footprint_counts`) |
+| Independent-pixel error factor, 2.24 / 2.25 / 2.62 for single-galaxy band means at 10-20, 15-25, 20-40 | `analysis/boss/results/profile_bands_corrected_scw_rand_scw_frac100_BOSS_North_South_joint_linear.csv`, columns `kappa_err` over `kappa_err_diag_only` (from `combine_jackknife.py`, command in `CLAUDE.md`) |
 | Bridge excess as the window moves away from the galaxies | `validation/halo_cut/halo_cut_scan.csv` |
 
 ## Tests quoted in the text

@@ -131,10 +131,12 @@ def archived_sample(results_dir, sim_dir, sim_single, key, bin_text, single_tag,
     sim_ctl = two_halo_template(sim_single, gx, gy, float(key))
     loo = np.asarray([band_profile(m.reshape(t["filament"].shape), t["axis"]) for m in t["loo"]["filament"]])
     gal_x = t["sep"] / 2     # narrow symmetric bin: the mean galaxy position is the bin centre
-    gal_loo = np.asarray([at_galaxy(m.reshape(t["filament"].shape), t["axis"], gal_x)
+    gal_loo = np.asarray([[at_galaxy(m.reshape(t["filament"].shape), t["axis"], x) for x in (gal_x, 0.0)]
                           for m in t["loo"]["filament"]])
+    gal_err, mid_err = jackknife_error(gal_loo)[1]
     return {"bin": bin_text, "sep": t["sep"], "n_pairs": t["n_pairs"], "axis": t["axis"],
-            "gal_x": gal_x, "gal_err": float(jackknife_error(gal_loo[:, None])[1][0]),
+            "gal_x": gal_x, "gal_err": float(gal_err), "mid_err": float(mid_err),
+            "sim_gal_err": np.nan, "sim_mid_err": np.nan,
             "pair": t["physical"], "res": t["filament"], "B_err": jackknife_error(loo)[1],
             "sim_axis": sim_axis, "sim_pair": sim_pair, "sim_ctl": sim_ctl, "sim_res": sim_res,
             "sim_B_err": sim_band_error(key, sim_axis, sim_ctl)}
@@ -159,7 +161,8 @@ def wide_sample(wide_dir, sim_dir, sim_single, singles, name, bin_text, random_l
     loo_maps = [fil(pl[k], sl[k], separation_mix(*fine, exclude_region=k)) for k in range(sl.shape[0])]
     loo = np.asarray([band_profile(m, axis) for m in loo_maps])
     gal_x = float(pair["fine_wr"].sum() / pair["fine_w"].sum()) / 2   # half the mean pair separation
-    gal_loo = np.asarray([at_galaxy(m, axis, gal_x) for m in loo_maps])
+    gal_err, mid_err = jackknife_error(np.asarray([[at_galaxy(m, axis, x) for x in (gal_x, 0.0)]
+                                                   for m in loo_maps]))[1]
     phys = reflect_symmetrize_map(pt.reshape(res.shape)) - rand
 
     base = sim_dir / "hod_pairs" / "widebin_rpar5" / f"stack_{name}_rpar5_avgctrl"
@@ -170,11 +173,15 @@ def wide_sample(wide_dir, sim_dir, sim_single, singles, name, bin_text, random_l
     seps, wts, _ = separation_mix(blocks["fine_w"], blocks["fine_wr"])
     sim_ctl = separation_averaged_template(sim_single, gx, gy, seps, wts)
     sums, counts = blocks["sums"], blocks["counts"]
-    sim_loo = [band_profile(reflect_symmetrize_map(((sums.sum(0) - sums[b]) / (counts.sum() - counts[b]))
-                                                   .astype(np.float32)) - sim_ctl, sim_axis)
-               for b in range(len(counts)) if counts.sum() - counts[b] > 0]
+    sim_loo_maps = [reflect_symmetrize_map(((sums.sum(0) - sums[b]) / (counts.sum() - counts[b]))
+                                           .astype(np.float32)) - sim_ctl
+                    for b in range(len(counts)) if counts.sum() - counts[b] > 0]
+    sim_loo = [band_profile(m, sim_axis) for m in sim_loo_maps]
+    sim_gal_err, sim_mid_err = jackknife_error(np.asarray(
+        [[at_galaxy(m, sim_axis, x) for x in (gal_x, 0.0)] for m in sim_loo_maps]))[1]
     return {"bin": bin_text, "sep": center, "n_pairs": int(pair["n_pairs"].sum()), "axis": axis,
-            "gal_x": gal_x, "gal_err": float(jackknife_error(gal_loo[:, None])[1][0]),
+            "gal_x": gal_x, "gal_err": float(gal_err), "mid_err": float(mid_err),
+            "sim_gal_err": float(sim_gal_err), "sim_mid_err": float(sim_mid_err),
             "pair": phys, "res": res, "B_err": jackknife_error(loo)[1],
             "sim_axis": sim_axis, "sim_pair": sim_pair, "sim_ctl": sim_ctl, "sim_res": sim_pair - sim_ctl,
             "sim_B_err": jackknife_error(np.asarray(sim_loo))[1]}
@@ -377,7 +384,10 @@ def galaxy_residuals(S):
     between +X and -X by about one per-pixel error.  The position is half the
     mean pair separation, interpolated between grid points, and the error is the
     jackknife error of that interpolated value.  In a wide bin the galaxies span
-    a range of X, so the peak along the axis is reported as well.
+    a range of X, so the peak along the axis is reported as well.  The same is
+    given at the pair midpoint (X = 0), with the pair-stack convergence there for
+    scale.  Mock errors are the 25-block jackknife with the control held fixed;
+    they are not computed for the archived bins.
     """
     rows = []
     for v in VERSIONS:
@@ -390,6 +400,13 @@ def galaxy_residuals(S):
                          "obs_at_galaxy": obs, "obs_at_galaxy_err": s["gal_err"],
                          "obs_at_galaxy_sigma": obs / s["gal_err"],
                          "mock_at_galaxy": at_galaxy(s["sim_res"], s["sim_axis"], s["gal_x"]),
+                         "mock_at_galaxy_err": s["sim_gal_err"],
+                         "obs_at_midpoint": at_galaxy(s["res"], s["axis"], 0.0),
+                         "obs_at_midpoint_err": s["mid_err"],
+                         "mock_at_midpoint": at_galaxy(s["sim_res"], s["sim_axis"], 0.0),
+                         "mock_at_midpoint_err": s["sim_mid_err"],
+                         "obs_pair_kappa_at_midpoint": at_galaxy(s["pair"], s["axis"], 0.0),
+                         "mock_pair_kappa_at_midpoint": at_galaxy(s["sim_pair"], s["sim_axis"], 0.0),
                          "obs_axis_peak": float(row[m].max()),
                          "obs_axis_peak_x_hmpc": float(s["axis"][m][int(np.argmax(row[m]))]),
                          "obs_max_within_R": crop(s["res"], s["axis"], s["sep"])[0].max(),
