@@ -595,9 +595,7 @@ We estimate errors on the observed maps and covariance matrices of band profiles
 %with a delete-one spatial jackknife.
 The joint footprint is divided into $K=287$ contiguous regions of
 approximately equal size, constructed from HEALPix cells with
-$N_{\rm side}=10$.
-% with an RMS size scatter of $11$ percent.
-% CHECK: 287 and 11% are quoted in CLAUDE.md and code docstrings; the regions file is not in the repo.
+$N_{\rm side}=10$, with an RMS scatter in occupancy of $11$ percent.
 %No region straddles the two caps. We assign galaxies and random points to
 %regions by their positions and pairs by their midpoints. The same regions are
 %used for galaxies and randoms, so each realization applies the same spatial
@@ -659,7 +657,14 @@ The residual maps all display a quadrupole pattern, with a negative signal close
 
 Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For the $4$--$6\,\hinvMpc$ bin, the central band becomes negative, which is likely caused by the environment effect of close pairs. The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirts. For the $6$--$15\,\hinvMpc$ bin, the central band profile between the galaxies is weakly positive, and for the $15$--$25\,\hinvMpc$ bin it is clearly positive. In all three bins, the off-center band profile between the galaxies is negative. It dominates the difference profile in the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, while the two bands contribute comparably in the $15$--$25\,\hinvMpc$ bin. Near the galaxy positions, the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|\leq0.35\,d$ with $d$ the nominal separation, is $\left(5.97\pm0.35,\ 4.91\pm0.21,\ 2.18\pm0.11\right)\times10^{-4}$ for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
 
-% TODO: quote the mock residual at the halo positions and the midpoint kappa.
+% OPTIONAL (for Zheng to decide; values from residual_at_galaxies.csv, widebin_paper_figures.py --residuals-only):
+% At a single position the mock residual is small: it is
+% $\left(1.5,\ 1.2,\ 0.7\right)\times10^{-4}$ at the mean galaxy position and
+% $\left(-0.6,\ 0.6,\ 1.1\right)\times10^{-4}$ at the pair midpoint in the three
+% bins, compared with a stacked convergence of
+% $\left(75,\ 41,\ 23\right)\times10^{-4}$ at the midpoint. The block-jackknife
+% error of each of these values is $2.4\times10^{-4}$, dominated by a shift
+% common to the whole map that the band difference removes.
 
 \begin{figure*}
   \centering
@@ -1158,7 +1163,8 @@ If this comparison changes the error only marginally, the error budget is
 dominated by Planck reconstruction noise within the bridge window, and
 refinements to the control alone will not substantially reduce the error.
 Treating pixels as independent would have understated
-the error by a factor of $2.2$ to $2.6$, % CHECK
+the error on band means of the single-galaxy profile by a factor of $2.2$
+to $2.6$,
 showing that the covariance between pixels must be retained.
 
 \textbf{The unit-amplitude control prevents the halo model from absorbing
