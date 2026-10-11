@@ -595,7 +595,8 @@ We estimate errors on the observed maps and covariance matrices of band profiles
 %with a delete-one spatial jackknife.
 The joint footprint is divided into $K=287$ contiguous regions of
 approximately equal size, constructed from HEALPix cells with
-$N_{\rm side}=10$, with an RMS scatter in occupancy of $11$ percent.
+$N_{\rm side}=10$, with an RMS scatter of $10.5$ percent in region size, as
+measured by the number of random points in each.
 %No region straddles the two caps. We assign galaxies and random points to
 %regions by their positions and pairs by their midpoints. The same regions are
 %used for galaxies and randoms, so each realization applies the same spatial
@@ -874,7 +875,8 @@ At the mean galaxy position on the pair axis, the observed residual is
 $\left(-0.34\pm0.78,\ 0.68\pm0.57,\ 0.55\pm0.51\right)\times10^{-3}$ in the
 $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins, within $1.2\sigma$ of
 zero in each. The corresponding mock values are
-$\left(0.15,\ 0.12,\ 0.07\right)\times10^{-3}$. The position is half the mean
+$\left(0.15,\ 0.12,\ 0.07\right)\times10^{-3}$, each with a block-jackknife
+error of $0.24\times10^{-3}$. The position is half the mean
 pair separation, and the errors are jackknife errors of the
 reflection-symmetrized map at that position.
 The corrected single-galaxy profile also lies below
@@ -1193,8 +1195,8 @@ bridge excess (Section~\ref{sec:sim_expect}).
 
 \textbf{The residual near the galaxies tests the control and the mock.}
 At the mean galaxy position, the observed residual is within $1.2\sigma$ of
-zero in all three bins, and exceeds the mock value in the two wider bins
-without being significant (Section~\ref{sec:obs_stacks}).
+zero in all three bins, and the mock residual is also consistent with zero
+(Section~\ref{sec:obs_stacks}).
 A residual there can arise from the halo-mass and environmental selection of
 paired galaxies and, in the comparison with the mock, from the absence of
 satellites. The corrected BOSS single-galaxy profile may also fall below the mock
