@@ -22,7 +22,7 @@
 
 \begin{abstract}
 Dark matter distribution around pairs of dark matter haloes encodes information about the gravitational interaction between haloes and probes the associated filamentary structure. In this work, we use the BOSS CMASS galaxy sample and Planck 2018 cosmic microwave background (CMB) lensing map to study the matter distribution around galaxy pairs. We produce stacked CMB lensing $\kappa$ maps around galaxy pairs, in transverse pair separation bins of
-$4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$. With comparison to the maps from control pairs, obtained by superposition of $\kappa$ distribution around single galaxies, a quadrupole pattern in the matter distribution around galaxy pairs is revealed for the first time, with excess around the pair connection line and deficit around the perpendicular bisector. Such a pattern is consistent with the expectation from cosmological $N$-body simulations, pointing to an origin from tidal interaction. There is hint of matter excess in between galaxy pairs, associated with filaments, at $2.4\sigma$ in the $6$--$15\,\hinvMpc$ bin, and an increased galaxy pair sample and/or CMB lensing reconstruction with improved precision would be necessary for a firm detection.
+$4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$. With comparison to the maps from control pairs, obtained by superposition of $\kappa$ distribution around single galaxies, a quadrupole pattern in the matter distribution around galaxy pairs is revealed for the first time, with excess around the pair connection line and deficit around the perpendicular bisector. Such a pattern is consistent with the expectation from cosmological $N$-body simulations, pointing to an origin from tidal interaction. There is a hint of matter excess in between galaxy pairs, associated with filaments, at $2.4\sigma$ in the $6$--$15\,\hinvMpc$ bin, and an increased galaxy pair sample and/or CMB lensing reconstruction with improved precision would be necessary for a firm detection.
 
 \end{abstract}
 
@@ -129,8 +129,8 @@ a $4.5\sigma$ detection. Their four-point shear estimator uses symmetry to
 cancel the signal of two spherical haloes and isolate the bridge.
 \citet{EppsHudson2017} stacked the weak-lensing signal from CFHTLenS source
 shapes around BOSS LOWZ and CMASS pairs at a mean redshift
-$\langle z\rangle\approx0.42$. While their pairs pairs had the same projected
-separation, this was paired with a larger line-of-sight separation as a control and reported a
+$\langle z\rangle\approx0.42$. They used pairs with the same projected
+separation but a larger line-of-sight separation as a control, and reported a
 $5\sigma$ excess after subtracting this control from the physical-pair
 stack. \citet{Kondo2020} paired BOSS CMASS galaxies at $z\approx0.55$ with
 first-year Subaru Hyper Suprime-Cam shapes. Although
@@ -263,7 +263,7 @@ from BOSS, which define the pairs and the single-galaxy control; the
 corresponding BOSS random catalogs, which trace the angular selection and
 measure footprint-dependent offsets; and the Planck CMB lensing convergence
 map, from which we construct the galaxy and random stacks. An $N$-body mock
-of the CMASS sample and the corresponding  convergence field provide a $\Lambda$CDM
+of the CMASS sample and the corresponding convergence field provide a $\Lambda$CDM
 reference model
 (Section~\ref{sec:sim}), which guides observational measurements and aids interpretation.
 
@@ -326,8 +326,7 @@ into comoving distances under the Planck 2018 cosmology
   Galactic coordinates, overlaid on the Planck 2018 lensing analysis mask.
   Right: weighted redshift distribution of the CMASS galaxies in each cap
   and in total, with the $0.4<z<0.7$ selection shaded and the median
-  redshift of the selected sample marked.
-  
+  redshift of the selected sample marked.}
   \label{fig:footprint_zdist}
 \end{figure}
 
@@ -436,8 +435,8 @@ onto a periodic 2-dimensional (2D) grid with pixel width $0.1\,\hinvMpc$. For ea
     \Sigma(\mathbf{x})=m_{\rm eff}\left[\frac{N_{\rm p}(\mathbf{x})}{\ell^{2}}
 -\frac{N_{\rm tot}}{L^{2}}\right],
 \end{equation}
-where $N_{\rm p}(\mathbf{x})$ is the number of particles in the pixel of width $\ell$, and $N_{\rm tot}$ is the total number particles in the box of size $L$, and $m_{\rm eff}$ is the effective mass of each particle in the subsample (i.e., 200 times the particle mass in the simulation). We convert the surface density to convergence as $\kappa=\Sigma/\Sigma_{\rm crit}$ with the comoving critical density for a lens at $z=0.547$ and the CMB as source, $\Sigma_{\rm crit}=8.88\times10^{14}\,h\,\mathrm{M}_{\odot}\,\mathrm{Mpc}^{-2}$.
-Similar to the CMB lensing map, the simulation$\kappa$ map is smoothed with a periodic two-dimensional Gaussian kernel of FWHM $3.31\,\hinvMpc$, corresponding to $8\,\mathrm{arcmin}$ at the snapshot redshift.
+where $N_{\rm p}(\mathbf{x})$ is the number of particles in the pixel of width $\ell$, and $N_{\rm tot}$ is the total number of particles in the box of size $L$, and $m_{\rm eff}$ is the effective mass of each particle in the subsample (i.e., 200 times the particle mass in the simulation). We convert the surface density to convergence as $\kappa=\Sigma/\Sigma_{\rm crit}$ with the comoving critical density for a lens at $z=0.547$ and the CMB as source, $\Sigma_{\rm crit}=8.88\times10^{14}\,h\,\mathrm{M}_{\odot}\,\mathrm{Mpc}^{-2}$.
+Similar to the CMB lensing map, the simulation $\kappa$ map is smoothed with a periodic two-dimensional Gaussian kernel of FWHM $3.31\,\hinvMpc$, corresponding to $8\,\mathrm{arcmin}$ at the snapshot redshift.
 
 %If $N_{\rm p}(\boldsymbol{x})$ is the number of particles in a pixel of width $\ell$, $N_{\rm tot}$ is the total number of projected particles, and $L$ is the box width, the mean-subtracted surface density is $\Sigma(\boldsymbol{x})=m_{\rm eff}[N_{\rm p}(\boldsymbol{x})/\ell^{2} -N_{\rm tot}/L^{2}]$. We convert it to convergence as $\kappa=\Sigma/\Sigma_{\rm crit}$ with the comoving critical density for a lens at $z=0.547$ and the CMB as source, $\Sigma_{\rm crit}=8.88\times10^{14}\,h\,\mathrm{M}_{\odot}\,\mathrm{Mpc}^{-2}$. The map is smoothed with a periodic two-dimensional Gaussian of FWHM $3.31\,\hinvMpc$, which is $8\,\mathrm{arcmin}$ at the comoving distance $1424.5\,\hinvMpc$ of the snapshot. Because the box is projected at a single redshift, the mock reproduces the mean signal of structure correlated with the pairs but not the full line-of-sight integral or the Planck reconstruction noise; it is used for the reference signal, not for the observational covariance. The single-galaxy stack from this map has been checked against an independent direct particle-count estimator; the two agree to 3 percent inside $10\,\hinvMpc$.
 
@@ -464,14 +463,14 @@ We construct samples of galaxy pairs according to the line-of-sight and transver
   r_{\perp} = \theta_{12}\,\frac{D_{{\rm c},1}+D_{{\rm c},2}}{2},
   \label{eq:separations}
 \end{equation}
-where $D_{\rm c,1}$ and $D_{\rm c,2}$ are the comoving distances of the two galaxies and $\theta_{12}$ is their angular separation (in radian) satisfying $r_{\parallel}\leq r_{\parallel,{\rm max}}$ and
+where $D_{\rm c,1}$ and $D_{\rm c,2}$ are the comoving distances of the two galaxies and $\theta_{12}$ is their angular separation (in radians) satisfying $r_{\parallel}\leq r_{\parallel,{\rm max}}$ and
 $r_{\perp,{\rm min}}\leq r_{\perp}\leq r_{\perp,{\rm max}}$.
 We use three contiguous $r_\perp$ bins, $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$, with a line-of-sight cut of $r_{\parallel,{\rm max}}=5\,\hinvMpc$ for all three. A pair on an edge shared by two bins is assigned to the bin at larger separation. The pair-weighted mean separations in the three bins are $5.0$, $10.7$, and $20.2\,\hinvMpc$, and we assign them the nominal separations $d=5$, $10$, and $20\,\hinvMpc$. Each pair is assigned the comoving distance $D_{\rm mid}$ at the mean redshift of its members. Random pairs are drawn from the full random catalogs using the same redshift range and transverse- and line-of-sight separation cuts.
 
 %\subsection{Stacking in the pair frame}
 %\label{sec:stacking}
 
-Each pair of galaxy defines a local Cartesian frame on the sky. The $X$ axis runs from
+Each pair of galaxies defines a local Cartesian frame on the sky. The $X$ axis runs from
 galaxy 1 to galaxy 2, with the pair ordered so that $X$ increases with
 Galactic longitude, and the $Y$ axis is perpendicular to the pair axis. 
 The $\kappa$ field around the pair is sampled with a $101\times101$ grid extending
@@ -563,7 +562,7 @@ Equation~(\ref{eq:stack}), and receives the same fourfold reflection
 average. The mock map has no mask and the mock pairs are
 unweighted, so $c_{b}$ reduces to the number of pairs in the fine bin.
 %This control has unit amplitude and no free parameters. 
-We define the residual map as the difference between the true pair map and cthe ontrol pair map,
+We define the residual map as the difference between the true pair map and the control pair map,
 \begin{equation}
   F(X,Y) = \kappa_{\rm p}(X,Y)-\kappa_{\rm ctl}(X,Y).
   \label{eq:filament}
@@ -604,7 +603,7 @@ $N_{\rm side}=10$.
 %regions by their positions and pairs by their midpoints. The same regions are
 %used for galaxies and randoms, so each realization applies the same spatial
 %deletion to every term in the corrected map. 
-For any statistic $\mathbf{x}$ (a pixel, a band value, or the compressed vector), we measure it $K$ times by leaving out one jackknife regions each time. The jackknife 
+For any statistic $\mathbf{x}$ (a pixel, a band value, or the compressed vector), we measure it $K$ times by leaving out one jackknife region each time. The jackknife 
 %variance and
 covariance is calculated as
 \begin{equation}
@@ -613,7 +612,7 @@ covariance is calculated as
                                           (\mathbf{x}_{k}-\bar{\mathbf{x}})^{\mathsf T},
   \label{eq:jackknife}
 \end{equation}
-where $\bar \mathbf{x}$ is the mean of the leave-one-out values. The square roots of the diagonal elements are used as error bars shown in the relevant plots. 
+where $\bar{\mathbf{x}}$ is the mean of the leave-one-out values. The square roots of the diagonal elements are used as error bars shown in the relevant plots. 
 
 To fit the amplitude $A$ of a fixed template $\mathbf{s}$ to an observed
 vector $\mathbf{d}$, we minimize
@@ -636,10 +635,10 @@ which has the solution and error bar
 We first analyze the stacked $\kappa$ maps based on the mock galaxy catalog and the $\kappa$ map from the $N$-body simulation, which provide a reference model to guide our observational measurements and analysis. 
 
 Figure~\ref{fig:sim_pair_vs_control} compares the mock pair stack for the
-$6$--$15\,\hinvMpc$ bin with its control constructed from the stack with single galaxies. The two maps are nearly indistinguishable on a common color scale because the difference is small relative to the signal around the galaxies. A close look reveal that the pair stack appear to be more squashed along the $Y$ direction than the control stack.
+$6$--$15\,\hinvMpc$ bin with its control constructed from the stack with single galaxies. The two maps are nearly indistinguishable on a common color scale because the difference is small relative to the signal around the galaxies. A close look reveals that the pair stack appears to be more squashed along the $Y$ direction than the control stack.
 
 Taking the difference of the two maps, we obtain the residual maps for the three $r_{\perp}$ bins, as shown in Figure~\ref{fig:sim_residual_maps}. 
-The residual maps all display a quadrupole pattern, with a negative signal close to the $Y$ axis and a positive signal close to the $X$ axis. Such a pattern is consistent with a tidal origin --- as a result of the tidal interaction of galaxy pairs, dark matter distribution tends to be stretched along the pair connecting line and to be squashed along the perpendicular direction. The ridge between the pair of galaxies is the filament-associated component targeted by the analysis. As a result of tidal effect, in the outskirt of the pair and close to the $X$ axis, the stretched matter distribution also shows up. We note that near the positions of the galaxies, the pixel value does not go to zero, as a result of both the tidal effect and pair environment effect.
+The residual maps all display a quadrupole pattern, with a negative signal close to the $Y$ axis and a positive signal close to the $X$ axis. Such a pattern is consistent with a tidal origin --- as a result of the tidal interaction of galaxy pairs, dark matter distribution tends to be stretched along the pair connecting line and to be squashed along the perpendicular direction. The ridge between the pair of galaxies is the filament-associated component targeted by the analysis. As a result of the tidal effect, in the outskirts of the pair and close to the $X$ axis, the stretched matter distribution also shows up. We note that near the positions of the galaxies, the pixel value does not go to zero, as a result of both the tidal effect and pair environment effect.
 
 \begin{figure*}
   \centering
@@ -659,7 +658,7 @@ The residual maps all display a quadrupole pattern, with a negative signal close
   \label{fig:sim_residual_maps}
 \end{figure*}
 
-Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For the $4$--$6\,\hinvMpc$ bin, the central band becomes negative, which is likely caused by the environment effect of close pairs. The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirt. For the $6$--$15\,\hinvMpc$ bin, the central band profile between the galaxies is weakly positive, and for the $15$--$25\,\hinvMpc$ bin it is clearly positive. In all three bins, the off-center band profile between the galaxies is negative. It dominates the difference profile in the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, while the two bands contribute comparably in the $15$--$25\,\hinvMpc$ bin. Near the galaxy positions, the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|\leq0.35\,d$ with $d$ the nominal separation, is $\left(5.97\pm0.35,\ 4.91\pm0.21,\ 2.18\pm0.11\right)\times10^{-4}$ for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
+Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For the $4$--$6\,\hinvMpc$ bin, the central band becomes negative, which is likely caused by the environment effect of close pairs. The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirts. For the $6$--$15\,\hinvMpc$ bin, the central band profile between the galaxies is weakly positive, and for the $15$--$25\,\hinvMpc$ bin it is clearly positive. In all three bins, the off-center band profile between the galaxies is negative. It dominates the difference profile in the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, while the two bands contribute comparably in the $15$--$25\,\hinvMpc$ bin. Near the galaxy positions, the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|\leq0.35\,d$ with $d$ the nominal separation, is $\left(5.97\pm0.35,\ 4.91\pm0.21,\ 2.18\pm0.11\right)\times10^{-4}$ for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
 
 % TODO: quote the mock residual at the halo positions and the midpoint kappa.
 
@@ -711,12 +710,12 @@ In this section, we present the measurements of the matter distribution around B
 \label{sec:obs_stacks}
 
 With $217{,}702$, $1{,}159{,}266$, and $1{,}644{,}128$ pairs in the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins, we measure the stacked $\kappa$ distribution around them. Figure~\ref{fig:boss_maps} shows the single-galaxy stack and the
-three pair stacks, all corrected by subtracting the stacks and random points/pairs and symmetrized according to the reflection symmetry about $X$ and $Y$ axis. All the maps show clear detection of the matter distribution, concentrated at the positions of galaxies.
+three pair stacks, all corrected by subtracting the stacks of random points/pairs and symmetrized according to the reflection symmetry about the $X$ and $Y$ axes. All the maps show clear detection of the matter distribution, concentrated at the positions of galaxies.
 
 %The three BOSS samples contain $217{,}702$, $459{,}051$, and $1{,}282{,}969$ pairs at $r_{\perp}=5$, $10$, and $20\,\hinvMpc$. Figure~\ref{fig:boss_maps} shows the corrected single-galaxy stack and the three corrected pair stacks. 
 Figure~\ref{fig:obs_vs_sim_maps} compares the
-observed and simulated residual maps, obtained by subtracting the control pair maps constructed by superpositions of single galaxy map. 
-At distances $\gtrsim 15\hinvMpc$ to the pair center, the observed maps tend to be dominated by noise. At smaller distances, a quadrupole pattern shows up, with a broad $X$-axis-aligned excess and an off-axis deficit, a trend consistent with that expected from simulated maps. The off-axis deficit is seen in all three bins, while the axis-aligned excess is clearest in the $6$--$15\,\hinvMpc$ bin, where it peaks near the galaxy positions.
+observed and simulated residual maps, obtained by subtracting the control pair maps constructed by superposition of the single-galaxy map. 
+At distances $\gtrsim 15\,\hinvMpc$ from the pair center, the observed maps tend to be dominated by noise. At smaller distances, a quadrupole pattern shows up, with a broad $X$-axis-aligned excess and an off-axis deficit, a trend consistent with that expected from simulated maps. The off-axis deficit is seen in all three bins, while the axis-aligned excess is clearest in the $6$--$15\,\hinvMpc$ bin, where it peaks near the galaxy positions.
 
 %These residual maps are the observational estimators of filament-associated convergence, but may also contain %imperfectly subtracted halo and environmental contributions. The observed maps contain a broad axis-aligned excess and an off-axis deficit, although both features have low signal-to-noise in the Planck reconstruction.
 
@@ -743,7 +742,7 @@ At distances $\gtrsim 15\hinvMpc$ to the pair center, the observed maps tend to 
 %\subsection{Bridge convergence}
 %\label{sec:bridge}
 
-Figure~\ref{fig:band_profiles_obs_sim} shows the band profile $B(X)$, the difference between central and off-center average profile defined in Equation~(\ref{eq:band}). Although the observe profiles are noisier, there is general agreement with the simulated profile, with excess in between the pairs. We first computed the bridge excess as the average of $B(X)$ within $|X|\leq0.35\,d$ (indicated by the shaded regions in Fig.~\ref{fig:band_profiles_obs_sim}) and estimate the uncertainty based on the jackknife error bars. We find that none of the three bridge excesses exceeds $3\sigma$. The $6$--$15\,\hinvMpc$ bin has a positive excess of $2.4\sigma$ and lies $1.1\sigma$ above the mock prediction. The other two measurements are consistent with zero. The results are listed in Table~\ref{tab:bridge}.
+Figure~\ref{fig:band_profiles_obs_sim} shows the band profile $B(X)$, the difference between the central and off-center average profiles defined in Equation~(\ref{eq:band}). Although the observed profiles are noisier, there is general agreement with the simulated profile, with excess in between the pairs. We first compute the bridge excess as the average of $B(X)$ within $|X|\leq0.35\,d$ (indicated by the shaded regions in Fig.~\ref{fig:band_profiles_obs_sim}) and estimate the uncertainty based on the jackknife error bars. We find that none of the three bridge excesses exceeds $3\sigma$. The $6$--$15\,\hinvMpc$ bin has a positive excess of $2.4\sigma$ and lies $1.1\sigma$ above the mock prediction. The other two measurements are consistent with zero. The results are listed in Table~\ref{tab:bridge}.
 
 %Table~\ref{tab:bridge} gives the bridge excess and jackknife error for each sample, together with the mock prediction for the same statistic. Figure~\ref{fig:band_profiles_obs_sim} compares the observed and mock band profiles.
 
@@ -765,7 +764,6 @@ the map is smoothed to $10$ arcmin. Their value is consistent with our
 result of $(9.2\pm3.9)\times10^{-4}$ in that bin, but the two estimators
 differ. Their sample contains about $1.0$ million pairs, comparable to the
 $1.16$ million in our bin, and the two errors are similar.
-% CHECK: the 1.0 million is 2.2 x 459,051, from the ratio quoted in the submitted version; confirm against de Graaff et al. (2019).
 An inverse-variance-weighted combination of our three bins, neglecting the
 covariance between them, gives $(3.7\pm1.9)\times10^{-4}$.
 % TODO: recompute the combined value with the joint jackknife covariance of the three bins (bridge_study_pooled.csv treats them as independent).
@@ -953,7 +951,7 @@ halo signal cannot be excluded.
 \medskip
 \medskip
 
-As a whole, by cross-correlating CMASS galaxy pair wth the Planck CMB lensing map, we detect the matter distribution around galaxy pairs in the three $r_{\perp}$ bins. Comparing to the control pair map, we find the expected quadrupole pattern in the residual matter distribution around galaxy pairs. There is hint of stretched matter (filaments) along the pair connection line, while their significance needs to be further examined by increasing the size of the galaxy pair sample.
+As a whole, by cross-correlating CMASS galaxy pairs with the Planck CMB lensing map, we detect the matter distribution around galaxy pairs in the three $r_{\perp}$ bins. Comparing to the control pair map, we find the expected quadrupole pattern in the residual matter distribution around galaxy pairs. There is a hint of stretched matter (filaments) along the pair connection line, while their significance needs to be further examined by increasing the size of the galaxy pair sample.
 
 \section{Summary and Discussion}
 \label{sec:discussion}
@@ -964,19 +962,19 @@ separation bins of $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$,
 subtracted a control built from the galaxies' own single-galaxy stack, and
 measured a residual bridge statistic that is sensitive to filament-associated
 convergence between the galaxies. We applied the same signal estimator to a
-CMASS-like mock built from the BigMDPL $N$-boday simulation, which provides a
+CMASS-like mock built from the BigMDPL $N$-body simulation, which provides a
 $\Lambda$CDM reference prediction for this statistic. We retain the term
 ``residual'' because the estimator may also contain incompletely subtracted
 halo and environmental contributions.
 
-In the residual map, which shows the difference between the matter distribution around true galaxy pairs and that around control pairs (from superposition of single galaxy stacks), a quadrupole pattern is revealed, with excess around the pair connection line and deficit around the perpendicular bisector. It is the first time that this pattern has been discovered in observation. Such a pattern is consistent with the expectation from the simulation model. It is a manifestation of the gravitational interaction between galaxy or halo pairs. Tidal interaction tends to make the matter distribution stretched around the pair connection line and squashed around the perpendicular bisector direction. For models without dark matter, such as the Modified Newtonian dynamics (MOND; \citealt{Milgrom1983}), the gravitational effect comes from the concentrated distribution of baryonic matter in galaxies, which would be hard to produce the observed quadrupole pattern here. 
+In the residual map, which shows the difference between the matter distribution around true galaxy pairs and that around control pairs (from superposition of single galaxy stacks), a quadrupole pattern is revealed, with excess around the pair connection line and deficit around the perpendicular bisector. It is the first time that this pattern has been discovered in observation. Such a pattern is consistent with the expectation from the simulation model. It is a manifestation of the gravitational interaction between galaxy or halo pairs. Tidal interaction tends to make the matter distribution stretched around the pair connection line and squashed around the perpendicular bisector direction. For models without dark matter, such as the Modified Newtonian dynamics (MOND; \citealt{Milgrom1983}), the gravitational effect comes from the concentrated distribution of baryonic matter in galaxies, which would make the observed quadrupole pattern hard to produce. 
 
-The quadrople pattern is not seen in \citet{deGraaff2019} with a similar CMB lensing stacking analysis. This may be related to their construction of the control pair $\kappa$ map. In stead of superposition of the $\kappa$ profile around single galaxies, they derive their control map effectively from averaging the pair $\kappa$ in certain range. Such a control map tends to suppress the relatively weak quadrupole pattern. The weak lensing analysis of matter distribution around galaxy pairs in \citet{EppsHudson2017} does not reveal the quadrupole pattern, either. It may be buried in the noise or systematics in the weak lensing analysis. As a comparison, their filament detection results are not supported by \citealt{Xia2020}, with an increased sample of source galaxies for weak lensing.
+The quadrupole pattern is not seen in \citet{deGraaff2019} with a similar CMB lensing stacking analysis. This may be related to their construction of the control pair $\kappa$ map. Instead of superposition of the $\kappa$ profile around single galaxies, they derive their control map effectively from averaging the pair $\kappa$ over a certain range. Such a control map tends to suppress the relatively weak quadrupole pattern. The weak lensing analysis of matter distribution around galaxy pairs in \citet{EppsHudson2017} does not reveal the quadrupole pattern, either. It may be buried in the noise or systematics in the weak lensing analysis. As a comparison, their filament detection results are not supported by \citet{Xia2020}, with an increased sample of source galaxies for weak lensing.
 
 We construct a band profile from the residual map by taking the difference between the average profile near the pair connection line and the offset from the connection line in the perpendicular direction. The band profile serves to quantify the appearance of filaments. In the band profiles of the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, there appears to be a coherent excess between the two galaxies, signaling the filament, while in the $15$--$25\,\hinvMpc$ bin the observed excess is concentrated near the galaxy positions. The amplitude of the excess broadly agrees with the simulation model. When the jackknife covariance is accounted for, the bridge excess is $2.4\sigma$ in the $6$--$15\,\hinvMpc$ bin and consistent with zero in the other two, and it lacks statistical significance if we exclude the region affected by the halo subtraction (Section~\ref{sec:robust}). In Appendix~\ref{sec:appendix}, we list the lessons learned from our analysis.
 
 %\textbf{Prospects.} 
-The CMB lensing noises appear to dominate the error budget in our analysis.
+The CMB lensing noise appears to dominate the error budget in our analysis.
 Increasing the number of pairs
 should reduce the statistical error until correlations in the convergence
 map become limiting. We find that this limit is already close. The
