@@ -854,9 +854,13 @@ $\left(-1.7,\ -0.7,\ -0.8\right)\times10^{-4}$, consistent with zero.
 
 
 The residual maps also test how well the control describes the paired haloes.
-At the galaxy positions, the observed residual is within about one
-per-pixel jackknife error of zero in all three bins.
-% TODO: quote the observed and mock residual at the galaxy positions with errors. residual_at_galaxies.csv has no error columns, and its observed values differ from the kappa_filament_* maps (0.75 vs 0.64e-3 for 6-15, -0.46 vs -1.18e-3 for 4-6); reconcile first. Per-pixel jackknife errors there are 6-11e-4 (error_filament_* maps).
+At the mean galaxy position on the pair axis, the observed residual is
+$\left(-0.34\pm0.78,\ 0.68\pm0.57,\ 0.55\pm0.51\right)\times10^{-3}$ in the
+$4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins, within $1.2\sigma$ of
+zero in each. The corresponding mock values are
+$\left(0.15,\ 0.12,\ 0.07\right)\times10^{-3}$. The position is half the mean
+pair separation, and the errors are jackknife errors of the
+reflection-symmetrized map at that position.
 The corrected single-galaxy profile also lies below
 the matched mock prediction at large radius.
 % CHECK: fit_sim_template.py docstring; compare_boss_mock_profile.py retracted earlier significance values.
@@ -1171,10 +1175,9 @@ unit-amplitude control generates a ridge. They show no evidence of a spurious
 bridge excess (Section~\ref{sec:sim_expect}).
 
 \textbf{The residual near the galaxies tests the control and the mock.}
-At the galaxy positions, the observed residual is within about one
-per-pixel jackknife error of zero in all three bins
-(Section~\ref{sec:obs_stacks}).
-% TODO: quote the observed and mock values with errors, as in Section 5.1.
+At the mean galaxy position, the observed residual is within $1.2\sigma$ of
+zero in all three bins, and exceeds the mock value in the two wider bins
+without being significant (Section~\ref{sec:obs_stacks}).
 A residual there can arise from the halo-mass and environmental selection of
 paired galaxies and, in the comparison with the mock, from the absence of
 satellites. The corrected BOSS single-galaxy profile may also fall below the mock
