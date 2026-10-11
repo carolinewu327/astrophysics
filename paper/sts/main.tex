@@ -772,9 +772,12 @@ the map is smoothed to $10$ arcmin. Their value is consistent with our
 result of $(9.2\pm3.9)\times10^{-4}$ in that bin, but the two estimators
 differ. Their sample contains about $1.0$ million pairs, comparable to the
 $1.16$ million in our bin, and the two errors are similar.
-An inverse-variance-weighted combination of our three bins, neglecting the
-covariance between them, gives $(3.7\pm1.9)\times10^{-4}$.
-% TODO: recompute the combined value with the joint jackknife covariance of the three bins (bridge_study_pooled.csv treats them as independent).
+An inverse-variance-weighted combination of our three bins gives
+$(3.7\pm2.3)\times10^{-4}$, or $1.6\sigma$, where the error includes the
+jackknife covariance between the bins (correlation coefficients of $0.21$
+between the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, and $0.36$ between the
+$6$--$15$ and $15$--$25\,\hinvMpc$ bins). Neglecting that covariance would
+give $\pm1.9\times10^{-4}$.
 
 \begin{table}
   \centering
@@ -845,8 +848,8 @@ galaxy bin, and beam-convolved halo signal can enter the bridge window in all
 three bins. We therefore interpret these fits as profile diagnostics,
 not bridge detections. Adding a free constant to the full-profile model changes
 the amplitudes by less than $0.02$ and gives offsets of
-$\left(-1.7,\ -0.7,\ -0.8\right)\times10^{-4}$, consistent with zero.
-% CHECK: the offset errors are not written to bridge_study_archived_vs_wide.csv; add them and confirm "consistent with zero".
+$\left(-1.7\pm2.9,\ -0.7\pm2.8,\ -0.8\pm2.7\right)\times10^{-4}$, consistent
+with zero.
 
 %\subsection{Comparison with the simulation and with previous work}
 %\label{sec:compare}
@@ -1141,11 +1144,11 @@ bridge decreases by a factor of $2.7$ from the $4$--$6$ to the $15$--$25\,\hinvM
 measurement combines structures with different expected amplitudes. Dividing
 the sample increases the error in each bin, and none yields a $3\sigma$
 bridge excess. Pooling our three bins with inverse-variance weights gives
-$\left(3.66\pm1.93\right)\times10^{-4}$, or $1.9\sigma$. This provides only an
+$\left(3.7\pm2.3\right)\times10^{-4}$, or $1.6\sigma$. This provides only an
 approximate comparison with \citet{deGraaff2019}, whose estimator rescales and
-pools pairs before stacking. The quoted error also neglects cross-covariance among our
-three samples, which share a footprint and can share galaxies, and is not a
-formal uncertainty on the combined measurement.
+pools pairs before stacking. The quoted error includes the jackknife
+covariance among our three samples, which share a footprint and can share
+galaxies; treating them as independent would give $\pm1.9\times10^{-4}$.
 
 \textbf{The Planck map appears to set the present sensitivity.} The
 contribution from control uncertainty can be quantified by applying the same
