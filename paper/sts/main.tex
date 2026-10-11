@@ -711,7 +711,15 @@ adopted cut gives a nearly pure but
 incomplete sample. The completeness depends on the $20\,\hinvMpc$
 definition: unclustered pairs would give about $25$ percent, close to the
 value in the $15$--$25\,\hinvMpc$ bin.
-% TODO (wide bins): the bridge signal as a function of the cut (rpar_scan.py) was run at the narrow bins only (at 4-6 it first rises and then falls as the cut is widened; at 9-11 it falls). That sentence was removed from here; rerun for the wide bins to restore it.
+% OPTIONAL (for Zheng to decide; mock signal versus the line-of-sight cut, from los_signal_wide.csv, analysis/sim/widebin_los_signal.py):
+% Widening the cut does not dilute the mock bridge signal at first. Relative
+% to the adopted cut, selecting pairs with $r_{\parallel}\leq10\,\hinvMpc$
+% changes the mock bridge excess by factors of $1.37\pm0.26$, $1.00\pm0.06$,
+% and $0.91\pm0.09$ in the three bins, while the number of pairs grows by
+% factors of $1.5$, $1.8$, and $1.9$. With $r_{\parallel}\leq20\,\hinvMpc$ the
+% factors are $1.44\pm0.36$, $0.85\pm0.07$, and $0.92\pm0.10$, for $2.2$, $3.0$,
+% and $3.7$ times the pairs. The errors on these ratios are paired jackknife
+% errors, because the cuts are nested and share the same blocks.
 
 \section{Results}
 \label{sec:results}
@@ -1234,8 +1242,15 @@ We adopt
 $5\,\hinvMpc$ for all three bins, close to the $5$--$6\,\hinvMpc$ used
 previously. Under this criterion, it gives a nearly pure sample and a common selection for the
 bins, at the cost of completeness.
-% CHECK: reconcile los_contamination_table.py and rpar_scan.py before submission.
-% TODO (wide bins): whether a wider cut would raise the bridge signal-to-noise has not been tested for the wide bins (rpar_scan.py covers the narrow bins only).
+% OPTIONAL (for Zheng to decide; mock signal versus the line-of-sight cut, from los_signal_wide.csv, analysis/sim/widebin_los_signal.py):
+% In the mock, widening the cut to $10\,\hinvMpc$ leaves the bridge excess
+% unchanged within the errors in the two wider bins while nearly doubling the
+% number of pairs (Section~\ref{sec:sim_expect}). If the observational error
+% decreased as the inverse square root of the number of pairs, this would raise
+% the signal-to-noise ratio in those bins by up to about $30$ percent. The
+% actual gain should be smaller, because the added pairs lie on the same sky as
+% those already selected and share their reconstruction noise, which the mock
+% does not contain. We have not tested a wider cut on the data.
 
 
 \bibliography{ref}{}

@@ -103,7 +103,7 @@ regenerate each test are in `analysis/boss/results/widebin_rpar5/README.md`.
 | Smoothing scan | "Robustness tests", Figure 8 | `python analysis/boss/scripts/widebin_smoothing_scan.py` | `analysis/boss/results/widebin_rpar5/smoothing_scan_wide_BOSS.csv` | done |
 | Halo-cut scan (bridge as the window moves away from the galaxies) | "Robustness tests", the paragraph "Bridge window"; one sentence each in the Summary and in the appendix item on beam leakage | `python analysis/boss/scripts/widebin_halo_cut_scan.py` | `analysis/boss/results/widebin_rpar5/validation/halo_cut/halo_cut_scan.csv` | done, both binnings |
 | Line-of-sight cut, part A: completeness and interloper fraction of the selection | "Expected signal from the simulation", the paragraph "We also use the mock ... to assess the line-of-sight selection"; appendix, the line-of-sight item; Introduction, fourth design point | `python analysis/sim/widebin_los_purity.py` (after the null test, which builds its input) | `analysis/sim/results/hod_pairs/widebin_rpar5/los_purity_wide.csv` | done |
-| Line-of-sight cut, part B: bridge signal versus the cut | "Expected signal", one sentence labelled as the narrower-bin analysis, with a `% TODO (wide bins)`; a second `% TODO (wide bins)` in the appendix | `python analysis/sim/widebin_los_signal.py` (after the null test, which builds its input; about 40 minutes) | `analysis/sim/results/hod_pairs/widebin_rpar5/los_signal/los_signal_wide.csv` | done for the wide bins 2026-10-11; the sentence in the text still describes the narrower bins |
+| Line-of-sight cut, part B: bridge signal versus the cut | "Expected signal", one sentence labelled as the narrower-bin analysis, with a `% TODO (wide bins)`; a second `% TODO (wide bins)` in the appendix | `python analysis/sim/widebin_los_signal.py` (after the null test, which builds its input; about 40 minutes) | `analysis/sim/results/hod_pairs/widebin_rpar5/los_signal/los_signal_wide.csv` | done 2026-10-11; in the text only as two commented-out `% OPTIONAL` paragraphs (Expected signal and appendix) for Zheng to decide |
 | Sensitivity grid | not in the text: the paragraph was in a block removed from the submitted version | not re-run for the wide bins | - | open only if the paragraph is restored |
 
 ### Non-physical pair null test (2026-10-10)
@@ -249,10 +249,12 @@ new random-pair run at r_par <= 10.
    been compiled since.
 3. Mock tests: the non-physical pair null test and the line-of-sight purity
    table are done for all three bins and are in the text. The
-   signal-versus-cut sweep is now run for the wide bins (above), but the text
-   still has the narrower-bin sentence and its `% TODO (wide bins)`: replace
-   it with the wide-bin result. Open question for Zheng: is a data run at
-   r_par <= 10 worth a second GCP random run? The fitted-control test is in the same state.
+   signal-versus-cut sweep is run for the wide bins (above); its two paragraphs
+   are commented out in the text as `% OPTIONAL`, since showing them invites
+   the question of why the cut is 5.
+   Open question for Zheng: is a data run at
+   r_par <= 10 worth a second GCP random run? The fitted-control test is
+   still at the narrower bins, with a `% TODO (wide bins)` in the text.
    The sensitivity grid is not in the text.
 4. ~~Residual at the galaxy positions.~~ Resolved 2026-10-11.
    `residual_at_galaxies.csv` now has jackknife errors and a defined position
