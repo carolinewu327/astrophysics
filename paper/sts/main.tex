@@ -669,10 +669,27 @@ Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For th
   \label{fig:sim_band_profiles}
 \end{figure*}
 
-The nonphysical mock pairs show no bridge in any line-of-sight band,
-confirming that the control does not itself generate a ridge.
-% TODO (wide bins): the nonphysical-pair test was run at the narrow bins of the submitted version with the single-separation control. Rerun for 4-6, 6-15, 15-25 with the averaged control.
-% TODO: per-band residual bridge excess +/- error from nonphysical_pair_test_*.csv.
+To test whether the control itself generates a ridge, we stack mock pairs
+that are close on the sky but not physically associated. In each
+$r_{\perp}$ bin, we select pairs whose real-space line-of-sight separation
+lies in the bands $40$--$60$, $60$--$90$, and $90$--$120\,\hinvMpc$, using a
+random quarter of the mock galaxies used for the pair stacks, and apply the
+same control and bridge statistic. The bridge excess in the three bands is
+$\left(0.89\pm1.26,\ -0.96\pm0.77,\ -1.62\pm0.84\right)\times10^{-4}$ in the
+$4$--$6\,\hinvMpc$ bin,
+$\left(-0.16\pm0.31,\ -0.20\pm0.29,\ -0.33\pm0.25\right)\times10^{-4}$ in the
+$6$--$15\,\hinvMpc$ bin, and
+$\left(0.16\pm0.12,\ 0.16\pm0.13,\ -0.10\pm0.15\right)\times10^{-4}$ in the
+$15$--$25\,\hinvMpc$ bin. No band deviates from zero by more than
+$1.9\sigma$, and the sign differs between bins. The largest values are about
+a fifth of the observational error in the $4$--$6\,\hinvMpc$ bin and less
+than a tenth in the other two (Section~\ref{sec:results}). These tests show
+no evidence that the control generates a spurious bridge excess comparable
+to the observational uncertainties. Pairs separated by $20$--$40\,\hinvMpc$ along the line of sight
+still show a positive excess,
+$\left(3.36\pm1.43,\ 1.91\pm0.37,\ 1.17\pm0.17\right)\times10^{-4}$ in the
+three bins, which may reflect large-scale structure correlated with both
+galaxies, and we do not use this band as a null test.
 The line-of-sight sweep supports the production cuts. At
 $r_{\perp}=5\,\hinvMpc$ the bridge signal first rises and then falls as the
 cut is widened, while at $10\,\hinvMpc$ it falls.
