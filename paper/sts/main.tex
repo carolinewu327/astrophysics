@@ -846,29 +846,50 @@ statistic, which subtracts the off-center band in Equation~(\ref{eq:band}).
 We perform additional analyses to test the robustness of our results.
 
 \paragraph{Smoothing.} Figure~\ref{fig:smoothing_scan} compares the observed results with 
-$8$- and $6$-arcmin (FWHM) smoothing at all three separations and with $4$-arcmin  smoothing at $5$ and $10\,\hinvMpc$. The bridge signal-to-noise values for
-$8$, $6$, and $4$ arcmin smoothing are $(0.6,1.2,2.2)$ at $5\,\hinvMpc$ and
-$(2.3,2.4,1.1)$ at $10\,\hinvMpc$. At $20\,\hinvMpc$, the values with $8$- and
-$6$-arcmin smoothing are $0.6$ and $0.5$. We retain $8$ arcmin as the common
-smoothing scale and do not tune it separately for each separation.
+$8$-, $6$-, and $4$-arcmin (FWHM) smoothing in all three bins. The bridge signal-to-noise values for
+$8$, $6$, and $4$ arcmin smoothing are $(0.6,1.3,2.6)$ in the $4$--$6\,\hinvMpc$ bin,
+$(2.4,2.5,1.1)$ in the $6$--$15\,\hinvMpc$ bin, and $(0.7,1.0,0.7)$ in the
+$15$--$25\,\hinvMpc$ bin. The galaxy stacks are remade at each smoothing
+scale, while the random stacks are those of the $8$-arcmin map throughout.
+We retain $8$ arcmin as the common
+smoothing scale and do not tune it separately for each bin.
 
 \begin{figure}
   \centering
   \includegraphics[width=\linewidth]{Figure/filament_snr_vs_smoothing.pdf}
-  \caption{Observed bridge profiles and signal-to-noise with there
-  smoothing FWHM values. The $4$-arcmin smoothing stack is unavailable at
-  $20\,\hinvMpc$.}
+  \caption{Observed band profiles $B(X)$ for the three $r_{\perp}$ bins and
+  the bridge signal-to-noise (lower right) with three smoothing FWHM values.
+  Shaded bands show the jackknife errors, the gray region marks the bridge
+  window, and the dashed lines mark the galaxy positions at the nominal
+  separation.}
   \label{fig:smoothing_scan}
 \end{figure}
 
-\paragraph{Weighting.} We have not yet quantified the effect of removing the
-lensing-efficiency weight from the single-galaxy stacks.
+\paragraph{Binning, weighting, and control.} As a check on the binning, we
+repeat the analysis with narrower bins, $4$--$6$, $9$--$11$, and
+$18$--$22\,\hinvMpc$, with $r_{\parallel,{\rm max}}=5$, $10$, and
+$10\,\hinvMpc$, pair weights without the lensing-efficiency factor, and the
+control of Equation~(\ref{eq:two_halo}) at the central separation of each
+bin. The bridge excesses are
+$\left(5.4\pm9.1,\ 11.9\pm5.1,\ 1.2\pm2.2\right)\times10^{-4}$, at $0.6$,
+$2.3$, and $0.6\sigma$, close to the values in Table~\ref{tab:bridge}. The
+$4$--$6\,\hinvMpc$ bin contains the same pairs in both analyses, so the change
+there, from $5.38$ to $5.44\times10^{-4}$, isolates the combined effect of the
+weighting, the control, and the pooling of the random pairs. Splitting the
+$6$--$15\,\hinvMpc$ bin into $6$--$10$ and $10$--$15\,\hinvMpc$ gives
+$(10.5\pm5.7)$ and $(8.5\pm4.1)\times10^{-4}$, at $1.8$ and $2.1\sigma$, so
+the excess is not confined to one part of the bin. Replacing the
+separation-averaged control of Equation~(\ref{eq:control}) by the control at
+the nominal separation changes the bridge excesses in the three bins to
+$\left(5.3,\ 8.9,\ 2.9\right)\times10^{-4}$. The largest change, in the
+$15$--$25\,\hinvMpc$ bin, is $0.5$ times the error.
+% TODO: quantify the effect of removing the lensing-efficiency weight from all stacks (single and pair).
 % TODO: report the changes in the control and bridge excess.
 %Combining the two caps with equal weight, rather than as a joint stack, produced the apparent dip found in earlier versions of the analysis.
 % TODO: report the shift in the corrected single profile at 20 h^-1 Mpc.
 
-\paragraph{Random-pair sample.} Replacing the full random catalog by a
-10 percent subsample shifts the $10\,\hinvMpc$ bridge excess by
+\paragraph{Random-pair sample.} In the narrower-bin analysis, replacing the full random catalog by a
+10 percent subsample shifts the $9$--$11\,\hinvMpc$ bridge excess by
 $5\times10^{-4}$, comparable to the measured signal. We therefore use the
 full random catalog. % CHECK: combine_filament_jackknife.py docstring.
 
@@ -876,16 +897,37 @@ full random catalog. % CHECK: combine_filament_jackknife.py docstring.
 % UNVERIFIED: align this description with band_core_tail_control.py and add checked-in results.
 As an alternative to the unit-amplitude control, we split the single-galaxy
 profile into core and tail components and fit their amplitudes outside the
-pair. In the mock, this procedure drives the bridge excess to zero at all
+pair. In the mock, for the narrower bins, this procedure drives the bridge excess to zero at all
 three separations, whereas the unfitted control recovers the bridge present
 in the simulation. The fitted control therefore absorbs axis-aligned signal,
 so we do not use it for the fiducial measurement.
 % TODO: quote mock and observed bridge excess under the fitted control beside the unfitted values.
+% TODO (wide bins): the fitted control was tested with the narrower bins only.
+
+\paragraph{Bridge window.} The bridge window ends close to the galaxies, and
+in the $6$--$15\,\hinvMpc$ bin it reaches the innermost galaxy positions at
+$|X|=3\,\hinvMpc$. To test for halo signal inside the window, we recompute
+the bridge excess in narrower windows. In the $6$--$15\,\hinvMpc$ bin, it
+falls from $(9.2\pm3.9)\times10^{-4}$ for the full window to $(7.5\pm4.3)$,
+$(5.7\pm4.8)$, and $(4.6\pm5.3)\times10^{-4}$ for $|X|\leq2$, $1$, and
+$0\,\hinvMpc$, that is, from $2.4$ to $0.9\sigma$. In the
+$15$--$25\,\hinvMpc$ bin, it falls from $(1.6\pm2.3)\times10^{-4}$ for the
+full window to $(-1.1\pm3.1)\times10^{-4}$ for $|X|\leq3\,\hinvMpc$. In the
+$4$--$6\,\hinvMpc$ bin, it changes from $(5.4\pm9.0)$ to
+$(4.7\pm10.2)\times10^{-4}$ at $X=0$. The mock difference profile is nearly
+flat across the window (Figure~\ref{fig:sim_band_profiles}), so the
+simulation does not predict such a decline, although the narrower windows
+have larger errors and their values are correlated. The $2.4\sigma$ excess in
+the $6$--$15\,\hinvMpc$ bin therefore comes mostly from the part of the window
+nearest the galaxies, and we cannot exclude a contribution from residual halo
+signal.
+% CHECK: validation/halo_cut/bridge_window_scan.csv was produced by hand; there is no script in the repository.
+% TODO: mock counterpart of the window scan, to replace the qualitative statement about the mock profile.
 
 \medskip
 \medskip
 
-As a whole, by cross-correlating CMASS galaxy pair wth the Planck CMB lensing map, we detect the matter distribution around galaxy pairs at the three pair separations. Comparing to the control pair map, we find the expected quadrupole pattern in the residual matter distribution around galaxy pairs. There is hint of stretched matter (filaments) along the pair connection line, while their significance needs to be further examined by increasing the size of the galaxy pair sample.
+As a whole, by cross-correlating CMASS galaxy pair wth the Planck CMB lensing map, we detect the matter distribution around galaxy pairs in the three $r_{\perp}$ bins. Comparing to the control pair map, we find the expected quadrupole pattern in the residual matter distribution around galaxy pairs. There is hint of stretched matter (filaments) along the pair connection line, while their significance needs to be further examined by increasing the size of the galaxy pair sample.
 
 \section{Summary and Discussion}
 \label{sec:discussion}
