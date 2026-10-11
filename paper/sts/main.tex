@@ -925,22 +925,26 @@ so we do not use it for the fiducial measurement.
 \paragraph{Bridge window.} The bridge window ends close to the galaxies, and
 in the $6$--$15\,\hinvMpc$ bin it reaches the innermost galaxy positions at
 $|X|=3\,\hinvMpc$. To test for halo signal inside the window, we recompute
-the bridge excess in narrower windows. In the $6$--$15\,\hinvMpc$ bin, it
+the bridge excess and its jackknife error in narrower windows, and evaluate
+the mock in the same windows. In the $6$--$15\,\hinvMpc$ bin, the excess
 falls from $(9.2\pm3.9)\times10^{-4}$ for the full window to $(7.5\pm4.3)$,
 $(5.7\pm4.8)$, and $(4.6\pm5.3)\times10^{-4}$ for $|X|\leq2$, $1$, and
-$0\,\hinvMpc$, that is, from $2.4$ to $0.9\sigma$. In the
-$15$--$25\,\hinvMpc$ bin, it falls from $(1.6\pm2.3)\times10^{-4}$ for the
-full window to $(-1.1\pm3.1)\times10^{-4}$ for $|X|\leq3\,\hinvMpc$. In the
-$4$--$6\,\hinvMpc$ bin, it changes from $(5.4\pm9.0)$ to
-$(4.7\pm10.2)\times10^{-4}$ at $X=0$. The mock difference profile is nearly
-flat across the window (Figure~\ref{fig:sim_band_profiles}), so the
-simulation does not predict such a decline, although the narrower windows
-have larger errors and their values are correlated. The $2.4\sigma$ excess in
-the $6$--$15\,\hinvMpc$ bin therefore comes mostly from the part of the window
-nearest the galaxies, and we cannot exclude a contribution from residual halo
-signal.
-% CHECK: validation/halo_cut/bridge_window_scan.csv was produced by hand; there is no script in the repository.
-% TODO: mock counterpart of the window scan, to replace the qualitative statement about the mock profile.
+$0\,\hinvMpc$, and its significance falls from $2.4$ to $0.9\sigma$, while
+the mock stays between $4.8$ and $4.9\times10^{-4}$. The value at the pair
+midpoint matches the mock prediction but is not significant. The narrower
+$9$--$11\,\hinvMpc$ bin behaves in the same way, falling from
+$(11.9\pm5.1)$ to $(6.2\pm7.5)\times10^{-4}$ at the midpoint, although its
+window ends $1\,\hinvMpc$ short of the nearest galaxy. In the
+$15$--$25\,\hinvMpc$ bin, the excess changes from $(1.6\pm2.3)$ to
+$(-1.6\pm4.3)\times10^{-4}$ at the midpoint, compared with $2.2$ and
+$2.1\times10^{-4}$ in the mock. In the $4$--$6\,\hinvMpc$ bin, it changes
+from $(5.4\pm9.0)$ to $(4.7\pm10.2)\times10^{-4}$, compared with $6.0$ and
+$6.8\times10^{-4}$ in the mock. Both bins are consistent with zero and with
+the mock in every window. In the $6$--$15\,\hinvMpc$ bin, the measured
+difference from the mock is largest toward the edges of the window, nearest
+the galaxies. The nested-window measurements are correlated, and we have not
+quantified the significance of this variation; a contribution from residual
+halo signal cannot be excluded.
 
 \medskip
 \medskip
