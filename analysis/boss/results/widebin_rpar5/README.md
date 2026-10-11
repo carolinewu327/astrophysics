@@ -294,6 +294,21 @@ python analysis/sim/widebin_los_purity.py
 Output: `$HW/los_purity_wide.csv` (in git). Result and reading:
 `paper/sts/README.md`.
 
+## Mock signal versus the line-of-sight cut (mock only)
+
+Stacks the mock pairs of each wide bin at redshift-space cuts of 5, 10 and 20
+with the averaged control, and reports the bridge excess and pair count at
+each cut relative to the cut of 5. Like the purity table it reads the deep
+pair files the null test builds. About 40 minutes.
+
+```bash
+python analysis/sim/widebin_los_signal.py
+```
+
+Output: `$HW/los_signal/los_signal_wide.csv` (in git) and a `.json`,
+`_map.csv` and `_blocks.npz` per bin and cut (not in git; reused if present,
+rebuilt otherwise). Result and reading: `paper/sts/README.md`.
+
 ## Halo-cut scan
 
 Recomputes the bridge excess with the window shrunk away from the galaxies,

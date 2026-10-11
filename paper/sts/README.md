@@ -100,7 +100,7 @@ regenerate each test are in `analysis/boss/results/widebin_rpar5/README.md`.
 | Smoothing scan | "Robustness tests", Figure 8 | `python analysis/boss/scripts/widebin_smoothing_scan.py` | `analysis/boss/results/widebin_rpar5/smoothing_scan_wide_BOSS.csv` | done |
 | Halo-cut scan (bridge as the window moves away from the galaxies) | "Robustness tests", the paragraph "Bridge window"; one sentence each in the Summary and in the appendix item on beam leakage | `python analysis/boss/scripts/widebin_halo_cut_scan.py` | `analysis/boss/results/widebin_rpar5/validation/halo_cut/halo_cut_scan.csv` | done, both binnings |
 | Line-of-sight cut, part A: completeness and interloper fraction of the selection | "Expected signal from the simulation", the paragraph "We also use the mock ... to assess the line-of-sight selection"; appendix, the line-of-sight item; Introduction, fourth design point | `python analysis/sim/widebin_los_purity.py` (after the null test, which builds its input) | `analysis/sim/results/hod_pairs/widebin_rpar5/los_purity_wide.csv` | done |
-| Line-of-sight cut, part B: bridge signal versus the cut | "Expected signal", one sentence labelled as the narrower-bin analysis, with a `% TODO (wide bins)`; a second `% TODO (wide bins)` in the appendix | not run for the wide bins (`rpar_scan.py` covers the narrow bins only) | - | open; optional now that the cut is 5 everywhere |
+| Line-of-sight cut, part B: bridge signal versus the cut | "Expected signal", one sentence labelled as the narrower-bin analysis, with a `% TODO (wide bins)`; a second `% TODO (wide bins)` in the appendix | `python analysis/sim/widebin_los_signal.py` (after the null test, which builds its input; about 40 minutes) | `analysis/sim/results/hod_pairs/widebin_rpar5/los_signal/los_signal_wide.csv` | done for the wide bins 2026-10-11; the sentence in the text still describes the narrower bins |
 | Sensitivity grid | not in the text: the paragraph was in a block removed from the submitted version | not re-run for the wide bins | - | open only if the paragraph is restored |
 
 ### Non-physical pair null test (2026-10-10)
@@ -201,6 +201,40 @@ depends on the 20 h^-1 Mpc definition: at 15-25 the associated sample is close
 to what unclustered pairs would give (5/20 = 25 per cent), so part of it is
 chance alignment within the definition, not lost filaments.
 
+### Line-of-sight cut: mock bridge signal versus the cut (2026-10-11)
+
+Mock, same seeded quarter of the galaxies, separation-averaged control. S is
+the bridge excess in units of 1e-4. The ratio to the cut of 5 has a paired
+jackknife error (nested cuts, same 25 blocks).
+
+| Bin | Cut | Pairs (ratio to cut 5) | S | S / S(5) | Upper bound on S/N gain |
+|---|---|---:|---:|---:|---:|
+| 4-6 | 5 | 20,184 | 4.84 +/- 1.39 | 1 | 1 |
+| | 10 | 30,775 (1.52) | 6.61 +/- 0.94 | 1.37 +/- 0.26 | 1.69 |
+| | 20 | 44,631 (2.21) | 6.96 +/- 0.73 | 1.44 +/- 0.36 | 2.14 |
+| 6-15 | 5 | 105,618 | 5.14 +/- 0.52 | 1 | 1 |
+| | 10 | 187,880 (1.78) | 5.12 +/- 0.42 | 1.00 +/- 0.06 | 1.33 |
+| | 20 | 315,530 (2.99) | 4.35 +/- 0.31 | 0.85 +/- 0.07 | 1.47 |
+| 15-25 | 5 | 149,296 | 1.83 +/- 0.29 | 1 | 1 |
+| | 10 | 290,375 (1.94) | 1.67 +/- 0.26 | 0.91 +/- 0.09 | 1.27 |
+| | 20 | 546,516 (3.66) | 1.69 +/- 0.21 | 0.92 +/- 0.10 | 1.76 |
+
+The last column is S/S(5) times the square root of the pair ratio: the S/N
+gain if the data error fell as 1/sqrt(N). It is an upper bound, because pairs
+added by deepening the cut lie on the same sky as the existing ones and share
+their Planck noise; the mock has no such noise and cannot measure the true gain.
+
+Checks: the cut-5 values agree with the full-sample mock stacks (5.97, 4.91,
+2.18) within the quarter-sample errors; for every stack the bridge rebuilt from
+the saved blocks matches the stacker's own value.
+
+Reading: widening the cut from 5 to 10 does not dilute the mock signal at 6-15
+or 15-25 and raises it at 4-6, while the pair count grows by 1.5 to 1.9. At 20
+the 6-15 signal falls by about 15 per cent. So r_par <= 5 is safe but not
+optimal: a cut of 10 could gain up to about 30 per cent in S/N at 6-15, and
+realistically less. Testing it on the data needs new galaxy-pair stacks and a
+new random-pair run at r_par <= 10.
+
 ## Still to do
 
 1. ~~Figure 8.~~ Done 2026-10-09.
@@ -212,9 +246,10 @@ chance alignment within the definition, not lost filaments.
    been compiled since.
 3. Mock tests: the non-physical pair null test and the line-of-sight purity
    table are done for all three bins and are in the text. The
-   signal-versus-cut sweep is still at the old bins; the text labels its one
-   sentence as the narrower-bin analysis and carries a `% TODO (wide bins)`:
-   re-run, or cut the sentence. The fitted-control test is in the same state.
+   signal-versus-cut sweep is now run for the wide bins (above), but the text
+   still has the narrower-bin sentence and its `% TODO (wide bins)`: replace
+   it with the wide-bin result. Open question for Zheng: is a data run at
+   r_par <= 10 worth a second GCP random run? The fitted-control test is in the same state.
    The sensitivity grid is not in the text.
 4. Residual at the galaxy positions. The "2e-3 observed against 0.9e-3 mock"
    sentence and the HOD speculation built on it are removed from Section 5.1
