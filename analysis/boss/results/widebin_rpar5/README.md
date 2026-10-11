@@ -226,6 +226,46 @@ Output: `paper/sts/Figure/filament_snr_vs_smoothing.pdf` and
 `$W/smoothing_scan_wide_BOSS.csv`. The 8 arcmin rows reproduce the main result
 table exactly, which is the check that the script matches step 5.
 
+## Null test of the control (mock only)
+
+Checks that the separation-averaged control leaves nothing where there is no
+filament. Mock pairs that are close on the sky but 40-120 h^-1 Mpc apart along
+the line of sight (real space) are stacked and the control subtracted; the
+bridge excess should be zero. One command per bin, about 20 minutes:
+
+```bash
+python analysis/sim/widebin_null_test.py --bin g6_15
+```
+
+It uses a seeded random quarter of the mock galaxies, because the stacker
+reads the whole pair file into memory and the full catalogue would not fit.
+
+Inputs (the same three the mock stacks in step 4 use):
+
+| Input | In git |
+|---|---|
+| `analysis/sim/results/galaxies_hod_nmatch_frac50.csv` (mock galaxies, 146 MB) | no; analysis machine only |
+| `analysis/sim/results/kappa_map_l0p1_s8arcmin.float32` (mock kappa map, 2.3 GB) | no; analysis machine only |
+| `analysis/sim/results/kappa_single_sim_hodnmatch_8arcmin_centered_g101.csv` (mock single stack) | yes |
+
+Output, all in `$HW/nulltest/`:
+
+| File | In git |
+|---|---|
+| `nonphysical_pair_test_g6_15.csv`: the table, one row per band | yes |
+| `nonphys_g6_15_rpar<lo>_<hi>{.json,_map.csv,_blocks.npz}`: per band | no; rebuilt by the command |
+| `halos_*_frac25_seed12345.csv` (39 MB), `pairs_*_real120.csv` (378 MB): intermediate | no; rebuilt by the command |
+
+To regenerate: run the command above. If the table already exists the script
+stops; add `--overwrite` to replace it and the per-band files. The sampled
+galaxies and the pair file are reused when present and otherwise rebuilt from
+the seed, so a fresh run reproduces the committed table exactly (checked on
+2026-10-10). For another bin change `--bin`, for example `--bin g15_25`.
+
+Result for 6-15: 4.09 +/- 0.34 for associated pairs (0-20), then
+-0.16 +/- 0.31, -0.20 +/- 0.29 and -0.33 +/- 0.25 (x 1e-4) at 40-60, 60-90 and
+90-120. The control passes. Full table: `paper/sts/README.md`.
+
 ## If you change something, what to rerun
 
 | Change | Rerun |
