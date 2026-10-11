@@ -223,7 +223,6 @@ above, peculiar velocities of $\sim500\,\mathrm{km\,s^{-1}}$ move pairs across
 any threshold of a few $\hinvMpc$. We therefore use the mock, in which the true positions of the galaxies are
 known, to measure how many genuinely close pairs the cut keeps and how many
 pairs it admits that only appear close because of their velocities.
-% TODO (wide bins): the line-of-sight sweep was run at the narrow bins of the submitted version only; see Section 4 and the appendix.
 
 We use the Planck 2018 minimum-variance lensing reconstruction
 \citep{Planck2018lensing} synthesized at $N_{\rm side}=2048$ and smoothed with
@@ -693,12 +692,24 @@ still show a positive excess,
 $\left(3.36\pm1.43,\ 1.91\pm0.37,\ 1.17\pm0.17\right)\times10^{-4}$ in the
 three bins, which may reflect large-scale structure correlated with both
 galaxies, and we do not use this band as a null test.
-A line-of-sight sweep, run for the narrower bins of
-Section~\ref{sec:robust}, shows that at
-$r_{\perp}=5\,\hinvMpc$ the bridge signal first rises and then falls as the
+We also use the mock, with the same subsample of galaxies, to assess the
+line-of-sight selection. We call a pair associated if its real-space
+line-of-sight separation is at most $20\,\hinvMpc$. Of the pairs selected
+with a redshift-space separation $r_{\parallel}\leq5\,\hinvMpc$, only $0.1$
+percent are not associated, in each of the three bins, and $90$ percent have
+a real-space line-of-sight separation below about $9\,\hinvMpc$. The selection keeps $48$,
+$36$, and $29$ percent of the associated pairs in the $4$--$6$, $6$--$15$,
+and $15$--$25\,\hinvMpc$ bins. A cut of $20\,\hinvMpc$ would keep $95$ to
+$98$ percent of them, but $8$ to $11$ percent of the selected pairs would
+then not be associated. Under this real-space line-of-sight criterion, the
+adopted cut gives a nearly pure but
+incomplete sample. The completeness depends on the $20\,\hinvMpc$
+definition: unclustered pairs would give about $25$ percent, close to the
+value in the $15$--$25\,\hinvMpc$ bin.
+In the narrower-bin analysis of Section~\ref{sec:robust}, the bridge signal at
+$r_{\perp}=5\,\hinvMpc$ first rises and then falls as the
 cut is widened, while at $10\,\hinvMpc$ it falls.
-% TODO (wide bins): the line-of-sight sweep was run at the narrow bins of the submitted version; the two sentences above describe those runs. Rerun for the wide bins, which all use r_par <= 5, and rewrite.
-% TODO: completeness / interloper fraction / sensitivity per cut from rpar_scan.csv and los_sweep_summary.csv.
+% TODO (wide bins): the bridge signal as a function of the cut (rpar_scan.py) was run at the narrow bins only. Rerun for the wide bins or cut the sentence above.
 
 \section{Results}
 \label{sec:results}
@@ -1201,17 +1212,20 @@ calibrate the leakage using a simulation with matched smoothing and halo
 selection.
 
 \textbf{The line-of-sight cut trades completeness against contamination.}
-In the narrower-bin analysis of Section~\ref{sec:robust}, we tested this cut
-on the mock. The redshift-space sweep evaluated
-completeness and interloper fractions at cuts of $5$, $10$, $20$, and
-$30\,\hinvMpc$.
-% TODO: report the completeness and interloper fractions.
+We test this cut on the mock. A pair is associated if its real-space
+line-of-sight separation is at most $20\,\hinvMpc$, and an interloper is a
+selected pair that is not associated. We evaluate completeness and interloper
+fractions at cuts of $5$, $10$, $20$, and
+$30\,\hinvMpc$ (Section~\ref{sec:sim_expect}). At $5\,\hinvMpc$, $0.1$ percent
+of the selected pairs are interlopers and $29$ to $48$ percent of the
+associated pairs are kept. At $20\,\hinvMpc$, $95$ to $98$ percent are kept
+and $8$ to $11$ percent of the selected pairs are interlopers.
 We adopt
 $5\,\hinvMpc$ for all three bins, close to the $5$--$6\,\hinvMpc$ used
-previously, which gives the bins a common selection and simplifies
-comparisons among them.
+previously. Under this criterion, it gives a nearly pure sample and a common selection for the
+bins, at the cost of completeness.
 % CHECK: reconcile los_contamination_table.py and rpar_scan.py before submission.
-% TODO (wide bins): the sweep was run at the narrow bins of the submitted version. Rerun for 4-6, 6-15, 15-25 and report how the bridge sensitivity changes between cuts of 5 and 10.
+% TODO (wide bins): whether a wider cut would raise the bridge signal-to-noise has not been tested for the wide bins (rpar_scan.py covers the narrow bins only).
 
 
 \bibliography{ref}{}
