@@ -19,7 +19,10 @@ Per sample:
     profile (with the share of the response from bins around the galaxies,
     and with a free constant) and over the bridge window only;
   * the random-pair map's own bridge statistic (noise floor);
-  * an inverse-variance pool of the three main bins.
+  * an inverse-variance pool of the three main bins, with its error both
+    neglecting and including the covariance between bins (the bins share the
+    287 jackknife regions, so the joint covariance comes from the same
+    leave-one-out values), and the minimum-variance combination.
 
 The archived column must reproduce the draft; it is recomputed here rather than
 copied so that both columns come from one code path.  Nothing in the archive is
@@ -52,7 +55,7 @@ from catalog import setup_logging
 from combine_filament_jackknife import (BRIDGE_CENTERS, grouping_filament, load_grouping_pairs,
                                         load_random_subbins, loo_and_total, pooled_random_map)
 from combine_jackknife import load_accumulator
-from fit_band_covariance import run_fit
+from fit_band_covariance import Precision, run_fit
 from geometry import (BRIDGE_HALF_X_FRAC, band_profile, bridge_excess, separation_averaged_template,
                       separation_mix)
 from jackknife import jackknife_error
@@ -73,7 +76,14 @@ X_MAX, X_BIN = 40.0, 4.0
 def bridge_with_error(obs: np.ndarray, loo: np.ndarray, axis: np.ndarray, center: float):
     value = bridge_excess(obs, axis, center)
     loo_vals = np.array([bridge_excess(m.reshape(obs.shape), axis, center) for m in loo])
-    return value, jackknife_error(loo_vals)[1]
+    return value, jackknife_error(loo_vals)[1], loo_vals
+
+
+def offset_error(d, s, cov):
+    """1-sigma error on the free constant of the amplitude-plus-constant fit."""
+    B, one = Precision(cov), np.ones_like(d)
+    m = np.array([[B.dot(s, s), B.dot(s, one)], [B.dot(one, s), B.dot(one, one)]])
+    return float(np.sqrt(np.linalg.inv(m)[1, 1]))
 
 
 def profile_with_error(obs, loo, axis):
@@ -84,9 +94,10 @@ def profile_with_error(obs, loo, axis):
 
 def score(label, bin_text, rpar, center, obs, loo, sim, sim_bridge, n_pairs, mean_r, rand_floor, axis):
     """Every draft number for one sample."""
-    b, be = bridge_with_error(obs, loo, axis, center)
+    b, be, b_loo = bridge_with_error(obs, loo, axis, center)
     sb, sbe = sim_bridge
-    full, _ = run_fit(obs, loo, sim, axis, X_MAX, X_BIN, center)
+    full, (_, d_vec, s_vec, cov, _) = run_fit(obs, loo, sim, axis, X_MAX, X_BIN, center)
+    c_err = offset_error(d_vec, s_vec, cov)
     win, _ = run_fit(obs, loo, sim, axis, BRIDGE_HALF_X_FRAC * center, X_BIN, center)
     return {
         "sample": label, "bin": bin_text, "rpar_max": rpar, "center": center,
@@ -102,8 +113,10 @@ def score(label, bin_text, rpar, center, obs, loo, sim, sim_bridge, n_pairs, mea
         "A_full": full["A"], "A_full_err": full["sigma_A"], "A_full_sig": full["significance"],
         "A_full_halo_frac": full["frac_halo"], "A_full_bridge_frac": full["frac_bridge"],
         "A_offset": full["A_offset"], "A_offset_err": full["sigma_A_offset"], "offset_c": full["offset_c"],
+        "offset_c_err": c_err, "offset_c_sig": full["offset_c"] / c_err,
         "A_window": win["A"], "A_window_err": win["sigma_A"], "A_window_sig": win["significance"],
         "random_floor": rand_floor,
+        "_loo_bridge": b_loo,   # leave-one-out bridge values, for the joint covariance; not written
     }
 
 
@@ -177,11 +190,32 @@ def wide_samples(results_dir, wide_dir, sim_dir, sim_single, single_tag, single_
 
 
 def pooled(df: pd.DataFrame, version: str) -> dict:
+    """Combine the three main bins.
+
+    pooled_bridge uses inverse-variance weights.  pooled_err treats the bins as
+    independent; pooled_err_joint is the error of that same weighted mean with
+    the jackknife covariance between bins.  The gls_* columns are the
+    minimum-variance combination under that covariance.
+    """
     main = df[(df.version == version) & (df["sample"] != "split")]
-    w = 1.0 / main.bridge_err ** 2
-    value = float((w * main.bridge).sum() / w.sum())
+    w = (1.0 / main.bridge_err ** 2).to_numpy()
+    b = main.bridge.to_numpy()
+    value = float((w * b).sum() / w.sum())
     err = float(1.0 / np.sqrt(w.sum()))
-    return {"version": version, "pooled_bridge": value, "pooled_err": err, "pooled_snr": value / err}
+
+    loo = np.column_stack(list(main["_loo_bridge"]))      # (regions, bins)
+    k = loo.shape[0]
+    dev = loo - loo.mean(axis=0)
+    cov = (k - 1) / k * dev.T @ dev
+    corr = cov / np.sqrt(np.outer(np.diag(cov), np.diag(cov)))
+    err_joint = float(np.sqrt(w @ cov @ w) / w.sum())
+    cinv = np.linalg.inv(cov)
+    gls_err = float(1.0 / np.sqrt(cinv.sum()))
+    gls = float((cinv @ b).sum() * gls_err ** 2)
+    return {"version": version, "pooled_bridge": value, "pooled_err": err, "pooled_snr": value / err,
+            "pooled_err_joint": err_joint, "pooled_snr_joint": value / err_joint,
+            "corr_5_10": corr[0, 1], "corr_5_20": corr[0, 2], "corr_10_20": corr[1, 2],
+            "gls_bridge": gls, "gls_err": gls_err, "gls_snr": gls / gls_err}
 
 
 def plot_profiles(profiles, out_base):
@@ -244,7 +278,7 @@ def main(argv=None):
     rows_w, prof_w = wide_samples(args.results_dir, args.wide_dir, args.sim_dir, args.sim_single,
                                   args.single_tag, args.single_random_tag, args.random_label)
     df = pd.DataFrame(rows_a + rows_w)
-    df.to_csv(outputs[0], index=False)
+    df.drop(columns="_loo_bridge").to_csv(outputs[0], index=False)
     pd.DataFrame([pooled(df, "archived"), pooled(df, "wide")]).to_csv(outputs[1], index=False)
     plot_profiles({**prof_a, **prof_w}, os.path.join(out_dir, "band_profiles_archived_vs_wide"))
     logger.info("Saved -> %s", out_dir)

@@ -84,8 +84,8 @@ All in `analysis/boss/results/widebin_rpar5/`:
 | Quantity | File |
 |---|---|
 | Bridge excess, error, S/N, pair counts, mean r_perp | `filament_jackknife_wide_avgctrl_BOSS_North_South.csv` |
-| Mock prediction, observed minus mock, chi^2, fitted amplitudes, noise floor | `comparison/bridge_study_archived_vs_wide.csv` (rows with `version = wide`) |
-| Pooled bridge excess | `comparison/bridge_study_pooled.csv` |
+| Mock prediction, observed minus mock, chi^2 before and after the amplitude fit, fitted amplitudes, the free constant with its error, noise floor | `comparison/bridge_study_archived_vs_wide.csv` (rows with `version = wide`) |
+| Pooled bridge excess: inverse-variance mean with its error neglecting and including the covariance between bins, the bin-to-bin correlations, and the minimum-variance combination | `comparison/bridge_study_pooled.csv` |
 | Residual at the mean galaxy position, with jackknife error, data and mock | `comparison/paper_figures/residual_at_galaxies.csv` |
 | Bridge excess as the window moves away from the galaxies | `validation/halo_cut/halo_cut_scan.csv` |
 
