@@ -790,29 +790,35 @@ covariance between them, gives $(3.7\pm1.9)\times10^{-4}$.
 \end{figure*}
 
 To see the significance of detecting the central and off-center band profiles, we perform a $\chi^{2}$ test of the compressed $22$-element central and off-center band profile against zero with
-the full covariance, which gives $\chi^{2}=35.0$, $20.7$, and $32.4$ for $22$
-degrees of freedom (corresponding to nominal $p$ values of $p=0.04$, $0.54$, and $0.07$). The $p=0.04$ result at $5\,\hinvMpc$ applies to the full profile, including bins that contain the galaxies, and therefore does not constitute a bridge detection.
+the full covariance, which gives $\chi^{2}=34.8$, $41.2$, and $49.9$ for $22$
+degrees of freedom in the three bins (corresponding to nominal $p$ values of $p=0.04$, $0.008$, and $6\times10^{-4}$). These tests apply to the full profile, including bins that contain the galaxies, and therefore do not constitute a bridge detection.
 
 Fitting the mock residual profile to the observed profile over the full
 $22$-element vector using Equation~(\ref{eq:amplitude}) gives
-$A=1.47\pm0.36$, $1.07\pm0.49$, and $1.60\pm0.57$, at $4.1$, $2.2$, and
-$2.8\sigma$.
-At $10$ and $20\,\hinvMpc$, bins around the galaxies contribute $59$ and
-$44$ percent of the fitted response, respectively. At $5\,\hinvMpc$, the
+$A=1.46\pm0.36$, $1.52\pm0.35$, and $1.58\pm0.61$, at $4.0$, $4.3$, and
+$2.6\sigma$.
+After the best-fit mock profile is subtracted, $\chi^{2}=18.5$, $22.8$, and
+$43.2$ for $21$ degrees of freedom ($p=0.62$, $0.36$, and $0.003$). The mock
+profile therefore describes the observed profile in the $4$--$6$ and
+$6$--$15\,\hinvMpc$ bins, but not in the $15$--$25\,\hinvMpc$ bin.
+In the $6$--$15$ and $15$--$25\,\hinvMpc$ bins, bins around the nominal
+galaxy positions contribute $59$ and $54$ percent of the fitted response,
+respectively. In the $4$--$6\,\hinvMpc$ bin, the
 $4\,\hinvMpc$ binning places the galaxy positions in the sole bridge bin, so
 their contributions cannot be separated. The full-profile amplitude is
 therefore not an estimate of the bridge amplitude. Restricting the fit to the
 bridge window
-$|X|\leq0.35\,d$ gives $A=1.97\pm0.58$, $1.81\pm0.84$, and $0.71\pm0.95$, at
-$3.4$, $2.1$, and $0.7\sigma$. These significances differ from the bridge
+$|X|\leq0.35\,d$ gives $A=1.98\pm0.59$, $1.69\pm0.64$, and $1.05\pm0.99$, at
+$3.3$, $2.7$, and $1.1\sigma$. These significances differ from the bridge
 excesses in Table~\ref{tab:bridge} because the fit treats the central and
 off-center bands as separate data elements, whereas the bridge statistic
-uses their difference. The $5\,\hinvMpc$ fit still contains the unresolved
-galaxy bin, and beam-convolved halo signal can enter the bridge window at all
-three separations. We therefore interpret these fits as profile diagnostics,
-not bridge detections. Adding a free constant to the full-profile model leaves
-the amplitudes unchanged and gives offsets of
-$\left(-1.6,\ +0.4,\ +0.2\right)\times10^{-4}$, consistent with zero.
+uses their difference. The $4$--$6\,\hinvMpc$ fit still contains the unresolved
+galaxy bin, and beam-convolved halo signal can enter the bridge window in all
+three bins. We therefore interpret these fits as profile diagnostics,
+not bridge detections. Adding a free constant to the full-profile model changes
+the amplitudes by less than $0.02$ and gives offsets of
+$\left(-1.7,\ -0.7,\ -0.8\right)\times10^{-4}$, consistent with zero.
+% CHECK: the offset errors are not written to bridge_study_archived_vs_wide.csv; add them and confirm "consistent with zero".
 
 %\subsection{Comparison with the simulation and with previous work}
 %\label{sec:compare}
@@ -820,14 +826,10 @@ $\left(-1.6,\ +0.4,\ +0.2\right)\times10^{-4}$, consistent with zero.
 
 
 The residual maps also test how well the control describes the paired haloes.
-The observed residual map peaks at the galaxy positions at about
-$2\times10^{-3}$, compared with $0.9\times10^{-3}$ in the mock.
-% CHECK: values from the fit_sim_template.py docstring; confirm from checked-in output.
-If confirmed, this difference would imply a larger contrast between paired
-and average CMASS galaxies than between paired and average mock galaxies. A
-central-only HOD with a soft mass threshold may select pairs differently from
-the observed sample, which includes satellites and has a sharper effective
-stellar-mass selection. The corrected single-galaxy profile also lies below
+At the galaxy positions, the observed residual is within about one
+per-pixel jackknife error of zero in all three bins.
+% TODO: quote the observed and mock residual at the galaxy positions with errors. residual_at_galaxies.csv has no error columns, and its observed values differ from the kappa_filament_* maps (0.75 vs 0.64e-3 for 6-15, -0.46 vs -1.18e-3 for 4-6); reconcile first. Per-pixel jackknife errors there are 6-11e-4 (error_filament_* maps).
+The corrected single-galaxy profile also lies below
 the matched mock prediction at large radius.
 % CHECK: fit_sim_template.py docstring; compare_boss_mock_profile.py retracted earlier significance values.
 These comparisons constrain the isotropic residual from which the
