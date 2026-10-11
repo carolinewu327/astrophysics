@@ -96,41 +96,49 @@ regenerate each test are in `analysis/boss/results/widebin_rpar5/README.md`.
 
 | Test | Where in `main.tex` | Command | Result file | Status |
 |---|---|---|---|---|
-| Non-physical pair null test (is the control unbiased?) | "Expected signal from the simulation", the sentence "The nonphysical mock pairs show no bridge..." and its `% TODO` | `python analysis/sim/widebin_null_test.py --bin g6_15` | `analysis/sim/results/hod_pairs/widebin_rpar5/nulltest/nonphysical_pair_test_g6_15.csv` | 6-15 done; 4-6 and 15-25 not run |
+| Non-physical pair null test (is the control unbiased?) | "Expected signal from the simulation", the sentence "The nonphysical mock pairs show no bridge..." and its `% TODO` | `python analysis/sim/widebin_null_test.py --bin g6_15` (also `g4_6`, `g15_25`) | `analysis/sim/results/hod_pairs/widebin_rpar5/nulltest/nonphysical_pair_test_<bin>.csv` | done for all three bins |
 | Smoothing scan | "Robustness tests", Figure 8 | `python analysis/boss/scripts/widebin_smoothing_scan.py` | `analysis/boss/results/widebin_rpar5/smoothing_scan_wide_BOSS.csv` | done |
 | Halo-cut scan (bridge as the window moves away from the galaxies) | summary, halo-leakage paragraph | none yet; run by hand | `analysis/boss/results/widebin_rpar5/validation/halo_cut/bridge_window_scan.csv` | numbers exist, script missing |
 | Line-of-sight sweep | "Expected signal", `% TODO` | not re-run for the wide bins | - | open |
 | Sensitivity grid | Methods, mock tests | not re-run for the wide bins | - | open |
 
-### Non-physical pair null test, 6-15 bin (2026-10-10)
+### Non-physical pair null test (2026-10-10)
 
-Mock pairs in the 6-15 bin, split by real-space line-of-sight separation, with
-the separation-averaged control. Bridge excess in units of 1e-4, errors from
-the 25-block jackknife. Uses a seeded random 25 per cent of the mock galaxies
-(one sixteenth of the pairs); the method and the reason are in the script's
-docstring.
+Mock pairs in each bin, split by real-space line-of-sight separation, with the
+separation-averaged control. Bridge excess after the control in units of 1e-4,
+errors from the 25-block jackknife. Uses a seeded random 25 per cent of the
+mock galaxies (one sixteenth of the pairs); the method and the reason are in
+the script's docstring.
 
-| Line-of-sight band (h^-1 Mpc) | Pairs | Before control | After control |
+| Line-of-sight band (h^-1 Mpc) | 4-6 | 6-15 | 15-25 |
 |---|---:|---:|---:|
-| 0-20 | 294,403 | 21.35 | 4.09 +/- 0.34 (12.2 sigma) |
-| 20-40 | 225,799 | 18.43 | 1.91 +/- 0.37 (5.2 sigma) |
-| 40-60 | 215,670 | 16.34 | -0.16 +/- 0.31 (-0.5 sigma) |
-| 60-90 | 318,052 | 16.30 | -0.20 +/- 0.29 (-0.7 sigma) |
-| 90-120 | 317,547 | 16.15 | -0.33 +/- 0.25 (-1.3 sigma) |
+| 0-20 (associated) | 6.19 +/- 0.78 | 4.09 +/- 0.34 | 1.55 +/- 0.22 |
+| 20-40 | 3.36 +/- 1.43 | 1.91 +/- 0.37 | 1.17 +/- 0.17 |
+| 40-60 | 0.89 +/- 1.26 | -0.16 +/- 0.31 | 0.16 +/- 0.12 |
+| 60-90 | -0.96 +/- 0.77 | -0.20 +/- 0.29 | 0.16 +/- 0.13 |
+| 90-120 | -1.62 +/- 0.84 | -0.33 +/- 0.25 | -0.10 +/- 0.15 |
+| Largest null-band deviation | -1.9 sigma | -1.3 sigma | +1.4 sigma |
+| BOSS bridge error, for scale | 9.0 | 3.9 | 2.3 |
+
+Pair counts and the bridge before the control are in the three CSVs.
 
 Reading: beyond 40 h^-1 Mpc, where pairs are not physically associated, the
-control leaves a residual consistent with zero. The three null bands are all
-slightly negative, as was the 40-60 band of the old control at 9-11
-(-0.33 +/- 0.28); they share one simulated map, so they are not independent.
-Any control bias is below about 0.3e-4, against a BOSS error of 3.9e-4.
+control leaves a residual consistent with zero in every bin; no null band
+reaches 2 sigma. The sign is not the same across bins, so there is no
+evidence of a common bias. In each bin the residual does fall slightly with
+line-of-sight distance; the bands share one simulated map, so that is not
+three independent hints. Any control bias is at most about a fifth of the
+BOSS error (4-6) and under a tenth at 6-15 and 15-25. The 20-40 band still
+carries real signal in all three bins, so "no bridge" holds beyond 40, not
+beyond 20.
 
 ## Still to do
 
 1. ~~Figure 8.~~ Done 2026-10-09.
 2. Copy the `.tex` sections and the Figure 1 files from `styau/`, then update
    methods, captions, Table 1, abstract and summary for the wide bins.
-3. Mock tests: the non-physical pair null test is done for 6-15 (above);
-   decide whether to run 4-6 and 15-25. The line-of-sight sweep and the
+3. Mock tests: the non-physical pair null test is done for all three bins
+   (above). The line-of-sight sweep and the
    sensitivity grid are still at the old bins: re-run or say so in the text.
 4. Section 5.1's "2e-3 observed against 0.9e-3 mock at the galaxies": the mock
    value could not be reproduced, even for the old bins.

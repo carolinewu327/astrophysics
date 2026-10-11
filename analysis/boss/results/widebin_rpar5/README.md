@@ -262,9 +262,11 @@ galaxies and the pair file are reused when present and otherwise rebuilt from
 the seed, so a fresh run reproduces the committed table exactly (checked on
 2026-10-10). For another bin change `--bin`, for example `--bin g15_25`.
 
-Result for 6-15: 4.09 +/- 0.34 for associated pairs (0-20), then
+Run for all three bins (`g4_6`, `g6_15`, `g15_25`; about 7, 20 and 35
+minutes). Result for 6-15: 4.09 +/- 0.34 for associated pairs (0-20), then
 -0.16 +/- 0.31, -0.20 +/- 0.29 and -0.33 +/- 0.25 (x 1e-4) at 40-60, 60-90 and
-90-120. The control passes. Full table: `paper/sts/README.md`.
+90-120. The control passes in every bin: no null band reaches 2 sigma. Full
+table for the three bins: `paper/sts/README.md`.
 
 ## If you change something, what to rerun
 
