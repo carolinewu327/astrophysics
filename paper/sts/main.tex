@@ -186,8 +186,8 @@ following \citet{deGraaff2019}, with four changes in design.
 First, we resolve the measurement in pair separation rather than integrating
 over it. Whereas \citet{deGraaff2019} rescaled every pair to a normalized
 separation before stacking, we stack on a fixed comoving grid of
-$101\times101$ pixels spanning $100\times100\,(\hinvMpc)^{2}$, using disjoint
-separation bins centered at $5$, $10$, and $20\,\hinvMpc$. The finite bin
+$101\times101$ pixels spanning $100\times100\,(\hinvMpc)^{2}$, using three
+contiguous separation bins, $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$. The finite bin
 width causes some smearing, but the construction allows us to test
 the predicted decline of the anisotropic excess with separation described
 above.
@@ -202,8 +202,9 @@ statistic as the observed stacks.
 
 Third, we use a different halo-subtraction method. Where
 \citet{deGraaff2019} fit an isotropic profile to the observed pair stack
-itself, we subtract a control map built by displacing the stack of single
-CMASS galaxies to $\pm d/2$ along the pair axis, in the spirit of the control
+itself, we subtract a control map built by placing the stack of single
+CMASS galaxies at the two galaxy positions along the pair axis, averaged over
+the separations of the pairs in each bin, in the spirit of the control
 stacks of \citet{EppsHudson2017}. Profile fitting can absorb part of the
 bridge into the halo model. Our control instead models the one-halo and
 isotropic environmental terms using the profile of an average CMASS galaxy.
@@ -214,13 +215,15 @@ and axis-aligned residuals that cannot be assigned uniquely to a filament.
 We apply the same control to the mock and compare the resulting residual,
 rather than an isolated filament component, with the data.
 
-Fourth, we vary the line-of-sight cut rather than adopting the
+Fourth, we use the mock to examine the line-of-sight selection. We adopt a
+cut of $5\,\hinvMpc$, close to the
 $5$--$6\,\hinvMpc$ value used in previous pair-stacking studies. Larger cuts
 increase the pair count but admit more unconnected pairs, and, as discussed
 above, peculiar velocities of $\sim500\,\mathrm{km\,s^{-1}}$ move pairs across
-any threshold of a few $\hinvMpc$. We therefore measure directly how the cut
-trades completeness against contamination, using the mock to identify
-interlopers in real space.
+any threshold of a few $\hinvMpc$. We therefore use the mock, in which the true positions of the galaxies are
+known, to measure how many genuinely close pairs the cut keeps and how many
+pairs it admits that only appear close because of their velocities.
+% TODO (wide bins): the line-of-sight sweep was run at the narrow bins of the submitted version only; see Section 4 and the appendix.
 
 We use the Planck 2018 minimum-variance lensing reconstruction
 \citep{Planck2018lensing} synthesized at $N_{\rm side}=2048$ and smoothed with
@@ -228,7 +231,8 @@ an $8$-arcmin Gaussian kernel, compared with the $10$-arcmin smoothing of
 \citet{deGraaff2019}. At $z=0.55$ the comoving distance is
 $\chi\simeq1400\,\hinvMpc$, so $8$ arcmin corresponds to $\simeq3.3\,\hinvMpc$,
 comparable to the few-megaparsec transverse width of inter-halo filaments
-\citep{Colberg2005}. Pair separations of $5$, $10$, and $20\,\hinvMpc$ subtend
+\citep{Colberg2005}. Separations of $5$, $10$, and $20\,\hinvMpc$, the
+nominal separations of our three bins, subtend
 approximately $12$, $24$, and $48$ arcmin. The smallest separation spans only
 about 1.5 beam widths, so its bridge profile is poorly resolved and its
 central bin can contain beam-convolved halo residuals.
@@ -246,7 +250,7 @@ presents the pair selection, stacking, control construction, band statistic,
 and error estimation for the data and mock.
 Section~\ref{sec:sim_expect} gives the $\Lambda$CDM reference signal from the
 mock. Section~\ref{sec:results} reports the observed stacks, the bridge
-convergence at each separation, the comparison with the mock prediction and
+convergence in each bin, the comparison with the mock prediction and
 with previous work, and the robustness tests. Section~\ref{sec:discussion}
 summarizes the results and discusses their implications.
 
