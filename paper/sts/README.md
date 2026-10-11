@@ -86,7 +86,7 @@ All in `analysis/boss/results/widebin_rpar5/`:
 | Bridge excess, error, S/N, pair counts, mean r_perp | `filament_jackknife_wide_avgctrl_BOSS_North_South.csv` |
 | Mock prediction, observed minus mock, chi^2, fitted amplitudes, noise floor | `comparison/bridge_study_archived_vs_wide.csv` (rows with `version = wide`) |
 | Pooled bridge excess | `comparison/bridge_study_pooled.csv` |
-| Bridge excess as the window moves away from the galaxies | `validation/halo_cut/bridge_window_scan.csv` |
+| Bridge excess as the window moves away from the galaxies | `validation/halo_cut/halo_cut_scan.csv` |
 
 ## Tests quoted in the text
 
@@ -98,7 +98,7 @@ regenerate each test are in `analysis/boss/results/widebin_rpar5/README.md`.
 |---|---|---|---|---|
 | Non-physical pair null test (is the control unbiased?) | "Expected signal from the simulation", the sentence "The nonphysical mock pairs show no bridge..." and its `% TODO` | `python analysis/sim/widebin_null_test.py --bin g6_15` (also `g4_6`, `g15_25`) | `analysis/sim/results/hod_pairs/widebin_rpar5/nulltest/nonphysical_pair_test_<bin>.csv` | done for all three bins |
 | Smoothing scan | "Robustness tests", Figure 8 | `python analysis/boss/scripts/widebin_smoothing_scan.py` | `analysis/boss/results/widebin_rpar5/smoothing_scan_wide_BOSS.csv` | done |
-| Halo-cut scan (bridge as the window moves away from the galaxies) | summary, halo-leakage paragraph | none yet; run by hand | `analysis/boss/results/widebin_rpar5/validation/halo_cut/bridge_window_scan.csv` | numbers exist, script missing |
+| Halo-cut scan (bridge as the window moves away from the galaxies) | summary, halo-leakage paragraph | `python analysis/boss/scripts/widebin_halo_cut_scan.py` | `analysis/boss/results/widebin_rpar5/validation/halo_cut/halo_cut_scan.csv` | done, both binnings |
 | Line-of-sight sweep | "Expected signal", `% TODO` | not re-run for the wide bins | - | open |
 | Sensitivity grid | Methods, mock tests | not re-run for the wide bins | - | open |
 
@@ -132,6 +132,40 @@ BOSS error (4-6) and under a tenth at 6-15 and 15-25. The 20-40 band still
 carries real signal in all three bins, so "no bridge" holds beyond 40, not
 beyond 20.
 
+### Halo-cut scan (2026-10-10)
+
+Bridge excess as the window |X| <= w shrinks from the default (0.35 R) to the
+pair centre alone. Units 1e-4; errors are the full jackknife error of each
+windowed mean. "Gap" is the distance from the window edge to the nearest
+galaxy in the bin. The default rows reproduce the main result tables exactly.
+
+| Bin | Window, gap | BOSS | S/N | Mock |
+|---|---|---:|---:|---:|
+| paper 9-11 | default 3.5, gap 1.0 | 11.91 +/- 5.10 | 2.3 | 4.91 |
+| | 2, gap 2.5 | 9.65 +/- 5.72 | 1.7 | 5.14 |
+| | 1, gap 3.5 | 8.26 +/- 6.66 | 1.2 | 5.21 |
+| | 0, gap 4.5 | 6.22 +/- 7.47 | 0.8 | 4.92 |
+| wide 6-15 | default 3.5, gap -0.5 | 9.23 +/- 3.92 | 2.4 | 4.91 |
+| | 2, gap 1.0 | 7.55 +/- 4.32 | 1.7 | 4.86 |
+| | 1, gap 2.0 | 5.69 +/- 4.82 | 1.2 | 4.87 |
+| | 0, gap 3.0 | 4.62 +/- 5.25 | 0.9 | 4.77 |
+| paper 18-22 | default 7, gap 2.0 | 1.24 +/- 2.22 | 0.6 | 2.18 |
+| | 0, gap 9.0 | 2.36 +/- 4.59 | 0.5 | 2.21 |
+| wide 15-25 | default 7, gap 0.5 | 1.63 +/- 2.30 | 0.7 | 2.18 |
+| | 0, gap 7.5 | -1.64 +/- 4.31 | -0.4 | 2.10 |
+
+The 4-6 bin (both binnings), the intermediate windows and the 6-10 / 10-15
+split are in the CSV.
+
+Reading: at R = 10 the BOSS excess falls by about half as the window closes
+to the pair centre, in the paper's bin and the wide bin alike, while the mock
+stays flat at about 4.9. The part of the 2.3-2.4 sigma that lies near the
+galaxies is therefore not something the mock's filament produces; what is
+left at the centre matches the mock in size but is under 1 sigma. The paper's
+9-11 bin shows this even though its window ends 1 h^-1 Mpc short of the
+nearest galaxy, which is inside the 3.3 h^-1 Mpc beam. The R = 20 bins are
+consistent with zero and with the mock at every window.
+
 ## Still to do
 
 1. ~~Figure 8.~~ Done 2026-10-09.
@@ -142,5 +176,6 @@ beyond 20.
    sensitivity grid are still at the old bins: re-run or say so in the text.
 4. Section 5.1's "2e-3 observed against 0.9e-3 mock at the galaxies": the mock
    value could not be reproduced, even for the old bins.
-5. Report the halo-cut result (6-15 falls from 2.4 to 0.9 sigma at the pair
-   centre) and give it a script; it was run by hand.
+5. ~~Halo-cut script.~~ Done 2026-10-10 (above). `main.tex` still has a
+   `% CHECK` saying the scan has no script and a `% TODO` for the mock
+   counterpart; both are now answered by `halo_cut_scan.csv`.
