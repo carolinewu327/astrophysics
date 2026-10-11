@@ -95,6 +95,10 @@ def score(label, bin_text, rpar, center, obs, loo, sim, sim_bridge, n_pairs, mea
         "mock_bridge": sb, "mock_err": sbe, "obs_minus_mock_sigma": (b - sb) / np.hypot(be, sbe),
         "chi2_profile": full["chi2_A0"], "chi2_dof": full["dim"],
         "chi2_p": float(chi2_dist.sf(full["chi2_A0"], full["dim"])),
+        # Same vector and covariance after the best-fit mock profile is removed:
+        # chi2_fit = chi2_profile - A_full_sig^2, with one fewer degree of freedom.
+        "chi2_fit": full["chi2_min"], "chi2_fit_dof": full["dof"],
+        "chi2_fit_p": float(chi2_dist.sf(full["chi2_min"], full["dof"])),
         "A_full": full["A"], "A_full_err": full["sigma_A"], "A_full_sig": full["significance"],
         "A_full_halo_frac": full["frac_halo"], "A_full_bridge_frac": full["frac_bridge"],
         "A_offset": full["A_offset"], "A_offset_err": full["sigma_A_offset"], "offset_c": full["offset_c"],
