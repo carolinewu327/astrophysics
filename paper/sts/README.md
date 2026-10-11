@@ -99,7 +99,8 @@ regenerate each test are in `analysis/boss/results/widebin_rpar5/README.md`.
 | Non-physical pair null test (is the control unbiased?) | "Expected signal from the simulation", the sentence "The nonphysical mock pairs show no bridge..." and its `% TODO` | `python analysis/sim/widebin_null_test.py --bin g6_15` (also `g4_6`, `g15_25`) | `analysis/sim/results/hod_pairs/widebin_rpar5/nulltest/nonphysical_pair_test_<bin>.csv` | done for all three bins |
 | Smoothing scan | "Robustness tests", Figure 8 | `python analysis/boss/scripts/widebin_smoothing_scan.py` | `analysis/boss/results/widebin_rpar5/smoothing_scan_wide_BOSS.csv` | done |
 | Halo-cut scan (bridge as the window moves away from the galaxies) | summary, halo-leakage paragraph | `python analysis/boss/scripts/widebin_halo_cut_scan.py` | `analysis/boss/results/widebin_rpar5/validation/halo_cut/halo_cut_scan.csv` | done, both binnings |
-| Line-of-sight sweep | "Expected signal", `% TODO` | not re-run for the wide bins | - | open |
+| Line-of-sight cut, part A: completeness and interloper fraction of the selection | "Expected signal" and summary, the three `% TODO`s on the sweep | `python analysis/sim/widebin_los_purity.py` (after the null test, which builds its input) | `analysis/sim/results/hod_pairs/widebin_rpar5/los_purity_wide.csv` | done |
+| Line-of-sight cut, part B: bridge signal versus the cut | same | not run for the wide bins (`rpar_scan.py` covers the narrow bins only) | - | open; optional now that the cut is 5 everywhere |
 | Sensitivity grid | Methods, mock tests | not re-run for the wide bins | - | open |
 
 ### Non-physical pair null test (2026-10-10)
@@ -166,14 +167,46 @@ left at the centre matches the mock in size but is under 1 sigma. The paper's
 nearest galaxy, which is inside the 3.3 h^-1 Mpc beam. The R = 20 bins are
 consistent with zero and with the mock at every window.
 
+### Line-of-sight selection: completeness and interlopers (2026-10-10)
+
+Mock, same seeded quarter of the galaxies as the null test. A pair counts as
+truly associated if its true line-of-sight separation is at most 20 h^-1 Mpc.
+Completeness: share of the associated pairs that pass the redshift-space cut.
+Interlopers: share of the selected pairs that are not associated.
+
+| Cut on redshift-space r_par | 4-6 | 6-15 | 15-25 |
+|---|---:|---:|---:|
+| <= 5 (used): completeness | 48.1% | 35.8% | 28.9% |
+| <= 5 (used): interlopers | 0.1% | 0.1% | 0.1% |
+| <= 10: completeness / interlopers | 73.0% / 0.5% | 63.4% / 0.6% | 56.0% / 0.6% |
+| <= 20: completeness / interlopers | 97.7% / 8.2% | 96.5% / 10.0% | 94.8% / 10.6% |
+| <= 30: completeness / interlopers | 100% / 25.9% | 100% / 31.1% | 100% / 34.1% |
+| Selected at <= 5: median / 90th / 99th percentile of the true separation | 3.3 / 8.5 / 14.9 | 3.6 / 9.0 / 15.4 | 3.6 / 8.9 / 15.2 |
+
+Checks: pair counts at <= 5 times 16 match the full-sample mock stacks to 1 per
+cent; no selected pair has a true separation beyond 60, well inside the
+catalogue's 120.
+
+Reading: the r_par <= 5 selection is pure but incomplete. Almost none of the
+selected pairs are chance alignments, and it keeps between a half and under a
+third of the pairs that lie within 20 h^-1 Mpc in real space. It is a
+conservative cut that follows earlier work; it is not what the 90 per cent
+completeness / 10 per cent interloper rule in
+`notes/phase3_los_preregistration.md` would pick (that rule lands near 20), so
+the text must not say the cut was chosen by that rule. The completeness also
+depends on the 20 h^-1 Mpc definition: at 15-25 the associated sample is close
+to what unclustered pairs would give (5/20 = 25 per cent), so part of it is
+chance alignment within the definition, not lost filaments.
+
 ## Still to do
 
 1. ~~Figure 8.~~ Done 2026-10-09.
 2. Copy the `.tex` sections and the Figure 1 files from `styau/`, then update
    methods, captions, Table 1, abstract and summary for the wide bins.
 3. Mock tests: the non-physical pair null test is done for all three bins
-   (above). The line-of-sight sweep and the
-   sensitivity grid are still at the old bins: re-run or say so in the text.
+   (above). The line-of-sight cut has its purity table (above); the
+   signal-versus-cut sweep and the sensitivity grid are still at the old bins:
+   re-run, or cut those sentences.
 4. Section 5.1's "2e-3 observed against 0.9e-3 mock at the galaxies": the mock
    value could not be reproduced, even for the old bins.
 5. ~~Halo-cut script.~~ Done 2026-10-10 (above). `main.tex` still has a

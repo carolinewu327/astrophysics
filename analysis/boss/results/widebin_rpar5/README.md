@@ -279,6 +279,21 @@ table for the three bins: `paper/sts/README.md`.
 | The control (for example back to single-separation) | step 5 with `--control nominal` and a new `--tag`; step 4 with `--control nominal` |
 | The paper's own bins | `combine_filament_jackknife.py --separations 5,10,20` still reproduces the archived numbers exactly |
 
+## Purity of the line-of-sight selection (mock only)
+
+For each wide bin and cuts of 5, 10, 20 and 30 on the redshift-space
+line-of-sight separation: what share of truly associated pairs (true
+separation at most 20) is kept, and what share of the selected pairs is not
+associated. It reads the deep pair files the null test builds, so run the null
+test for the three bins first; then it takes seconds.
+
+```bash
+python analysis/sim/widebin_los_purity.py
+```
+
+Output: `$HW/los_purity_wide.csv` (in git). Result and reading:
+`paper/sts/README.md`.
+
 ## Halo-cut scan
 
 Recomputes the bridge excess with the window shrunk away from the galaxies,
