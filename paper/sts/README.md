@@ -96,12 +96,12 @@ regenerate each test are in `analysis/boss/results/widebin_rpar5/README.md`.
 
 | Test | Where in `main.tex` | Command | Result file | Status |
 |---|---|---|---|---|
-| Non-physical pair null test (is the control unbiased?) | "Expected signal from the simulation", the sentence "The nonphysical mock pairs show no bridge..." and its `% TODO` | `python analysis/sim/widebin_null_test.py --bin g6_15` (also `g4_6`, `g15_25`) | `analysis/sim/results/hod_pairs/widebin_rpar5/nulltest/nonphysical_pair_test_<bin>.csv` | done for all three bins |
+| Non-physical pair null test (is the control unbiased?) | "Expected signal from the simulation", the paragraph "To test whether the control itself generates a ridge..."; appendix, the control item | `python analysis/sim/widebin_null_test.py --bin g6_15` (also `g4_6`, `g15_25`) | `analysis/sim/results/hod_pairs/widebin_rpar5/nulltest/nonphysical_pair_test_<bin>.csv` | done for all three bins |
 | Smoothing scan | "Robustness tests", Figure 8 | `python analysis/boss/scripts/widebin_smoothing_scan.py` | `analysis/boss/results/widebin_rpar5/smoothing_scan_wide_BOSS.csv` | done |
-| Halo-cut scan (bridge as the window moves away from the galaxies) | summary, halo-leakage paragraph | `python analysis/boss/scripts/widebin_halo_cut_scan.py` | `analysis/boss/results/widebin_rpar5/validation/halo_cut/halo_cut_scan.csv` | done, both binnings |
-| Line-of-sight cut, part A: completeness and interloper fraction of the selection | "Expected signal" and summary, the three `% TODO`s on the sweep | `python analysis/sim/widebin_los_purity.py` (after the null test, which builds its input) | `analysis/sim/results/hod_pairs/widebin_rpar5/los_purity_wide.csv` | done |
-| Line-of-sight cut, part B: bridge signal versus the cut | same | not run for the wide bins (`rpar_scan.py` covers the narrow bins only) | - | open; optional now that the cut is 5 everywhere |
-| Sensitivity grid | Methods, mock tests | not re-run for the wide bins | - | open |
+| Halo-cut scan (bridge as the window moves away from the galaxies) | "Robustness tests", the paragraph "Bridge window"; one sentence each in the Summary and in the appendix item on beam leakage | `python analysis/boss/scripts/widebin_halo_cut_scan.py` | `analysis/boss/results/widebin_rpar5/validation/halo_cut/halo_cut_scan.csv` | done, both binnings |
+| Line-of-sight cut, part A: completeness and interloper fraction of the selection | "Expected signal from the simulation", the paragraph "We also use the mock ... to assess the line-of-sight selection"; appendix, the line-of-sight item; Introduction, fourth design point | `python analysis/sim/widebin_los_purity.py` (after the null test, which builds its input) | `analysis/sim/results/hod_pairs/widebin_rpar5/los_purity_wide.csv` | done |
+| Line-of-sight cut, part B: bridge signal versus the cut | "Expected signal", one sentence labelled as the narrower-bin analysis, with a `% TODO (wide bins)`; a second `% TODO (wide bins)` in the appendix | not run for the wide bins (`rpar_scan.py` covers the narrow bins only) | - | open; optional now that the cut is 5 everywhere |
+| Sensitivity grid | not in the text: the paragraph was in a block removed from the submitted version | not re-run for the wide bins | - | open only if the paragraph is restored |
 
 ### Non-physical pair null test (2026-10-10)
 
@@ -187,9 +187,12 @@ Checks: pair counts at <= 5 times 16 match the full-sample mock stacks to 1 per
 cent; no selected pair has a true separation beyond 60, well inside the
 catalogue's 120.
 
-Reading: the r_par <= 5 selection is pure but incomplete. Almost none of the
-selected pairs are chance alignments, and it keeps between a half and under a
-third of the pairs that lie within 20 h^-1 Mpc in real space. It is a
+Reading: under the 20 h^-1 Mpc line-of-sight criterion, the r_par <= 5
+selection is pure but incomplete. Almost none of the selected pairs have a
+true line-of-sight separation above 20 h^-1 Mpc, and it keeps between a half
+and under a third of the pairs that lie within 20 h^-1 Mpc in real space. This
+shows the selected pairs are close along the line of sight; it does not show
+that they share a filament. It is a
 conservative cut that follows earlier work; it is not what the 90 per cent
 completeness / 10 per cent interloper rule in
 `notes/phase3_los_preregistration.md` would pick (that rule lands near 20), so
@@ -201,14 +204,27 @@ chance alignment within the definition, not lost filaments.
 ## Still to do
 
 1. ~~Figure 8.~~ Done 2026-10-09.
-2. Copy the `.tex` sections and the Figure 1 files from `styau/`, then update
-   methods, captions, Table 1, abstract and summary for the wide bins.
-3. Mock tests: the non-physical pair null test is done for all three bins
-   (above). The line-of-sight cut has its purity table (above); the
-   signal-versus-cut sweep and the sensitivity grid are still at the old bins:
-   re-run, or cut those sentences.
-4. Section 5.1's "2e-3 observed against 0.9e-3 mock at the galaxies": the mock
-   value could not be reproduced, even for the old bins.
-5. ~~Halo-cut script.~~ Done 2026-10-10 (above). `main.tex` still has a
-   `% CHECK` saying the scan has no script and a `% TODO` for the mock
-   counterpart; both are now answered by `halo_cut_scan.csv`.
+2. ~~Copy the `.tex` sections and the Figure 1 files from `styau/`, then
+   update the text for the wide bins.~~ Done 2026-10-10. `main.tex` is a copy
+   of `styau/submitted.tex` with the dead blocks stripped; every section
+   (abstract, Introduction, Methods, expected signal, Results, robustness
+   tests, Summary, appendix) has been updated for the wide bins. It has not
+   been compiled since.
+3. Mock tests: the non-physical pair null test and the line-of-sight purity
+   table are done for all three bins and are in the text. The
+   signal-versus-cut sweep is still at the old bins; the text labels its one
+   sentence as the narrower-bin analysis and carries a `% TODO (wide bins)`:
+   re-run, or cut the sentence. The fitted-control test is in the same state.
+   The sensitivity grid is not in the text.
+4. Residual at the galaxy positions. The "2e-3 observed against 0.9e-3 mock"
+   sentence and the HOD speculation built on it are removed from Section 5.1
+   and the appendix. The text now says the observed residual is within about
+   one per-pixel jackknife error of zero in all three bins, with a `% TODO`
+   to quote values. Still open: `residual_at_galaxies.csv` has no error
+   columns, and its observed values differ from the `kappa_filament_*` maps
+   (0.75 against 0.64e-3 for 6-15, -0.46 against -1.18e-3 for 4-6).
+5. ~~Halo-cut script.~~ Done 2026-10-10 (above). The "Bridge window"
+   paragraph in `main.tex` quotes `halo_cut_scan.csv`, including the mock
+   in the same windows; its `% CHECK` and `% TODO` are removed. Still open:
+   the significance of the fall from the full window to the pair centre is
+   not quantified (the nested windows are correlated).
