@@ -8,7 +8,13 @@
 \onehalfspacing
 \usepackage{graphicx} % Required for inserting images
 \usepackage[font=small]{caption} % captions may be smaller if legible
+% Let large figures sit at the top of a text page instead of alone on a
+% half-empty float page.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.8}
 \usepackage[round,semicolon,authoryear]{natbib}
+\setcitestyle{aysep={}} % "A. de Graaff et al. 2019", no comma before the year
 \usepackage{url}
 \usepackage{fancyhdr} % page numbers in the bottom right corner
 \pagestyle{fancy}
