@@ -1,32 +1,56 @@
-%\documentclass[linenumbers,trackchanges]{aastex701}
-\documentclass[preprint]{aastex701}
+\documentclass[11pt,letterpaper]{article}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{newtxtext,newtxmath} % Times; text must appear at least as large as Times New Roman 11 pt
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\onehalfspacing
 \usepackage{graphicx} % Required for inserting images
-\usepackage{amssymb}
-\usepackage{todonotes}
-\usepackage{comment}
+\usepackage[font=small]{caption} % captions may be smaller if legible
+\usepackage[round,semicolon,authoryear]{natbib}
+\usepackage{url}
+\usepackage{fancyhdr} % page numbers in the bottom right corner
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[R]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+% No hyperref: the report may not contain links outside the references. If
+% the bibliography style writes \doi or \href, print them as plain text.
+\providecommand{\doi}[1]{\url{https://doi.org/#1}}
+\providecommand{\href}[2]{#2}
 
 \graphicspath{{Figure/}}
 
 \newcommand{\hinvMpc}{h^{-1}{\rm Mpc}}
 
-\newcommand{\ZZ}[1]{{\color{red} [ZZ: #1]}}
-
 \begin{document}
 
-\title{Studying Matter Distribution around Pairs of Dark Matter Halos from Cosmic Microwave Background Lensing}
+% Title page: name and project title are required; lab and mentor names are
+% permitted; no e-mail addresses or phone numbers. Not counted toward the 20 pages.
+\begin{titlepage}
+  \centering
+  \vspace*{\fill}
+  {\LARGE\bfseries Studying Matter Distribution around Pairs of Dark Matter
+  Halos from Cosmic Microwave Background Lensing\par}
+  \vspace{2.5em}
+  {\Large Caroline Wu\par}
+  \vspace*{\fill}
+\end{titlepage}
 
-\author[]{Caroline Wu}
-\affiliation{Scarsdale High School, 1057 Post Road, Scarsdale, NY 10583}
-\email[show]{carolinewu327@gmail.com}
-
-\begin{abstract}
+% Abstract on its own unnumbered page. Not counted toward the 20 pages.
+\thispagestyle{empty}
+\begin{center}
+  {\large\bfseries Abstract}
+\end{center}
 Dark matter distribution around pairs of dark matter haloes encodes information about the gravitational interaction between haloes and probes the associated filamentary structure. In this work, we use the BOSS CMASS galaxy sample and Planck 2018 cosmic microwave background (CMB) lensing map to study the matter distribution around galaxy pairs. We produce stacked CMB lensing $\kappa$ maps around galaxy pairs, in transverse pair separation bins of
 $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$. With comparison to the maps from control pairs, obtained by superposition of $\kappa$ distribution around single galaxies, a quadrupole pattern in the matter distribution around galaxy pairs is revealed for the first time, with excess around the pair connection line and deficit around the perpendicular bisector. Such a pattern is consistent with the expectation from cosmological $N$-body simulations, pointing to an origin from tidal interaction. There is a hint of matter excess in between galaxy pairs, associated with filaments, at $2.4\sigma$ in the $6$--$15\,\hinvMpc$ bin, and an increased galaxy pair sample and/or CMB lensing reconstruction with improved precision would be necessary for a firm detection.
 
-\end{abstract}
-
-\keywords{\uat{Galaxies}{573} --- \uat{Cosmology}{343}}
+% Page numbering starts after the abstract; page 1 is the first counted page.
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
 
 \section{Introduction}
 
@@ -1028,7 +1052,7 @@ mass. Finally, subsets of the CMASS pairs overlap the HSC, DES, and KiDS shape
 catalogs. A joint galaxy-shear and CMB-lensing analysis would test the bridge
 using two independent source planes. % CHECK: quantify overlap and add survey citations. 
 
-\begin{acknowledgments}
+\section*{Acknowledgments}
 We are grateful to Prof.\ Zheng Zheng for his guidance throughout this
 project, for many discussions that shaped the analysis, and in particular
 for proposing the subset test that established the sample-variance origin
@@ -1125,8 +1149,6 @@ any remaining errors.
 2026 September, in two concentrated periods: the restructuring of the pipeline
 in 2026 February, and the verification in 2026 August
 and September. No AI tool was used on this project before 2026 February.
-
-\end{acknowledgments}
 
 \appendix
 
@@ -1255,7 +1277,9 @@ bins, at the cost of completeness.
 % does not contain. We have not tested a wider cut on the data.
 
 
-\bibliography{ref}{}
+% The bibliography is not counted toward the 20 pages; start it on its own page.
+\clearpage
+\bibliography{ref}
 \bibliographystyle{aasjournalv7}
 
 \end{document}
