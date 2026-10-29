@@ -44,11 +44,11 @@ logger = logging.getLogger(__name__)
 REGION_COLORS = {"North": "#1f77b4", "South": "#d62728", "NGC": "#1f77b4", "SGC": "#d62728"}
 
 # The two panels of fig:footprint_zdist are both included at 0.48\linewidth
-# (2_data_draft.tex), but the Mollweide map is saved ~8.8 in wide against
-# zdist's 5.2 in, so LaTeX scales it down about 1.7x more and its text prints
-# correspondingly smaller. Text, legend markers and graticule on the footprint
-# are drawn this much larger so the two panels match in apparent type size.
-FOOTPRINT_FONT_SCALE = 8.84 / 5.2
+# (AASTeX text width 7.1 in) and both are drawn at that printed width, so the
+# font sizes and marker sizes below are the printed sizes.
+PANEL_WIDTH = 0.48 * 7.1
+plt.rcParams.update({"font.size": 8, "axes.labelsize": 8.5, "xtick.labelsize": 8,
+                     "ytick.labelsize": 8, "legend.fontsize": 7.5})
 
 
 # ===========================================================================
@@ -133,13 +133,8 @@ def write_stats(stats, path, z_min, z_max):
 # ===========================================================================
 # Plots
 # ===========================================================================
-def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base,
-                   font_scale=FOOTPRINT_FONT_SCALE):
-    """Mollweide map of the Planck mask with galaxies overplotted.
-
-    `font_scale` enlarges every annotation by the factor this panel is scaled
-    down relative to zdist in the paper; see FOOTPRINT_FONT_SCALE.
-    """
+def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base):
+    """Mollweide map of the Planck mask with galaxies overplotted."""
     mask_dg = hp.ud_grade(mask.astype(float), nside_plot)
     # Two-level colour map: masked (0) light grey, unmasked (1) white.
     cmap = ListedColormap(["#d9d9d9", "#ffffff"])
@@ -148,12 +143,12 @@ def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base,
     cmap.set_under("white")
     cmap.set_bad("white")
 
-    fig = plt.figure(figsize=(9, 5), facecolor="white")
+    fig = plt.figure(figsize=(PANEL_WIDTH, PANEL_WIDTH * 5 / 9), facecolor="white")
     hp.mollview(
         mask_dg, fig=fig.number, title="", cbar=False, notext=True,
         cmap=cmap, min=0, max=1, badcolor="white", bgcolor="white",
     )
-    hp.graticule(dpar=30, dmer=60, color="0.6", alpha=0.5, lw=0.5 * font_scale)
+    hp.graticule(dpar=30, dmer=60, color="0.6", alpha=0.5, lw=0.5)
 
     rng = np.random.default_rng(12345)
     handles = []
@@ -163,28 +158,30 @@ def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base,
             sel = rng.choice(sel, n_points, replace=False)
         color = REGION_COLORS.get(name, None)
         sc = hp.projscatter(
-            d["l"][sel], d["b"][sel], lonlat=True, s=0.4, color=color,
+            d["l"][sel], d["b"][sel], lonlat=True, s=0.06, color=color,
             alpha=0.5, linewidths=0, rasterized=True,
         )
         sc.set_rasterized(True)
-        handles.append(Line2D([], [], marker="o", ls="", color=color, ms=5 * font_scale,
+        handles.append(Line2D([], [], marker="o", ls="", color=color, ms=4,
                               label=f"CMASS {name}"))
 
-    handles.append(Line2D([], [], marker="s", ls="", color="#d9d9d9", ms=9 * font_scale,
+    handles.append(Line2D([], [], marker="s", ls="", color="#d9d9d9", ms=7,
                           label=f"Planck lensing mask ($f_{{\\rm sky}}={np.mean(mask > 0):.2f}$)"))
     ax = plt.gca()
-    # Tight column spacing keeps the enlarged legend narrower than the map, so the
-    # saved width stays set by the ellipse and font_scale means what it says.
-    ax.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, -0.17),
-              ncol=3, frameon=False, fontsize=9 * font_scale, markerscale=1.0,
+    # Two columns (North, South | mask) keep the legend narrower than the map, so
+    # the saved width stays set by the ellipse.
+    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.0),
+              ncol=2, frameon=False, markerscale=1.0,
               columnspacing=1.2, handletextpad=0.5, borderpad=0.0)
     # Longitude labels along the equator (astronomical convention: l increases leftwards).
     for lon in (120, 60, 0, -60, -120):
-        hp.projtext(lon, -4, f"$l={lon % 360:d}^\\circ$", lonlat=True, fontsize=8 * font_scale,
+        hp.projtext(lon, -4, f"$l={lon % 360:d}^\\circ$", lonlat=True, fontsize=7,
                     ha="center", va="top", color="0.35")
 
+    # The galaxies are rasterized; 600 dpi at the printed size keeps the
+    # resolution the map had when it was drawn 2.6x larger at 200 dpi.
     for ext in ("pdf", "png"):
-        fig.savefig(f"{out_base}.{ext}", dpi=200, bbox_inches="tight", facecolor="white")
+        fig.savefig(f"{out_base}.{ext}", dpi=600, bbox_inches="tight", facecolor="white")
         logger.info("Wrote %s.%s", out_base, ext)
     plt.close(fig)
 
@@ -192,7 +189,7 @@ def plot_footprint(regions, mask, z_min, z_max, nside_plot, n_points, out_base,
 def plot_zdist(regions, z_min, z_max, out_base, dz=0.01, z_plot=(0.3, 0.85)):
     """Weighted redshift histograms per region with the selection shaded."""
     bins = np.arange(z_plot[0], z_plot[1] + dz / 2, dz)
-    fig, ax = plt.subplots(figsize=(5.2, 4.2))
+    fig, ax = plt.subplots(figsize=(PANEL_WIDTH, PANEL_WIDTH * 4.2 / 5.2))
 
     ax.axvspan(z_min, z_max, color="0.92", zorder=0, label=f"${z_min} < z < {z_max}$")
 
@@ -209,10 +206,12 @@ def plot_zdist(regions, z_min, z_max, out_base, dz=0.01, z_plot=(0.3, 0.85)):
     ax.axvline(zmed, color="0.3", lw=0.8, ls=":", label=f"median $z={zmed:.3f}$")
 
     ax.set_xlim(*z_plot)
-    ax.set_ylim(bottom=0)
+    # headroom above the peak so the legend clears the curves
+    ax.set_ylim(0, 1.3 * total_hist.max())
     ax.set_xlabel("redshift $z$")
-    ax.set_ylabel(f"weighted number of galaxies per $\\Delta z={dz}$")
-    ax.legend(frameon=False, fontsize=9, loc="upper right")
+    # two lines: at the printed size one line is longer than the axis
+    ax.set_ylabel(f"weighted number of galaxies\nper $\\Delta z={dz}$")
+    ax.legend(frameon=False, loc="upper right", handlelength=1.4, borderaxespad=0.3)
     fig.tight_layout()
 
     for ext in ("pdf", "png"):
@@ -240,11 +239,6 @@ def parse_args():
                    help="HEALPix nside to which the mask is degraded for plotting.")
     p.add_argument("--n-points", type=int, default=60000,
                    help="Maximum galaxies drawn per region on the footprint map.")
-    p.add_argument("--font-scale", type=float, default=FOOTPRINT_FONT_SCALE,
-                   help="Enlarge the footprint legend, longitude labels and graticule by this "
-                        "factor. The default compensates for the footprint being scaled down "
-                        "more than zdist when both are placed at 0.48\\linewidth; use 1.0 for "
-                        "a standalone figure.")
     return p.parse_args()
 
 
@@ -266,7 +260,7 @@ def main():
     write_stats(stats, os.path.join(args.output_dir, "footprint_stats.txt"), args.z_min, args.z_max)
 
     plot_footprint(regions, mask, args.z_min, args.z_max, args.nside_plot, args.n_points,
-                   os.path.join(args.output_dir, "footprint"), font_scale=args.font_scale)
+                   os.path.join(args.output_dir, "footprint"))
     plot_zdist(regions, args.z_min, args.z_max, os.path.join(args.output_dir, "zdist"))
 
 
