@@ -53,6 +53,7 @@ python analysis/boss/scripts/widebin_paper_figures.py --paper --overwrite
 | `obs_vs_sim_quadrupole_maps.pdf` | 6 | Observed and mock residual maps | done |
 | `band_profiles_obs_vs_sim.pdf` | 7 | B(X), BOSS against the mock, with residual strip | done |
 | `filament_snr_vs_smoothing.pdf` | 8 | Bridge S/N at 8, 6 and 4 arcmin | done (separate command, below) |
+| `band_fit_profiles_obs_vs_sim.pdf` | new (number set in `main.tex`) | 22-element central and off-centre band vectors, BOSS against the mock, with the full-covariance amplitude fit | done (separate command, below) |
 
 Figure 8 has its own script. It needs the 6 and 4 arcmin galaxy-pair stacks,
 which are made once (see "Smoothing scan" in the wide-bin README):
@@ -65,6 +66,15 @@ It also writes the numbers to
 `analysis/boss/results/widebin_rpar5/smoothing_scan_wide_BOSS.csv`. The random
 stacks are the 8 arcmin ones at every smoothing, as in the submitted figure;
 the caption or text should say so.
+
+The band-fit figure (added 2026-10-29 at Zheng's request) has its own script.
+It redoes the fit with the same code as `widebin_vs_archived.py` and stops if
+A, sigma_A or either chi^2 differs from
+`widebin_rpar5/comparison/bridge_study_archived_vs_wide.csv`:
+
+```bash
+python analysis/boss/scripts/widebin_band_fit_figure.py --paper --overwrite
+```
 
 File names are kept from the submitted version so the `\includegraphics`
 lines carry over unchanged. `sim_pair_vs_control_maps_sep10.pdf` now shows the

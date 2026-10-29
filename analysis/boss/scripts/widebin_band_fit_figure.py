@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Candidate figure: the 22-element band vectors and their amplitude fits, wide bins.
+"""The 22-element band vectors and their amplitude fits, wide bins (manuscript figure).
 
 For each wide r_perp bin (4-6, 6-15, 15-25) draws the two halves of the
 compressed data vector of the text -- the central band (|Y| <= 1.5) and the
@@ -11,13 +11,17 @@ call widebin_vs_archived.py makes, so A, sigma_A and chi^2 are the numbers in
 comparison/bridge_study_archived_vs_wide.csv; the script checks that they agree
 and stops if they do not.
 
-Not yet in the manuscript.  Writes to widebin_rpar5/comparison/paper_figures/
-(PNG and PDF, drawn at print size); paper/sts/Figure/ is not touched.
+Drawn at print size in the manuscript's style.  By default writes PNG and PDF
+to widebin_rpar5/comparison/paper_figures/ (fig_band_fit_22.*); with --paper,
+PDF only, to paper/sts/Figure/band_fit_profiles_obs_vs_sim.pdf.
+paper/styau/ is never written.
 
 Usage
 -----
-    PYTHONPATH=lib:analysis/boss/scripts:analysis/sim python \\
-        analysis/boss/scripts/widebin_band_fit_figure.py
+    export PYTHONPATH=lib:analysis/boss/scripts:analysis/sim
+    S=analysis/boss/scripts/widebin_band_fit_figure.py
+    python $S --paper --overwrite   # manuscript figure -> paper/sts/Figure/
+    python $S                       # PNG + PDF        -> comparison/paper_figures/
 """
 
 from __future__ import annotations
@@ -50,6 +54,7 @@ logger = logging.getLogger(__name__)
 
 X_MAX, X_BIN = 40.0, 4.0   # the text's compression: 11 bins per band, 22 elements
 STEM = "fig_band_fit_22"
+PAPER_STEM = "band_fit_profiles_obs_vs_sim"
 
 
 def fit_bin(s):
@@ -69,7 +74,7 @@ def check(fits, table):
     logger.info("Fits match %s", table)
 
 
-def figure(S, fits, out):
+def figure(S, fits, base, exts):
     fig, axes = plt.subplots(2, 3, figsize=(wpf.PRINT_WIDTH, 3.6), sharex="col", sharey="col",
                              constrained_layout=True)
     for c, (key, *_rest) in enumerate(wpf.ROWS):
@@ -97,11 +102,11 @@ def figure(S, fits, out):
             ax.set_xlim(0, X_MAX + X_BIN / 2)
             tidy(ax)
     fig.legend(*axes[0, 0].get_legend_handles_labels(), loc="outside upper center", ncol=3, frameon=False)
-    out.mkdir(parents=True, exist_ok=True)
-    for e in ("png", "pdf"):
-        fig.savefig(out / f"{STEM}.{e}", bbox_inches="tight", dpi=200)
+    base.parent.mkdir(parents=True, exist_ok=True)
+    for e in exts:
+        fig.savefig(f"{base}.{e}", bbox_inches="tight", dpi=200)
     plt.close(fig)
-    logger.info("Saved %s", out / STEM)
+    logger.info("Saved %s", base)
 
 
 def main(argv=None):
@@ -113,13 +118,22 @@ def main(argv=None):
     p.add_argument("--random-label", default="random_w3_25_rpar5_scw_frac100")
     p.add_argument("--single-tag", default="_scw")
     p.add_argument("--single-random-tag", default="_scw_frac100")
+    p.add_argument("--paper", action="store_true",
+                   help="Manuscript version: PDF only, to paper/sts/Figure/ under the manuscript's file name.")
+    p.add_argument("--overwrite", action="store_true")
     args = p.parse_args(argv)
     setup_logging()
     wpf.PAPER = True               # bare labels, print-size fonts
     plt.rcParams.update(wpf.PAPER_RC)
 
     wide_dir, sim_dir = Path(args.wide_dir), Path(args.sim_dir)
-    out = wide_dir / "comparison" / "paper_figures"
+    if args.paper:
+        base, exts = Path("paper/sts/Figure") / PAPER_STEM, ("pdf",)
+    else:
+        base, exts = wide_dir / "comparison" / "paper_figures" / STEM, ("png", "pdf")
+    existing = [f"{base}.{e}" for e in exts if Path(f"{base}.{e}").exists()]
+    if existing and not args.overwrite:
+        raise FileExistsError("Outputs exist (use --overwrite): " + ", ".join(existing))
     sim_single = load_map(sim_dir / args.sim_single)
     gal = load_accumulator(os.path.join(args.results_dir, "jk",
                                         f"acc_single_galaxy{args.single_tag}_BOSS_North_South.npz"))
@@ -134,7 +148,7 @@ def main(argv=None):
     check({b: f[0] for b, f in fits.items()},
           wide_dir / "comparison" / "bridge_study_archived_vs_wide.csv")
     logger.info("X bin centres: %s", np.round(fits[S["5"]["bin"]][1], 2))
-    figure(S, fits, out)
+    figure(S, fits, base, exts)
 
 
 if __name__ == "__main__":
