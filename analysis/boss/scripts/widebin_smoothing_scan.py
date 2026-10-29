@@ -56,6 +56,11 @@ logger = logging.getLogger(__name__)
 BINS = [("g4_6", "4–6"), ("g6_15", "6–15"), ("g15_25", "15–25")]
 # (label, tag on the single and pair accumulators), coarsest first.
 SMOOTHINGS = [("8 arcmin", ""), ("6 arcmin", "_fwhm6"), ("4 arcmin", "_fwhm4")]
+# Legend text per smoothing; the CSV keeps the plain labels above.
+LEGEND = {"8 arcmin": r"FWHM = $8'$", "6 arcmin": r"FWHM = $6'$", "4 arcmin": r"FWHM = $4'$"}
+# Drawn at the width it prints (\linewidth, AASTeX text width 7.1 in), so the font sizes set in
+# plot_smoothing_scan.py are the printed sizes.
+FIGSIZE = (7.1, 5.7)
 
 
 def measure(wide_dir, singles, rand, name, tag):
@@ -106,7 +111,7 @@ def main(argv=None):
     rt, rl = loo_and_total(load_accumulator(
         os.path.join(jk, f"acc_single_random{args.single_random_tag}_BOSS_North_South.npz")))
 
-    fig, axes = plt.subplots(2, 2, figsize=(9.6, 7.6), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=FIGSIZE, constrained_layout=True)
     panels = [axes[0, 0], axes[0, 1], axes[1, 0]]
     rows = []
     for ax, (name, bin_text) in zip(panels, BINS):
@@ -127,19 +132,21 @@ def main(argv=None):
                          "snr": m["bridge"] / m["bridge_err"], "n_pairs": m["n_pairs"]})
             logger.info("%s, %s: %.2f +/- %.2f e-4 (%.2f sigma)", bin_text, label, m["bridge"] * 1e4,
                         m["bridge_err"] * 1e4, m["bridge"] / m["bridge_err"])
-            color = PALETTE[i]
-            ax.plot(m["axis"], m["prof"] * 1e4, lw=2, color=color, label=label, zorder=3 + i)
+            # 4 arcmin at the bottom and 8 arcmin on top, so the noisiest curve does not hide the others;
+            # the legend keeps the 8, 6, 4 order
+            color, rank = PALETTE[i], len(SMOOTHINGS) - i
+            ax.plot(m["axis"], m["prof"] * 1e4, lw=1.6, color=color, label=LEGEND[label], zorder=3 + rank)
             ax.fill_between(m["axis"], (m["prof"] - m["prof_err"]) * 1e4, (m["prof"] + m["prof_err"]) * 1e4,
-                            color=color, alpha=0.13, lw=0, zorder=1)
+                            color=color, alpha=0.13, lw=0, zorder=1 + 0.1 * rank)
         center = BRIDGE_CENTERS[name]
         ax.axhline(0, color=INK_MUTED, lw=0.8, alpha=0.6)
         for xx in (-center / 2, center / 2):
             ax.axvline(xx, color=INK_MUTED, lw=0.8, ls="--", alpha=0.6)
         ax.axvspan(-BRIDGE_HALF_X_FRAC * center, BRIDGE_HALF_X_FRAC * center, color=INK_MUTED,
-                   alpha=0.07, lw=0, zorder=0)
+                   alpha=0.2, lw=0, zorder=0)
         ax.set_xlim(-2.5 * center, 2.5 * center)
         ax.set_title(rf"Filament profile, $r_\perp$ = {bin_text} $h^{{-1}}$ Mpc", loc="left", color=INK, pad=5)
-        ax.set_xlabel(r"$X$ along pair axis  [$h^{-1}$ Mpc]")
+        ax.set_xlabel(r"$X$  [$h^{-1}$ Mpc]")
         ax.set_ylabel(r"$B(X)$  [$10^{-4}$]")
         ax.grid(True, color=GRID, linewidth=0.6)
         ax.set_axisbelow(True)
@@ -158,7 +165,7 @@ def main(argv=None):
         sub = out[out.smoothing == label].set_index("bin")
         vals = [sub.loc[name, "snr"] if name in sub.index else np.nan for name, _ in BINS]
         ax.bar(x + (i - (len(SMOOTHINGS) - 1) / 2) * width, vals, width * 0.9, color=PALETTE[i],
-               label=label, zorder=3)
+               label=LEGEND[label], zorder=3)
     ax.axhline(0, color=INK_MUTED, lw=0.8)
     ax.set_xticks(x)
     ax.set_xticklabels([t for _, t in BINS])

@@ -62,6 +62,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.colors import LogNorm
+from matplotlib.ticker import FormatStrFormatter, LogLocator, NullFormatter
 
 from catalog import setup_logging
 from combine_filament_jackknife import (BRIDGE_CENTERS, grouping_filament, load_grouping_pairs,
@@ -92,6 +93,16 @@ PAPER_STEMS = {2: "sim_pair_vs_control_maps_sep10", 3: "sim_quadrupole_diff_maps
                4: "sim_band_profiles_all_seps", 5: "boss_single_and_pair_maps",
                6: "obs_vs_sim_quadrupole_maps", 7: "band_profiles_obs_vs_sim"}
 ZOOM_FIG5 = 26.0
+# Under --paper each figure is drawn at the width it prints, so font sizes and line widths below are
+# printed sizes: AASTeX text width 7.1 in, Figures 2-5 and 7 included at 0.9\linewidth, Figure 6 at
+# 0.7\linewidth.  (The STS report's 6.5 in text width prints them 8 per cent smaller.)
+PRINT_WIDTH = 0.9 * 7.1
+PAPER_RC = {"font.size": 8.5, "axes.labelsize": 9, "axes.titlesize": 9,
+            "xtick.labelsize": 8, "ytick.labelsize": 8, "legend.fontsize": 8}
+# Figure 3's residual-map colours (RdBu_r): the central band is the positive, red strip and the
+# off-center band its negative, blue surroundings, so Figure 4 draws the two bands in these colours.
+RED, DEEP_BLUE = "#b2182b", "#2166ac"
+SHADE = 0.2  # opacity of the bridge-window (grey) and galaxy-range (green) shading
 
 
 def zoom(sep):
@@ -104,12 +115,24 @@ def crop(arr, axis, half):
 
 
 def mark(ax, sep, color=INK):
-    ax.plot([-0.5 * sep, 0.5 * sep], [0, 0], ls="none", marker="+", ms=10, mew=1.6, color=color)
+    xs = [0.0] if sep == 0 else [-0.5 * sep, 0.5 * sep]
+    ax.plot(xs, [0] * len(xs), ls="none", marker="+", ms=7 if PAPER else 10, mew=1.3 if PAPER else 1.6,
+            color=color)
 
 
-def label_axes(ax):
-    ax.set_xlabel(r"$X$ along the pair axis  [$h^{-1}$ Mpc]")
-    ax.set_ylabel(r"$Y$  [$h^{-1}$ Mpc]")
+def label_axes(ax, x=True, y=True):
+    """Under --paper, side-by-side panels share the Y label and stacked ones the X label."""
+    if x or not PAPER:
+        ax.set_xlabel(r"$X$  [$h^{-1}$ Mpc]")
+    if y or not PAPER:
+        ax.set_ylabel(r"$Y$  [$h^{-1}$ Mpc]")
+
+
+def log_ticks(cbar):
+    """Label a log colour bar at 1, 2, 5 x 10^n so values can be read off it."""
+    cbar.ax.yaxis.set_major_locator(LogLocator(subs=(1.0, 2.0, 5.0)))
+    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter("%g"))
+    cbar.ax.yaxis.set_minor_formatter(NullFormatter())
 
 
 def at_galaxy(arr, axis, x):
@@ -118,7 +141,9 @@ def at_galaxy(arr, axis, x):
 
 
 def title(ax, text):
-    ax.set_title(text, loc="left", color=INK, fontsize=10.5, pad=5)
+    # --paper centres titles: on a narrow map a left-aligned title runs into the next colour bar
+    ax.set_title(text, loc="center" if PAPER else "left", color=INK, pad=4,
+                 **({} if PAPER else {"fontsize": 10.5}))
 
 
 # --------------------------------------------------------------------------
@@ -202,30 +227,30 @@ def row_label(version, s):
 # --------------------------------------------------------------------------
 def fig2(S, out):
     """Mock pair stack beside its control at R = 10, one row per binning."""
-    fig, axes = plt.subplots(len(SHOW), 2, figsize=(9.6, 4.3 * len(SHOW)), constrained_layout=True,
-                             squeeze=False)
+    size = (PRINT_WIDTH, 2.95) if PAPER else (9.6, 4.3 * len(SHOW))
+    fig, axes = plt.subplots(len(SHOW), 2, figsize=size, constrained_layout=True, squeeze=False)
     for r, v in enumerate(SHOW):
         s = S[v]["10"]
         half = zoom(s["sep"])
         a, ext = crop(s["sim_pair"], s["sim_axis"], half)
         b, _ = crop(s["sim_ctl"], s["sim_axis"], half)
         norm = LogNorm(vmin=max(min(a.min(), b.min()), 1e-5) * 1e4, vmax=max(a.max(), b.max()) * 1e4)
-        ctl_name = "control at R" if v == "archived" else "control averaged over pairs"
+        ctl_name = "control at R" if v == "archived" else "control pair stack"
         for c, (arr, lab) in enumerate(((a, "true pair stack"), (b, ctl_name))):
             text = f"({'ab'[c]}) {lab}" if PAPER else f"mock, {row_label(v, s)}: {lab}"
             ax = axes[r, c]
             im = ax.imshow(arr * 1e4, origin="lower", extent=ext, cmap="magma_r", norm=norm)
             mark(ax, s["sep"], GREEN)
-            label_axes(ax)
+            label_axes(ax, y=c == 0)
             title(ax, text)
-        fig.colorbar(im, ax=axes[r], label=r"$\kappa$  [$10^{-4}$]", shrink=0.9)
+        log_ticks(fig.colorbar(im, ax=axes[r], label=r"$\kappa$  [$10^{-4}$]", shrink=0.9))
     save(fig, out / stem(2))
 
 
 def fig3(S, out):
     """Mock residual maps, one row per binning, one colour scale per column."""
-    fig, axes = plt.subplots(len(SHOW), 3, figsize=(14.7, 4.4 * len(SHOW)), constrained_layout=True,
-                             squeeze=False)
+    size = (PRINT_WIDTH, 1.85) if PAPER else (14.7, 4.4 * len(SHOW))
+    fig, axes = plt.subplots(len(SHOW), 3, figsize=size, constrained_layout=True, squeeze=False)
     for c, (key, *_rest) in enumerate(ROWS):
         half = zoom(S["archived"][key]["sep"])
         crops = {v: crop(S[v][key]["sim_res"], S[v][key]["sim_axis"], half) for v in SHOW}
@@ -235,16 +260,19 @@ def fig3(S, out):
             im = ax.imshow(crops[v][0] * 1e4, origin="lower", extent=crops[v][1], cmap="RdBu_r",
                            vmin=-lim, vmax=lim)
             mark(ax, S[v][key]["sep"])
-            label_axes(ax)
+            label_axes(ax, y=c == 0)
             title(ax, row_label(v, S[v][key]) if PAPER else f"mock, {row_label(v, S[v][key])}")
-        fig.colorbar(im, ax=axes[:, c], label=r"$\kappa$  [$10^{-4}$]", shrink=0.6 if len(SHOW) > 1 else 0.88)
+        # under --paper the three bars share one unit, so only the last is labelled
+        fig.colorbar(im, ax=axes[:, c], label=r"$\kappa$  [$10^{-4}$]" if c == 2 or not PAPER else None,
+                     shrink=0.6 if len(SHOW) > 1 else (0.8 if PAPER else 0.88), pad=0.06 if PAPER else 0.05)
     save(fig, out / stem(3))
 
 
 def fig4(S, out):
     """Mock central band, off-centre band and difference."""
-    fig, axes = plt.subplots(len(SHOW), 3, figsize=(14.7, 3.8 * len(SHOW)), constrained_layout=True,
-                             sharey="col", squeeze=False)
+    size = (PRINT_WIDTH, 2.4) if PAPER else (14.7, 3.8 * len(SHOW))
+    fig, axes = plt.subplots(len(SHOW), 3, figsize=size, constrained_layout=True, sharey="col", squeeze=False)
+    lw = 1.6 if PAPER else 2.0
     for c, (key, *_rest) in enumerate(ROWS):
         for r, v in enumerate(SHOW):
             s, ax = S[v][key], axes[r, c]
@@ -252,40 +280,44 @@ def fig4(S, out):
             half = zoom(s["sep"])
             m = np.abs(s["sim_axis"]) <= half
             x = s["sim_axis"][m]
-            ax.plot(x, cen[m] * 1e4, lw=2.0, color=BLUE, label=r"central band  $|Y| \leq 1.5$")
-            ax.plot(x, off[m] * 1e4, lw=2.0, color=ORANGE, label=r"off-centre band  $1.5 \leq |Y| \leq 10.5$")
-            ax.plot(x, (cen - off)[m] * 1e4, lw=2.3, color=INK, label="difference")
+            ax.plot(x, cen[m] * 1e4, lw=lw, color=RED, label=r"central band  $|Y| \leq 1.5$")
+            ax.plot(x, off[m] * 1e4, lw=lw, color=DEEP_BLUE, label=r"off-center band  $1.5 \leq |Y| \leq 10.5$")
+            ax.plot(x, (cen - off)[m] * 1e4, lw=lw + 0.3, color=INK, label="difference")
             ax.axhline(0, color=INK_MUTED, lw=0.9)
             ax.axvspan(-BRIDGE_HALF_X_FRAC * s["sep"], BRIDGE_HALF_X_FRAC * s["sep"],
-                       color=INK_MUTED, alpha=0.09, lw=0)
+                       color=INK_MUTED, alpha=SHADE, lw=0)
             for xx in (-0.5 * s["sep"], 0.5 * s["sep"]):
-                ax.axvline(xx, color=GREEN, lw=1.1, ls=":")
+                ax.axvline(xx, color=GREEN, lw=1.8, ls=":")
             ax.set_xlim(-half, half)
-            ax.set_xlabel(r"$X$ along the pair axis  [$h^{-1}$ Mpc]")
-            ax.set_ylabel(r"$\kappa$  [$10^{-4}$]")
+            ax.set_xlabel(r"$X$  [$h^{-1}$ Mpc]")
+            if c == 0 or not PAPER:
+                ax.set_ylabel(r"$\kappa$  [$10^{-4}$]")
             title(ax, row_label(v, s) if PAPER else f"mock, {row_label(v, s)}")
-            if r == 0 and c == 0:
-                ax.legend(loc="lower left", fontsize=8, frameon=False)
+            if r == 0 and c == 0 and not PAPER:
+                ax.legend(loc="lower left", frameon=False)
             tidy(ax)
+    if PAPER:  # above the panels, where it cannot cover a curve
+        fig.legend(*axes[0, 0].get_legend_handles_labels(), loc="outside upper center", ncol=3, frameon=False)
     save(fig, out / stem(4))
 
 
 def fig5(single, S, out):
     """Observed single stack and the pair stacks; one linear scale throughout."""
-    panels = [(r, c + 1, (f"({'bcd'[c]}) " if PAPER else "") + f"pairs, {row_label(v, S[v][key])}",
+    panels = [(r, c + 1, (f"({'bcd'[c]}) pairs\n" if PAPER else "pairs, ") + row_label(v, S[v][key]),
                S[v][key]["pair"], S[v][key]["axis"],
                S[v][key]["sep"]) for r, v in enumerate(SHOW) for c, (key, *_rest) in enumerate(ROWS)]
     s_axis = axis_for_map(single)
     vmax = max([float(crop(a, ax_, ZOOM_FIG5)[0].max()) for *_, a, ax_, _ in panels]
                + [float(crop(single, s_axis, ZOOM_FIG5)[0].max())]) * 1e4
-    fig, axes = plt.subplots(len(SHOW), 4, figsize=(17.2, 4.3 * len(SHOW)), constrained_layout=True,
-                             squeeze=False)
+    size = (PRINT_WIDTH, 1.9) if PAPER else (17.2, 4.3 * len(SHOW))
+    fig, axes = plt.subplots(len(SHOW), 4, figsize=size, constrained_layout=True, squeeze=False)
     a, ext = crop(single, s_axis, ZOOM_FIG5)
     im = axes[0, 0].imshow(a * 1e4, origin="lower", extent=ext, cmap="magma_r", vmin=0, vmax=vmax,
                            interpolation="nearest")
-    axes[0, 0].plot([0], [0], ls="none", marker="+", ms=10, mew=1.6, color=GREEN)
+    mark(axes[0, 0], 0, GREEN)
     label_axes(axes[0, 0])
-    title(axes[0, 0], ("(a) " if PAPER else "") + "single galaxies" + (" (both binnings)" if len(SHOW) > 1 else ""))
+    title(axes[0, 0], ("(a) single\ngalaxies" if PAPER else "single galaxies")
+          + (" (both binnings)" if len(SHOW) > 1 else ""))
     for r in range(1, len(SHOW)):
         axes[r, 0].axis("off")
     for r, c, lab, arr, axis, sep in panels:
@@ -293,15 +325,17 @@ def fig5(single, S, out):
         axes[r, c].imshow(a * 1e4, origin="lower", extent=ext, cmap="magma_r", vmin=0, vmax=vmax,
                           interpolation="nearest")
         mark(axes[r, c], sep, GREEN)
-        label_axes(axes[r, c])
+        label_axes(axes[r, c], y=False)
         title(axes[r, c], lab)
-    fig.colorbar(im, ax=axes, label=r"$\kappa$  [$10^{-4}$]", shrink=0.6 if len(SHOW) > 1 else 0.9)
+    fig.colorbar(im, ax=axes, label=r"$\kappa$  [$10^{-4}$]",
+                 shrink=0.6 if len(SHOW) > 1 else (0.72 if PAPER else 0.9), pad=0.04 if PAPER else 0.05)
     save(fig, out / stem(5))
 
 
 def fig6(S, out):
     """Observed and mock residual maps; each row (separation) shares one scale."""
-    fig, axes = plt.subplots(3, 2 * len(SHOW), figsize=(4.75 * 2 * len(SHOW), 13.2), constrained_layout=True)
+    size = (0.7 * 7.1, 6.9) if PAPER else (4.75 * 2 * len(SHOW), 13.2)
+    fig, axes = plt.subplots(3, 2 * len(SHOW), figsize=size, constrained_layout=True)
     for r, (key, *_rest) in enumerate(ROWS):
         half = zoom(S["archived"][key]["sep"])
         lim = max(float(np.nanpercentile(np.abs(crop(S[v][key]["res"], S[v][key]["axis"], half)[0]), 99.0))
@@ -313,8 +347,8 @@ def fig6(S, out):
             im = axes[r, c].imshow(a * 1e4, origin="lower", extent=ext, cmap="RdBu_r", vmin=-lim, vmax=lim,
                                    interpolation="nearest")
             mark(axes[r, c], s["sep"])
-            label_axes(axes[r, c])
-            title(axes[r, c], f"{row_label(v, s)} — {which}" if PAPER else f"{row_label(v, s)}, {which}")
+            label_axes(axes[r, c], x=r == len(ROWS) - 1, y=c == 0)
+            title(axes[r, c], f"{which}, {row_label(v, s)}" if PAPER else f"{row_label(v, s)}, {which}")
         fig.colorbar(im, ax=axes[r], label=r"$\kappa$  [$10^{-4}$]", shrink=0.88)
     save(fig, out / stem(6))
 
@@ -322,7 +356,8 @@ def fig6(S, out):
 def fig7(S, out):
     """B(X), BOSS against the mock, with (BOSS - mock)/sigma strips."""
     n = len(FIG7_SHOW)
-    fig, axes = plt.subplots(2 * n, 3, figsize=(13.8, 5.4 * n), height_ratios=[3, 1] * n,
+    fig, axes = plt.subplots(2 * n, 3, figsize=(PRINT_WIDTH, 3.0) if PAPER else (13.8, 5.4 * n),
+                             height_ratios=[3, 1] * n,
                              constrained_layout=True, squeeze=False)
     for c, (key, *_rest) in enumerate(ROWS):
         for r, v in enumerate(FIG7_SHOW):
@@ -337,24 +372,28 @@ def fig7(S, out):
             top, bot = axes[2 * r, c], axes[2 * r + 1, c]
             top.sharex(bot)
             top.axhline(0, color=INK, lw=0.9)
-            top.axvspan(-BRIDGE_HALF_X_FRAC * sep, BRIDGE_HALF_X_FRAC * sep, color=INK_MUTED, alpha=0.09,
+            top.axvspan(-BRIDGE_HALF_X_FRAC * sep, BRIDGE_HALF_X_FRAC * sep, color=INK_MUTED, alpha=SHADE,
                         lw=0, zorder=0)
             if v == "archived":
                 for xx in (-0.5 * sep, 0.5 * sep):
-                    top.axvline(xx, color=GREEN, lw=1.1, ls=":")
+                    top.axvline(xx, color=GREEN, lw=1.8, ls=":")
             else:
                 lo, hi = (float(t) for t in s["bin"].split("-"))
                 for sgn in (-1, 1):
-                    top.axvspan(sgn * lo / 2, sgn * hi / 2, color=GREEN, alpha=0.08, lw=0, zorder=0)
+                    top.axvspan(sgn * lo / 2, sgn * hi / 2, color=GREEN, alpha=SHADE, lw=0, zorder=0)
             top.fill_between(sim_axis[ms], (sim_prof - sim_err)[ms] * 1e4, (sim_prof + sim_err)[ms] * 1e4,
                              color=ORANGE, alpha=0.22, lw=0, zorder=1)
-            top.plot(sim_axis[ms], sim_prof[ms] * 1e4, lw=2.0, color=ORANGE, label="mock", zorder=2)
-            top.errorbar(axis[m], prof[m] * 1e4, yerr=err[m] * 1e4, fmt="o", ms=3.0, lw=0, elinewidth=1.0,
-                         capsize=0, color=BLUE, ecolor=BLUE, label="BOSS", zorder=3)
-            top.set_ylabel(r"$B(X)$  [$10^{-4}$]")
-            title(top, f"{row_label(v, s)}  ({s['n_pairs']:,} pairs)")
-            if r == 0 and c == 0:
-                top.legend(loc="upper right", fontsize=8.4, frameon=False)
+            top.plot(sim_axis[ms], sim_prof[ms] * 1e4, lw=1.6 if PAPER else 2.0, color=ORANGE, label="mock",
+                     zorder=2)
+            top.errorbar(axis[m], prof[m] * 1e4, yerr=err[m] * 1e4, fmt="o", ms=2.2 if PAPER else 3.0, lw=0,
+                         elinewidth=0.8 if PAPER else 1.0, capsize=0, color=BLUE, ecolor=BLUE, label="BOSS",
+                         zorder=3)
+            if c == 0 or not PAPER:
+                top.set_ylabel(r"$B(X)$  [$10^{-4}$]")
+            title(top, f"{row_label(v, s)}\n{s['n_pairs']:,} pairs" if PAPER
+                  else f"{row_label(v, s)}  ({s['n_pairs']:,} pairs)")
+            if r == 0 and c == 0 and not PAPER:
+                top.legend(loc="upper right", frameon=False)
             tidy(top)
             plt.setp(top.get_xticklabels(), visible=False)
 
@@ -362,17 +401,21 @@ def fig7(S, out):
             bot.axhline(0, color=INK, lw=0.9)
             for lev in (-2.0, 2.0):
                 bot.axhline(lev, color=INK_MUTED, lw=0.7, ls="--")
-            bot.plot(axis[m], resid, lw=0, marker="o", ms=2.6, color=BLUE)
+            bot.plot(axis[m], resid, lw=0, marker="o", ms=2.0 if PAPER else 2.6, color=BLUE)
             bot.set_ylim(-4.0, 4.0)
+            bot.set_yticks([-2, 0, 2])
             bot.set_xlim(-half, half)
-            bot.set_ylabel(r"$\Delta/\sigma$")
-            bot.set_xlabel(r"$X$ along the pair axis  [$h^{-1}$ Mpc]")
+            if c == 0 or not PAPER:
+                bot.set_ylabel(r"$\Delta/\sigma$")
+            bot.set_xlabel(r"$X$  [$h^{-1}$ Mpc]")
             bot.grid(True, axis="y", color=GRID, linewidth=0.6)
             tidy(bot)
         # one y-range per column so the two binnings compare directly
         lims = [axes[2 * r, c].get_ylim() for r in range(n)]
         for r in range(n):
             axes[2 * r, c].set_ylim(min(l[0] for l in lims), max(l[1] for l in lims))
+    if PAPER:  # above the panels, where it cannot cover a data point
+        fig.legend(*axes[0, 0].get_legend_handles_labels(), loc="outside upper center", ncol=2, frameon=False)
     save(fig, out / stem(7))
 
 
@@ -450,6 +493,7 @@ def main(argv=None):
         SHOW, SUFFIX = ("wide",), "_wide"
     if args.paper:
         PAPER, SHOW, FIG7_SHOW = True, ("wide",), ("wide",)
+        plt.rcParams.update(PAPER_RC)
     wide_dir, sim_dir = Path(args.wide_dir), Path(args.sim_dir)
     default_out = Path("paper/sts/Figure") if PAPER else wide_dir / "comparison" / "paper_figures"
     out = Path(args.output_dir) if args.output_dir else default_out
