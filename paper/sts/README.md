@@ -45,7 +45,7 @@ python analysis/boss/scripts/widebin_paper_figures.py --paper --overwrite
 
 | File (`sts/Figure/`) | Figure | Shows | Status |
 |---|---|---|---|
-| `footprint.pdf`, `zdist.pdf`, `footprint_stats.txt` | 1 | Footprint and n(z); do not depend on the binning | redrawn at print size 2026-10-28 with `python analysis/boss/scripts/plot_footprint.py --output-dir <dir>`, PDFs copied here (it also writes PNGs); `footprint_stats.txt` unchanged, still the `styau/Figure/` copy |
+| `footprint.pdf`, `zdist.pdf`, `footprint_stats.txt` | 1 | Footprint and n(z); do not depend on the binning | copied from `styau/Figure/` (command in `paper/README.md`) |
 | `sim_pair_vs_control_maps_sep10.pdf` | 2 | Mock pair stack and its separation-averaged control, 6-15 | done |
 | `sim_quadrupole_diff_maps.pdf` | 3 | Mock residual maps, three bins | done |
 | `sim_band_profiles_all_seps.pdf` | 4 | Mock central band, off-centre band and difference | done |
