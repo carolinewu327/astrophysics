@@ -207,7 +207,7 @@ def wide_sample(wide_dir, sim_dir, sim_single, singles, name, bin_text, random_l
     return {"bin": bin_text, "sep": center, "n_pairs": int(pair["n_pairs"].sum()), "axis": axis,
             "gal_x": gal_x, "gal_err": float(gal_err), "mid_err": float(mid_err),
             "sim_gal_err": float(sim_gal_err), "sim_mid_err": float(sim_mid_err),
-            "pair": phys, "res": res, "B_err": jackknife_error(loo)[1],
+            "pair": phys, "res": res, "res_loo": np.asarray(loo_maps), "B_err": jackknife_error(loo)[1],
             "sim_axis": sim_axis, "sim_pair": sim_pair, "sim_ctl": sim_ctl, "sim_res": sim_pair - sim_ctl,
             "sim_B_err": jackknife_error(np.asarray(sim_loo))[1]}
 
