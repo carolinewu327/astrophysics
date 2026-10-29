@@ -6,6 +6,7 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{setspace}
 \onehalfspacing
+\setlength{\emergencystretch}{2em} % no line may run into the 1-inch margin
 \usepackage{graphicx} % Required for inserting images
 \usepackage[font=small]{caption} % captions may be smaller if legible
 % Let large figures sit at the top of a text page instead of alone on a
@@ -258,7 +259,7 @@ used for error estimation (Section~\ref{sec:method}).
 \label{sec:data_planck}
 
 I use the Planck 2018 lensing reconstruction \citep{Planck2018lensing},
-release \texttt{COM\_Lensing\_4096\_R3.00}. The convergence harmonic
+release \texttt{COM\_\allowbreak Lensing\_\allowbreak 4096\_\allowbreak R3.00}. The convergence harmonic
 coefficients $\kappa_{LM}$ are taken from the minimum-variance combination
 of the temperature and polarization quadratic estimators applied to the
 SMICA foreground-cleaned maps. The Planck pipeline subtracts the estimator
@@ -562,7 +563,7 @@ The residual maps all display a quadrupole pattern, with a negative signal close
   \label{fig:sim_residual_maps}
 \end{figure*}
 
-Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For the $4$--$6\,\hinvMpc$ bin, the central band becomes negative, which is likely caused by the environment effect of close pairs. The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirts. For the $6$--$15\,\hinvMpc$ bin, the central band profile between the galaxies is weakly positive, and for the $15$--$25\,\hinvMpc$ bin it is clearly positive. In all three bins, the off-center band profile between the galaxies is negative. It dominates the difference profile in the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, while the two bands contribute comparably in the $15$--$25\,\hinvMpc$ bin. Near the galaxy positions, the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|\leq0.35\,d$ with $d$ the nominal separation, is $\left(5.97\pm0.35,\ 4.91\pm0.21,\ 2.18\pm0.11\right)\times10^{-4}$ for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
+Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For the $4$--$6\,\hinvMpc$ bin, the central band becomes negative, which is likely caused by the environment effect of close pairs. The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirts. For the $6$--$15\,\hinvMpc$ bin, the central band profile between the galaxies is weakly positive, and for the $15$--$25\,\hinvMpc$ bin it is clearly positive. In all three bins, the off-center band profile between the galaxies is negative. It dominates the difference profile in the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, while the two bands contribute comparably in the $15$--$25\,\hinvMpc$ bin. Near the galaxy positions, the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|\leq0.35\,d$ with $d$ the nominal separation, is $(5.97\pm0.35,\allowbreak\ 4.91\pm0.21,\allowbreak\ 2.18\pm0.11)\times10^{-4}$ for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
 
 % OPTIONAL (for Zheng to decide; values from residual_at_galaxies.csv, widebin_paper_figures.py --residuals-only):
 % At a single position the mock residual is small: it is
@@ -590,11 +591,11 @@ $r_{\perp}$ bin, I select pairs whose real-space line-of-sight separation
 lies in the bands $40$--$60$, $60$--$90$, and $90$--$120\,\hinvMpc$, using a
 random quarter of the mock galaxies used for the pair stacks, and apply the
 same control and bridge statistic. The bridge excess in the three bands is
-$\left(0.89\pm1.26,\ -0.96\pm0.77,\ -1.62\pm0.84\right)\times10^{-4}$ in the
+$(0.89\pm1.26,\allowbreak\ -0.96\pm0.77,\allowbreak\ -1.62\pm0.84)\times10^{-4}$ in the
 $4$--$6\,\hinvMpc$ bin,
-$\left(-0.16\pm0.31,\ -0.20\pm0.29,\ -0.33\pm0.25\right)\times10^{-4}$ in the
+$(-0.16\pm0.31,\allowbreak\ -0.20\pm0.29,\allowbreak\ -0.33\pm0.25)\times10^{-4}$ in the
 $6$--$15\,\hinvMpc$ bin, and
-$\left(0.16\pm0.12,\ 0.16\pm0.13,\ -0.10\pm0.15\right)\times10^{-4}$ in the
+$(0.16\pm0.12,\allowbreak\ 0.16\pm0.13,\allowbreak\ -0.10\pm0.15)\times10^{-4}$ in the
 $15$--$25\,\hinvMpc$ bin. No band deviates from zero by more than
 $1.9\sigma$, and the sign differs between bins. The largest values are about
 a fifth of the observational error in the $4$--$6\,\hinvMpc$ bin and less
@@ -602,7 +603,7 @@ than a tenth in the other two (Section~\ref{sec:results}). These tests show
 no evidence that the control generates a spurious bridge excess comparable
 to the observational uncertainties. Pairs separated by $20$--$40\,\hinvMpc$ along the line of sight
 still show a positive excess,
-$\left(3.36\pm1.43,\ 1.91\pm0.37,\ 1.17\pm0.17\right)\times10^{-4}$ in the
+$(3.36\pm1.43,\allowbreak\ 1.91\pm0.37,\allowbreak\ 1.17\pm0.17)\times10^{-4}$ in the
 three bins, which may reflect large-scale structure correlated with both
 galaxies, and I do not use this band as a null test.
 I also use the mock, with the same subsample of galaxies, to assess the
@@ -774,7 +775,7 @@ galaxy bin, and beam-convolved halo signal can enter the bridge window in all
 three bins. I therefore interpret these fits as profile diagnostics,
 not bridge detections. Adding a free constant to the full-profile model changes
 the amplitudes by less than $0.02$ and gives offsets of
-$\left(-1.7\pm2.9,\ -0.7\pm2.8,\ -0.8\pm2.7\right)\times10^{-4}$, consistent
+$(-1.7\pm2.9,\allowbreak\ -0.7\pm2.8,\allowbreak\ -0.8\pm2.7)\times10^{-4}$, consistent
 with zero.
 
 %\subsection{Comparison with the simulation and with previous work}
@@ -784,10 +785,10 @@ with zero.
 
 The residual maps also test how well the control describes the paired haloes.
 At the mean galaxy position on the pair axis, the observed residual is
-$\left(-0.34\pm0.78,\ 0.68\pm0.57,\ 0.55\pm0.51\right)\times10^{-3}$ in the
+$(-0.34\pm0.78,\allowbreak\ 0.68\pm0.57,\allowbreak\ 0.55\pm0.51)\times10^{-3}$ in the
 $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins, within $1.2\sigma$ of
 zero in each. The corresponding mock values are
-$\left(0.15,\ 0.12,\ 0.07\right)\times10^{-3}$, each with a block-jackknife
+$(0.15,\allowbreak\ 0.12,\allowbreak\ 0.07)\times10^{-3}$, each with a block-jackknife
 error of $0.24\times10^{-3}$. The position is half the mean
 pair separation, and the errors are jackknife errors of the
 reflection-symmetrized map at that position.
@@ -831,7 +832,7 @@ $18$--$22\,\hinvMpc$, with $r_{\parallel,{\rm max}}=5$, $10$, and
 $10\,\hinvMpc$, pair weights without the lensing-efficiency factor, and the
 control of Equation~(\ref{eq:two_halo}) at the central separation of each
 bin. The bridge excesses are
-$\left(5.4\pm9.1,\ 11.9\pm5.1,\ 1.2\pm2.2\right)\times10^{-4}$, at $0.6$,
+$(5.4\pm9.1,\allowbreak\ 11.9\pm5.1,\allowbreak\ 1.2\pm2.2)\times10^{-4}$, at $0.6$,
 $2.3$, and $0.6\sigma$, close to the values in Table~\ref{tab:bridge}. The
 $4$--$6\,\hinvMpc$ bin contains the same pairs in both analyses, so the change
 there, from $5.38$ to $5.44\times10^{-4}$, isolates the combined effect of the
@@ -841,7 +842,7 @@ $(10.5\pm5.7)$ and $(8.5\pm4.1)\times10^{-4}$, at $1.8$ and $2.1\sigma$, so
 the excess is not confined to one part of the bin. Replacing the
 separation-averaged control of Equation~(\ref{eq:control}) by the control at
 the nominal separation changes the bridge excesses in the three bins to
-$\left(5.3,\ 8.9,\ 2.9\right)\times10^{-4}$. The largest change, in the
+$(5.3,\allowbreak\ 8.9,\allowbreak\ 2.9)\times10^{-4}$. The largest change, in the
 $15$--$25\,\hinvMpc$ bin, is $0.5$ times the error.
 % TODO: quantify the effect of removing the lensing-efficiency weight from all stacks (single and pair).
 % TODO: report the changes in the control and bridge excess.
@@ -1050,7 +1051,7 @@ test of the full compressed profile gives nominal $p$-values of $0.04$,
 $0.008$, and $6\times10^{-4}$.
 These tests include bins containing the galaxies and
 are not evidence for a bridge. The mock predicts bridge excesses of
-$\left(5.97\pm0.35,\ 4.91\pm0.21,\ 2.18\pm0.11\right)\times10^{-4}$ in the
+$(5.97\pm0.35,\allowbreak\ 4.91\pm0.21,\allowbreak\ 2.18\pm0.11)\times10^{-4}$ in the
 same statistic. These amplitudes are $0.7$, $1.3$, and $1.0$ times the
 observational errors. In the $6$--$15\,\hinvMpc$ bin, the measurement is $2.4\sigma$
 from zero and $1.1\sigma$ from the mock prediction.
@@ -1067,7 +1068,7 @@ bridge decreases by a factor of $2.7$ from the $4$--$6$ to the $15$--$25\,\hinvM
 measurement combines structures with different expected amplitudes. Dividing
 the sample increases the error in each bin, and none yields a $3\sigma$
 bridge excess. Pooling my three bins with inverse-variance weights gives
-$\left(3.7\pm2.3\right)\times10^{-4}$, or $1.6\sigma$. This provides only an
+$(3.7\pm2.3)\times10^{-4}$, or $1.6\sigma$. This provides only an
 approximate comparison with \citet{deGraaff2019}, whose estimator rescales and
 pools pairs before stacking. The quoted error includes the jackknife
 covariance among the three samples, which share a footprint and can share
