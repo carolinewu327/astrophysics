@@ -13,7 +13,7 @@ and stops if they do not.
 
 Drawn at print size in the manuscript's style.  By default writes PNG and PDF
 to widebin_rpar5/comparison/paper_figures/ (fig_band_fit_22.*); with --paper,
-PDF only, to paper/sts/Figure/band_fit_profiles_obs_vs_sim.pdf.
+PDF only, to paper/sts/Figure/band_cen_vs_off_obs_vs_sim.pdf.
 paper/styau/ is never written.
 
 Usage
@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 
 X_MAX, X_BIN = 40.0, 4.0   # the text's compression: 11 bins per band, 22 elements
 STEM = "fig_band_fit_22"
-PAPER_STEM = "band_fit_profiles_obs_vs_sim"
+PAPER_STEM = "band_cen_vs_off_obs_vs_sim"
 
 
 def fit_bin(s):

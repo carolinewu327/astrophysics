@@ -53,7 +53,7 @@ python analysis/boss/scripts/widebin_paper_figures.py --paper --overwrite
 | `obs_vs_sim_quadrupole_maps.pdf` | 6 | Observed and mock residual maps | done |
 | `band_profiles_obs_vs_sim.pdf` | 7 | B(X), BOSS against the mock, with residual strip | done |
 | `filament_snr_vs_smoothing.pdf` | 8 | Bridge S/N at 8, 6 and 4 arcmin | done (separate command, below) |
-| `band_fit_profiles_obs_vs_sim.pdf` | new (number set in `main.tex`) | 22-element central and off-centre band vectors, BOSS against the mock, with the full-covariance amplitude fit | done (separate command, below) |
+| `band_cen_vs_off_obs_vs_sim.pdf` | new (number set in `main.tex`) | 22-element central and off-centre band vectors, BOSS against the mock, with the full-covariance amplitude fit | done (separate command, below) |
 
 Figure 8 has its own script. It needs the 6 and 4 arcmin galaxy-pair stacks,
 which are made once (see "Smoothing scan" in the wide-bin README):
