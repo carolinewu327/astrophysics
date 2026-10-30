@@ -386,7 +386,7 @@ def fig7(S, out):
             top.plot(sim_axis[ms], sim_prof[ms] * 1e4, lw=1.6 if PAPER else 2.0, color=ORANGE, label="mock",
                      zorder=2)
             top.errorbar(axis[m], prof[m] * 1e4, yerr=err[m] * 1e4, fmt="o", ms=2.2 if PAPER else 3.0, lw=0,
-                         elinewidth=0.8 if PAPER else 1.0, capsize=0, color=BLUE, ecolor=BLUE, label="BOSS",
+                         elinewidth=0.8 if PAPER else 1.0, capsize=0, color=BLUE, ecolor=BLUE, label="CMASS" if PAPER else "BOSS",
                          zorder=3)
             if c == 0 or not PAPER:
                 top.set_ylabel(r"$B(X)$  [$10^{-4}$]")

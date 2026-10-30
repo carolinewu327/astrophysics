@@ -90,7 +90,7 @@ def figure(S, fits, base, exts):
             ax.plot(x, m[sl] * 1e4, lw=1.0, ls="--", color=ORANGE, label="mock", zorder=2)
             ax.plot(x, fit["A"] * m[sl] * 1e4, lw=1.6, color=ORANGE, label=r"$\hat A\,\times$ mock", zorder=2)
             ax.errorbar(x, d[sl] * 1e4, yerr=err[sl] * 1e4, fmt="o", ms=2.6, lw=0, elinewidth=0.8, capsize=0,
-                        color=BLUE, ecolor=BLUE, label="BOSS", zorder=3)
+                        color=BLUE, ecolor=BLUE, label="CMASS", zorder=3)
             if r == 0:
                 wpf.title(ax, rf"$r_\perp$ = {s['bin'].replace('-', '–')} $h^{{-1}}$Mpc" "\n"
                           rf"$\hat A = {fit['A']:.2f} \pm {fit['sigma_A']:.2f}$" "\n"
