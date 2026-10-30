@@ -99,10 +99,10 @@ In this work of studying the matter distribution around galaxy pairs, we combine
 In our study, galaxy positions come from the CMASS sample of the Baryon Oscillation
 Spectroscopic Survey \citep[BOSS;][]{Dawson2013}, part of SDSS-III 
 \citep{Eisenstein2011}, in its twelfth data release
-\citep{Alam2015, Reid2016}. CMASS targets are selected with color and
+\citep{Alam2015, Reid2016}. CMASS galaxies are LRGs, which are selected with color and
 magnitude cuts designed to follow a passively evolving stellar-population
-locus, so that the sample has an approximately constant stellar mass across
-its redshift range (hence the name). They are luminous red galaxies (LRGs)
+locus so that the sample has an approximately constant stellar mass across
+its redshift range (hence the name). They are
 hosted by halos of typical mass $M\sim 10^{13}\,\hinvMsun$,
 with a satellite fraction of about 10 percent \citep{White2011}. 
 Simulations predict that pairs of such halos are often connected by filaments \citep{Colberg2005}.
@@ -465,6 +465,14 @@ At distances $\gtrsim 15\,\hinvMpc$ from the pair center, the observed maps tend
   \label{fig:band_profiles_obs_sim}
 \end{figure*}
 
+\begin{figure*}
+  \centering
+  \includegraphics[width=0.9\linewidth]{Figure/band_cen_vs_off_obs_vs_sim.pdf}
+  \caption{Central and off-center band profiles for pairs in the three $r_{\perp}$ bins. In each column, points in the top (bottom) panel are observational measurements of the central (off-center) band profile for CMASS galaxy pairs, with jackknife error bars. In each panel, the dashed curve is the prediction from the mock. The solid curve is the scaled mock profile from jointly fitting the measurements of central and off-center profiles, with the bestfit scaling factor and the bestfit $\chi^2$ per degree of freedom (dof) listed at the top. 
+  The gray and green bands are the same as in Fig.~\ref{fig:band_profiles_obs_sim}. }
+  \label{fig:band_cen_vs_off_obs_sim}
+\end{figure*}
+
 %\subsection{Bridge convergence}
 %\label{sec:bridge}
 
@@ -505,12 +513,13 @@ In Table~\ref{tab:bridge}, we also list the bridge statistics in the mock, which
   \end{tabular}
 \end{table}
 
-The bridge statistic is highly compressed, as it does not reflect the quadrupole pattern of the matter distribution around galaxy pairs. The central and off-center band profiles provide an improved description of the matter distribution. To see the significance of detecting the central and off-center band profiles, we perform a $\chi^{2}$ test of the compressed $22$-element central and off-center band profiles against zero with the full covariance, which gives $\chi^{2}=34.8$, $41.2$, and $49.9$ for $22$ degrees of freedom in the three $r_\perp$ bins (corresponding to nominal $p$ values of $p=0.04$, $0.008$, and $6\times10^{-4}$). These tests apply to the full profile, including bins that contain the galaxies. The $\chi^2$ values demonstrate that the matter distribution around true galaxy pairs is significantly different from that around the control pairs.
+The bridge statistic is highly compressed, as it does not reflect the quadrupole pattern of the matter distribution around galaxy pairs. The central and off-center band profiles provide an improved description of the matter distribution. The data points in Figure~\ref{fig:band_cen_vs_off_obs_sim}  are measurements of these band profiles. Central band profiles are close to zero, as we average over three central rows in the observed residual maps, which dilutes the excess on the pair connection line. Off-center band profiles clearly show a deficit on scales $\lesssim 15\,\hinvMpc$. To see the overall significance of detecting the central and off-center band profiles, we perform a $\chi^{2}$ test of the compressed $22$-element central and off-center band profiles against zero with the full covariance, which gives $\chi^{2}=34.8$, $41.2$, and $49.9$ for $22$ degrees of freedom in the three $r_\perp$ bins (corresponding to nominal $p$ values of $p=0.04$, $0.008$, and $6\times10^{-4}$). These tests apply to the full profile, including bins that contain the galaxies. The $\chi^2$ values demonstrate that the matter distribution around true galaxy pairs is significantly different from that around the control pairs.
 
 To see how well the central and off-center band profiles are described by the reference model from the mock, we fit the observed profiles with the mock residual profiles over the full
 $22$-element vector using Equation~(\ref{eq:amplitude}), which gives
-$A=1.46\pm0.36$, $1.52\pm0.35$, and $1.58\pm0.61$ for the three $r_\perp$ bins. The bestfit $\chi^2$ values are $18.5$, $22.8$, and $43.2$ for $21$ degrees of freedom. The mock profile therefore well describes the observed profile in the $r_\perp=4$--$6$ and
-$6$--$15\,\hinvMpc$ bins. For the $r_\perp=15$--$25\,\hinvMpc$ bin, the observed profile is about 3.4$\sigma$ away from the expected one given by the mock. We note that for the cases of $r_\perp=6$--$15$ and $15$--$25\,\hinvMpc$, bins around the nominal galaxy positions contribute $59$ and $54$ percent of the fitted response, respectively. In the $4$--$6\,\hinvMpc$ bin, the $4\,\hinvMpc$ binning places the galaxy positions in the sole bridge bin, so their contributions cannot be separated. The slight mismatch between the observed profile for the $r_\perp=15$--$25\,\hinvMpc$ bin and the bestfit scaled mock profile is driven by that near the galaxy position, not the matter distribution in the bridge or outer region. 
+$A=1.46\pm0.36$, $1.52\pm0.35$, and $1.58\pm0.61$ for the three $r_\perp$ bins, all consistent with unity. 
+In each panel of Figure~\ref{fig:band_cen_vs_off_obs_sim}, the original mock profile and the scaled one from jointly fitting the measured central and off-center band profiles are shown as dashed and solid curves in  The bestfit $\chi^2$ values are $18.5$, $22.8$, and $43.2$ for $21$ degrees of freedom. The mock profile therefore well describes the observed profile in the $r_\perp=4$--$6$ and
+$6$--$15\,\hinvMpc$ bins. For the $r_\perp=15$--$25\,\hinvMpc$ bin, the observed profile is about 3.4$\sigma$ away from the expected one given by the scaled mock prediction. We note that for the cases of $r_\perp=6$--$15$ and $15$--$25\,\hinvMpc$, bins around the nominal galaxy positions contribute $59$ and $54$ percent of the fitted response, respectively. In the $4$--$6\,\hinvMpc$ bin, the $4\,\hinvMpc$ binning places the galaxy positions in the sole bridge bin, so their contributions cannot be separated. The slight mismatch between the observed profile for the $r_\perp=15$--$25\,\hinvMpc$ bin and the bestfit scaled mock profile is driven by that near the galaxy position, not the matter distribution in the bridge or outer region. \ZZ{need to make change here.}
 
 Restricting the fit to the bridge window
 $|X|\leq0.35\,d$ gives $A=1.98\pm0.59$, $1.69\pm0.64$, and $1.05\pm0.99$, and the significance is $3.3$, $2.7$, and $1.1\sigma$, respectively. These significances differ from the bridge excesses in Table~\ref{tab:bridge}, because the fit treats the central and off-center bands as separate data elements, whereas the bridge statistic uses their difference. We interpret these fits as profile diagnostics, not bridge detections; they show that the matter distribution in the bridge region around true galaxy pairs is significantly different from that around the control pairs, except for the case with the largest $r_\perp$ separation.
