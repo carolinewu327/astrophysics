@@ -93,8 +93,8 @@ def figure(S, fits, base, exts):
                         color=BLUE, ecolor=BLUE, label="BOSS", zorder=3)
             if r == 0:
                 wpf.title(ax, rf"$r_\perp$ = {s['bin'].replace('-', '–')} $h^{{-1}}$Mpc" "\n"
-                          rf"$\hat A = {fit['A']:.2f} \pm {fit['sigma_A']:.2f}$,  "
-                          rf"$\chi^2 = {fit['chi2_min']:.1f}$ / {fit['dof']}")
+                          rf"$\hat A = {fit['A']:.2f} \pm {fit['sigma_A']:.2f}$" "\n"
+                          rf"$\chi^2/{{\rm dof}} = {fit['chi2_min']:.1f}/{fit['dof']}$")
             else:
                 ax.set_xlabel(r"$X$  [$h^{-1}$ Mpc]")
             if c == 0:
