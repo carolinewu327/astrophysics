@@ -1,5 +1,6 @@
 %\documentclass[linenumbers,trackchanges]{aastex701}
 %\documentclass[preprint]{aastex701}
+%\documentclass[twocolumn,anonymous]{aastex701}
 \documentclass[twocolumn]{aastex701}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx} % Required for inserting images
@@ -12,7 +13,6 @@
 
 \newcommand{\hinvMpc}{h^{-1}{\rm Mpc}}
 \newcommand{\hinvMsun}{h^{-1}M_\odot}
-
 
 \newcommand{\ZZ}[1]{{\color{red} [ZZ: #1]}}
 
@@ -201,9 +201,6 @@ where $D_{\rm c,1}$ and $D_{\rm c,2}$ are the comoving distances of the two gala
 $r_{\perp,{\rm min}}\leq r_{\perp} < r_{\perp,{\rm max}}$.
 We use three contiguous $r_\perp$ bins, $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$, with a line-of-sight cut of $r_{\parallel,{\rm max}}=5\,\hinvMpc$ for all three. The pair-weighted mean separations in the three bins are $5.0$, $10.7$, and $20.2\,\hinvMpc$, and we label them with the nominal separations $d=5$, $10$, and $20\,\hinvMpc$. Each pair is assigned the comoving distance $D_c$ at the mean redshift of its members. 
 
-%\subsection{Stacking in the pair frame}
-%\label{sec:stacking}
-
 Each pair of galaxies defines a local Cartesian frame on the sky. The $X$ axis runs from
 galaxy 1 to galaxy 2, with the pair ordered so that $X$ increases with
 Galactic longitude, and the $Y$ axis is perpendicular to the pair axis. 
@@ -259,7 +256,6 @@ Following the same procedure, we also obtain a stacked map $\hat\kappa_{\rm rp}(
 
 With the mock galaxies and the simulated $\kappa$ map, we follow a similar procedure to construct the stacked $\kappa$ map around mock galaxy pairs, following Equation~(\ref{eq:stack}) and without applying weights and mask. There is no need to produce a map from random pairs. 
 
-%\subsection{Control for the halo contributions}
 \subsection{Control pair map and band statistics}
 \label{sec:control}
 
@@ -283,20 +279,13 @@ To account for the distribution of transverse separation of galaxy pairs in each
 where $b$ runs over the fine $r_\perp$ bins, $r_{b}$ is the weighted mean $r_\perp$ separation of the pairs in fine bin $b$, and
 $c_{b}(X,Y)=\sum_{i\in b} w_{i}\,m_{i}(X,Y)$ is the weight that these pairs
 contribute to the control map. 
-%The control therefore has the same mix of separations and the same per-pixel weighting as the pair stack of Equation~(\ref{eq:stack}), and receives the same fourfold reflection average. The mock map has no mask and the mock pairs are unweighted, so $c_{b}$ reduces to the number of pairs in the fine bin.
-%This control has unit amplitude and no free parameters. 
 With the true pair map and the control pair map, we take their difference to construct the residual map,
 \begin{equation}
   F(X,Y) = \kappa_{\rm p}(X,Y)-\kappa_{\rm ctl}(X,Y).
   \label{eq:filament}
 \end{equation}
-%where gp and rp denote the galaxy-pair and random-pair stacks.
 This residual map is used to study the matter distribution pattern around galaxy pairs and to search for signatures of filaments between the
 paired galaxies. 
-%We call it a residual map, rather than a filament map, because imperfect halo subtraction and differences between paired and average galaxy environments can also contribute.
-
-%\subsection{Band statistic}
-%\label{sec:bands}
 
 To quantify the signal in the residual map, we form compressed 1D profiles along the $X$ direction, including a central band profile $\langle F(X,Y)\rangle_{\rm cen}$ and an off-center band profile $\langle F(X,Y)\rangle_{\rm off}$. The former is obtained by averaging the central rows with $|Y|\leq1.5\,\hinvMpc$, and the latter by averaging the rows with $1.5\leq|Y|\leq10.5\,\hinvMpc$. We also form a difference profile, 
 \begin{equation}
@@ -319,7 +308,6 @@ $N_{\rm side}=10$.
 
 For any statistic $\mathbf{x}$ (pixel value of a map or band profile), we measure it $K$ times by leaving out one jackknife region each time. The jackknife covariance is calculated as
 \begin{equation}
-  %\sigma^{2}=\frac{K-1}{K}\sum_{k=1}^{K}(x_{k}-\bar x)^{2}, \qquad
   \mathsf{C}=\frac{K-1}{K}\sum_{k=1}^{K}(\mathbf{x}_{k}-\bar{\mathbf{x}})
                                           (\mathbf{x}_{k}-\bar{\mathbf{x}})^{\mathsf T},
   \label{eq:jackknife}
@@ -338,7 +326,6 @@ which has the solution and error bar
   \sigma_{A}=\left(\mathbf{s}^{\mathsf T}\mathsf{C}^{-1}\mathbf{s}\right)^{-1/2}.
   \label{eq:amplitude}
 \end{equation}
-%We test for an additive constant by nesting a model with a free offset.
 
 \section{Expected signal from the simulation}
 \label{sec:sim_expect}
@@ -347,10 +334,6 @@ which has the solution and error bar
   \centering
   \includegraphics[width=0.8\linewidth]{Figure/sim_pair_vs_control_maps_sep10.pdf}
   \caption{Stacked convergence map around mock galaxy pairs with separation $6\leq r_{\perp}<15\,\hinvMpc$ (left) and the corresponding control map constructed by superposition of maps around single mock galaxies (right). Crosses mark the galaxy positions at the nominal separation $d=10\,\hinvMpc$.
-  %\ZZ{change the title for the right map to ``control pair stack''; also for all the relevant figures, let us simply label the X axis as ``X [$\hinvMpc$]"; for all the plots, enlarge the font size for text/title/legend}
-  %that for a controlits
-  %unit-amplitude control, Equation~(\ref{eq:control}) (right), on a common
-  %color scale.
   }
   \label{fig:sim_pair_vs_control}
 \end{figure*}
@@ -373,21 +356,11 @@ The residual maps all show a quadrupole pattern, with a negative signal close to
 
 Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For pairs of separation $4$--$6\,\hinvMpc$ (left panel), the central band becomes negative, which is likely caused by the environment effect of close pairs.  The difference between the central and off-center band profile, however, is positive, which shows a bridge between pairs and a declining profile in the outskirts. For the $6$--$15\,\hinvMpc$ pairs (middle panel), the central band profile between the galaxies is weakly positive, and for the $15$--$25\,\hinvMpc$ pairs (right panel) it is clearly positive. In all three cases, the off-center band profile between the galaxies is negative. It dominates the difference profile for the $4$--$6$ and $6$--$15\,\hinvMpc$ pairs, while the central and off-center bands contribute comparably for the $15$--$25\,\hinvMpc$ pairs. Near the galaxy positions (indicated by the dotted vertical lines), the residual does not go to zero, as explained above. The bridge excess, calculated within $|X|\leq0.35\,d$ with $d$ the nominal separation, is $\left(5.97\pm0.35,\ 4.91\pm0.21,\ 2.18\pm0.11\right)\times10^{-4}$ for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ pairs. The decline with separation is consistent with the expectation that the tidal effect and environment effect become less important for pairs at larger separation.
 
-% OPTIONAL (for Zheng to decide; values from residual_at_galaxies.csv, widebin_paper_figures.py --residuals-only):
-% At a single position the mock residual is small: it is
-% $\left(1.5,\ 1.2,\ 0.7\right)\times10^{-4}$ at the mean galaxy position and
-% $\left(-0.6,\ 0.6,\ 1.1\right)\times10^{-4}$ at the pair midpoint in the three
-% bins, compared with a stacked convergence of
-% $\left(75,\ 41,\ 23\right)\times10^{-4}$ at the midpoint. The block-jackknife
-% error of each of these values is $2.4\times10^{-4}$, dominated by a shift
-% common to the whole map that the band difference removes.
-
 \begin{figure*}
   \centering
   \includegraphics[width=0.99\linewidth]{Figure/sim_band_profiles_all_seps.pdf}
   \caption{Central-band mean profile (red), off-center-band mean profile (blue), and their difference $B(X)$ (black) from the mock residual maps for the three $r_{\perp}$ bins. The shaded window denotes $|X|\leq0.35\,d$ for measuring the bridge excess, and the dotted lines mark the positions of the pair of galaxies
   at the nominal separation $d$. See text for details.
-  %\ZZ{swap the colors of central and off-cen bands to be more consistent with the color scheme in Fig.3; make the shaded region slightly more opaque and the vertical lines thicker so that they can be seen more clearly; in the legend change `off-centre' to `off-center'}
   }
   \label{fig:sim_band_profiles}
 \end{figure*}
@@ -402,17 +375,6 @@ We also perform the test with pairs separated by $20$--$40\,\hinvMpc$ along the 
 $\left(3.36\pm1.43,\ 1.91\pm0.37,\ 1.17\pm0.17\right)\times10^{-4}$ for the three $r_\perp$ bins, which may reflect large-scale structure correlated with both galaxies. 
 
 These tests show no evidence that the control generates a spurious bridge excess, and the fluctuations in the control are expected to be much smaller than the observational uncertainties (Section~\ref{sec:results}). Our tests also demonstrate that the control map can be constructed by using galaxy pairs with large line-of-sight separations (e.g., $\gtrsim 50\,\hinvMpc$), as adopted in previous work \citep[e.g.,][]{EppsHudson2017}.
-
-
-% OPTIONAL (for Zheng to decide; mock signal versus the line-of-sight cut, from los_signal_wide.csv, analysis/sim/widebin_los_signal.py):
-% Widening the cut does not dilute the mock bridge signal at first. Relative
-% to the adopted cut, selecting pairs with $r_{\parallel}\leq10\,\hinvMpc$
-% changes the mock bridge excess by factors of $1.37\pm0.26$, $1.00\pm0.06$,
-% and $0.91\pm0.09$ in the three bins, while the number of pairs grows by
-% factors of $1.5$, $1.8$, and $1.9$. With $r_{\parallel}\leq20\,\hinvMpc$ the
-% factors are $1.44\pm0.36$, $0.85\pm0.07$, and $0.92\pm0.10$, for $2.2$, $3.0$,
-% and $3.7$ times the pairs. The errors on these ratios are paired jackknife
-% errors, because the cuts are nested and share the same blocks.
 
 \section{Results}
 \label{sec:results}
@@ -429,19 +391,14 @@ These tests show no evidence that the control generates a spurious bridge excess
 
 In this section, we present the measurements of the matter distribution around BOSS CMASS galaxy pairs through cross-correlating galaxy pairs with the Planck CMB lensing map and make comparisons with the reference model from the $N$-body simulation. We also perform analyses to test the robustness of the results.
 
-%\subsection{Observed stacks}
 \subsection{Measurements of the stacked $\kappa$ map around galaxy pairs and comparison to the simulation model}
 \label{sec:obs_stacks}
 
 With $217{,}702$, $1{,}159{,}266$, and $1{,}644{,}128$ CMASS galaxy pairs in the $r_\perp = 4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins (all having $r_{\parallel,{\rm max}}=5\,\hinvMpc$), respectively, we measure the stacked $\kappa$ distribution around them. Figure~\ref{fig:boss_maps} shows the single-galaxy stack (left panel) and the three pair stacks (three right panels), all corrected by subtracting the stacks of random points/pairs and symmetrized according to the reflection symmetry about the $X$ and $Y$ axes. All the maps show clear detection of the matter distribution, concentrated at the positions of galaxies.
 
-%The three BOSS samples contain $217{,}702$, $459{,}051$, and $1{,}282{,}969$ pairs at $r_{\perp}=5$, $10$, and $20\,\hinvMpc$. Figure~\ref{fig:boss_maps} shows the corrected single-galaxy stack and the three corrected pair stacks. 
 By subtracting the control pair maps constructed by superposition of the single-galaxy map from the stacked $\kappa$ maps of galaxy pairs, we obtain the residual maps. Figure~\ref{fig:obs_vs_sim_maps} compares the
 observed and simulated residual maps. 
 At distances $\gtrsim 15\,\hinvMpc$ from the pair center, the observed maps tend to be dominated by noise. At smaller distances, a quadrupole pattern appears, with a broad $X$-axis-aligned excess and an off-axis deficit, a trend consistent with that expected from simulated maps by accounting for the noise contribution. The off-axis deficit is seen in all three $r_\perp$ bins, while the axis-aligned excess is clearest in the $r_\perp = 6$--$15\,\hinvMpc$ bin, where it peaks near the galaxy positions.
-
-%These residual maps are the observational estimators of filament-associated convergence, but may also contain %imperfectly subtracted halo and environmental contributions. The observed maps contain a broad axis-aligned excess and an off-axis deficit, although both features have low signal-to-noise in the Planck reconstruction.
-
 
 
 \begin{figure*}
@@ -460,7 +417,6 @@ At distances $\gtrsim 15\,\hinvMpc$ from the pair center, the observed maps tend
   The gray region marks the bridge
   window, $|X| \leq 0.35\,d$, with $d$ the nominal pair separation, and the green bands mark the range of galaxy
   positions, $r_{\perp,{\rm min}}/2\leq|X|\leq r_{\perp,{\rm max}}/2$. The lower panels show the observed-minus-mock difference in units of the observational error, with dashed lines at $\pm2$. See text for more details.
-  %\ZZ{make the gray and green shade slightly more opaque.}
   }
   \label{fig:band_profiles_obs_sim}
 \end{figure*}
@@ -477,10 +433,6 @@ At distances $\gtrsim 15\,\hinvMpc$ from the pair center, the observed maps tend
 %\label{sec:bridge}
 
 Figure~\ref{fig:band_profiles_obs_sim} shows the band profile $B(X)$, the difference between the central and off-center average profiles defined in Equation~(\ref{eq:band}). Although the observed profiles are noisier, there is general agreement with the simulated profile, with excess in between the pairs. We first compute the bridge excess as the average of $B(X)$ within $|X|\leq0.35\,d$ (indicated by the shaded regions in Figure~\ref{fig:band_profiles_obs_sim}) and estimate the uncertainty based on the jackknife error bars. We find that none of the three bridge excesses exceeds $3\sigma$. The mean bridge signal for the $r_\perp = 6$--$15\,\hinvMpc$ bin shows a positive excess of $2.4\sigma$, and those for the other two pair separation cases are below $1\sigma$, as listed in Table~\ref{tab:bridge}. An inverse-variance-weighted combination of the results in the three $r_\perp$ bins gives $(3.7\pm2.3)\times10^{-4}$, or $1.6\sigma$, where the error includes the jackknife covariance between the bins. 
-%(correlation coefficients of $0.21$ between the $4$--$6$ and $6$--$15\,\hinvMpc$ bins, and $0.36$ between the $6$--$15$ and $15$--$25\,\hinvMpc$ bins). Neglecting that covariance would give $\pm1.9\times10^{-4}$.
-
-
-%Table~\ref{tab:bridge} gives the bridge excess and jackknife error for each sample, together with the mock prediction for the same statistic. Figure~\ref{fig:band_profiles_obs_sim} compares the observed and mock band profiles.
 
 \citet{deGraaff2019} measure
 $\bar\kappa=(5.8\pm3.1)\times10^{-4}$ in the bridge region of pairs pooled
@@ -491,9 +443,6 @@ a $60^\circ$ sector about the direction perpendicular to the pair axis, and
 the map is smoothed to $10$ arcmin. While the two estimators are different, their value is consistent with our result of $(9.2\pm3.9)\times10^{-4}$ with a similar uncertainty.
 
 In Table~\ref{tab:bridge}, we also list the bridge statistics in the mock, which are constructed in the same way as in the observation (e.g., same range to define central and off-center bands, same bridge window, and same smoothing scale in the $\kappa$ map). We see that the predicted bridge amplitudes are comparable to or even lower than the observational uncertainties. Given the uncertainties, all three measurements are consistent with the mock predictions.
-
-
-
 
 
 \begin{table}
@@ -519,25 +468,10 @@ To see how well the central and off-center band profiles are described by the re
 $22$-element vector using Equation~(\ref{eq:amplitude}), which gives
 $A=1.46\pm0.36$, $1.52\pm0.35$, and $1.58\pm0.61$ for the three $r_\perp$ bins, all consistent with unity. 
 In each panel of Figure~\ref{fig:band_cen_vs_off_obs_sim}, the original mock profile and the scaled one from jointly fitting the measured central and off-center band profiles are shown as dashed and solid curves. The bestfit $\chi^2$ values are $18.5$, $22.8$, and $43.2$ for $21$ degrees of freedom. The mock profile therefore well describes the observed profile in the $r_\perp=4$--$6$ and
-$6$--$15\,\hinvMpc$ bins. For the $r_\perp=15$--$25\,\hinvMpc$ bin, the observed profile is about 3.4$\sigma$ away from the expected one given by the scaled mock prediction. We note that for the cases of $r_\perp=6$--$15$ and $15$--$25\,\hinvMpc$, bins around the nominal galaxy positions contribute $59$ and $54$ percent of the fitted response, respectively. In the $4$--$6\,\hinvMpc$ bin, the $4\,\hinvMpc$ binning places the galaxy positions in the sole bridge bin, so their contributions cannot be separated. The slight mismatch between the observed profile for the $r_\perp=15$--$25\,\hinvMpc$ bin and the bestfit scaled mock profile is driven by that near the galaxy position, not the matter distribution in the bridge or outer region. \ZZ{need to make change here.}
+$6$--$15\,\hinvMpc$ bins. For the $r_\perp=15$--$25\,\hinvMpc$ bin, the observed profile is about 3.4$\sigma$ away from the expected one given by the scaled mock prediction. The deviation comes mainly from the central band at $X \gtrsim 20\,\hinvMpc$, well outside the galaxy positions. Excluding the bins at $X \gtrsim  20\,\hinvMpc$ gives a good fit, with $\chi^2 = 7.7$ for 9 degrees of freedom, so the relatively poor fit to the full range of measurements is likely caused by noise fluctuations in the outer central band profile.
 
 Restricting the fit to the bridge window
 $|X|\leq0.35\,d$ gives $A=1.98\pm0.59$, $1.69\pm0.64$, and $1.05\pm0.99$, and the significance is $3.3$, $2.7$, and $1.1\sigma$, respectively. These significances differ from the bridge excesses in Table~\ref{tab:bridge}, because the fit treats the central and off-center bands as separate data elements, whereas the bridge statistic uses their difference. We interpret these fits as profile diagnostics, not bridge detections; they show that the matter distribution in the bridge region around true galaxy pairs is significantly different from that around the control pairs, except for the case with the largest $r_\perp$ separation.
-
-%The $4$--$6\,\hinvMpc$ fit still contains the unresolved galaxy bin, and beam-convolved halo signal can enter the bridge window in all three bins. We therefore interpret these fits as profile diagnostics, not bridge detections. Adding a free constant to the full-profile model changes the amplitudes by less than $0.02$ and gives offsets of $\left(-1.7\pm2.9,\ -0.7\pm2.8,\ -0.8\pm2.7\right)\times10^{-4}$, consistent with zero.
-
-%\subsection{Comparison with the simulation and with previous work}
-%\label{sec:compare}
-
-
-
-%The residual maps also test how well the control describes the paired haloes.At the mean galaxy position on the pair axis, the observed residual is $\left(-0.34\pm0.78,\ 0.68\pm0.57,\ 0.55\pm0.51\right)\times10^{-3}$ in the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins, within $1.2\sigma$ of zero in each. The corresponding mock values are $\left(0.15,\ 0.12,\ 0.07\right)\times10^{-3}$, each with a block-jackknife error of $0.24\times10^{-3}$. The position is half the mean pair separation, and the errors are jackknife errors of the reflection-symmetrized map at that position. The corrected single-galaxy profile also lies below the matched mock prediction at large radius.
-% CHECK: fit_sim_template.py docstring; compare_boss_mock_profile.py retracted earlier significance values.
-%These comparisons constrain the isotropic residual from which the axis-aligned signal is separated. They do not directly measure the bridge statistic, which subtracts the off-center band in Equation~(\ref{eq:band}).
-% TODO: compare corrected single profiles in the 10--20, 15--25, and 20--40 h^-1 Mpc bands with jackknife errors.
-
-%A $95$ percent upper limit on the bridge excess can be converted to surface density using $\Sigma_{\rm crit}$ and subsequently to linear mass densityalong the bridge.
-% TODO: compute the upper limits and compare them with Epps & Hudson (2017) and de Graaff et al. (2019).
 
 Overall, we find that the measured matter distribution around galaxy pairs is significantly different from that from simple superposition of those from single galaxies. Similar to that seen in the model based on mock galaxies built from the $N$-body simulation, the matter distribution shows a quadrupole pattern, consistent with a tidal origin. The filament (bridge excess) between galaxy pairs is detected at the 2.4$\sigma$ level for pairs with transverse separation of $6$--$15\,\hinvMpc$.
 
@@ -575,26 +509,11 @@ We also perform a test by splitting the
 $r_\perp=6$--$15\,\hinvMpc$ bin into $6$--$10$ and $10$--$15\,\hinvMpc$ bins. The measured bridge excesses are $(10.5\pm5.7)$ and $(8.5\pm4.1)\times10^{-4}$, at $1.8\sigma$ and $2.1\sigma$. A further test with a narrower $r_\perp=9$--$11\,\hinvMpc$ bin gives a similar result, with a bridge excess of
 $(11.9\pm5.1)\times10^{-4}$ ($2.3\sigma$).
 Therefore, the excess is not confined to one part of the bin. 
-% TODO: quantify the effect of removing the lensing-efficiency weight from all stacks (single and pair).
-% TODO: report the changes in the control and bridge excess.
-%Combining the two caps with equal weight, rather than as a joint stack, produced the apparent dip found in earlier versions of the analysis.
-% TODO: report the shift in the corrected single profile at 20 h^-1 Mpc.
-
-%\paragraph{Random-pair sample.} In the narrower-bin analysis, replacing the full random catalog by a 10 percent subsample shifts the $9$--$11\,\hinvMpc$ bridge excess by $5\times10^{-4}$, comparable to the measured signal. We therefore use the full random catalog. % CHECK: combine_filament_jackknife.py docstring.
-
-%\paragraph{Fitted control.}
-% UNVERIFIED: align this description with band_core_tail_control.py and add checked-in results.
-%As an alternative to the unit-amplitude control, we split the single-galaxy profile into core and tail components and fit their amplitudes outside the pair. In the mock, for the narrower bins, this procedure drives the bridge excess to zero at all three separations, whereas the unfitted control recovers the bridge present in the simulation. The fitted control therefore absorbs axis-aligned signal, so we do not use it for the fiducial measurement.
-% TODO: quote mock and observed bridge excess under the fitted control beside the unfitted values.
-% TODO (wide bins): the fitted control was tested with the narrower bins only.
 
 \paragraph{Bridge window.} 
 For the $r_\perp=6$--$15\,\hinvMpc$ pairs, within our adopted bridge window ($|X|<0.35d$), there can still be contribution from the smoothed single galaxy profile. We recompute the bridge excess and its jackknife error in narrower windows, and evaluate
 the mock in the same windows. The excess falls from $(9.2\pm3.9)\times10^{-4}$ for the full window to $(7.5\pm4.3)$,
 $(5.7\pm4.8)$, and $(4.6\pm5.3)\times10^{-4}$ for window $|X|\leq2$, $1$, and $0\,\hinvMpc$ (corresponding to the single bin at the pair midpoint), while the mock stays between $4.8$ and $4.9\times10^{-4}$. The tests suggest that there may still be residual contribution from smoothed single galaxy profile in the window region.
-
-
-%The bridge window ends close to the galaxies, and in the $6$--$15\,\hinvMpc$ bin it reaches the innermost galaxy positions at $|X|=3\,\hinvMpc$. To test for halo signal inside the window, we recompute the bridge excess and its jackknife error in narrower windows, and evaluate the mock in the same windows. In the $6$--$15\,\hinvMpc$ bin, the excess falls from $(9.2\pm3.9)\times10^{-4}$ for the full window to $(7.5\pm4.3)$, $(5.7\pm4.8)$, and $(4.6\pm5.3)\times10^{-4}$ for $|X|\leq2$, $1$, and $0\,\hinvMpc$, and its significance falls from $2.4$ to $0.9\sigma$, while the mock stays between $4.8$ and $4.9\times10^{-4}$. The value at the pair midpoint matches the mock prediction but is not significant. The narrower $9$--$11\,\hinvMpc$ bin behaves in the same way, falling from $(11.9\pm5.1)$ to $(6.2\pm7.5)\times10^{-4}$ at the midpoint, although its window ends $1\,\hinvMpc$ short of the nearest galaxy. In the $15$--$25\,\hinvMpc$ bin, the excess changes from $(1.6\pm2.3)$ to $(-1.6\pm4.3)\times10^{-4}$ at the midpoint, compared with $2.2$ and $2.1\times10^{-4}$ in the mock. In the $4$--$6\,\hinvMpc$ bin, it changes from $(5.4\pm9.0)$ to $(4.7\pm10.2)\times10^{-4}$, compared with $6.0$ and $6.8\times10^{-4}$ in the mock. Both bins are consistent with zero and with the mock in every window. In the $6$--$15\,\hinvMpc$ bin, the measured difference from the mock is largest toward the edges of the window, nearest the galaxies. The nested-window measurements are correlated, and we have not quantified the significance of this variation; a contribution from residual halo signal cannot be excluded.
 
 \medskip
 \medskip
@@ -615,7 +534,6 @@ The quadrupole pattern is not seen in \citet{deGraaff2019} with a similar CMB le
 
 We construct a band profile from the residual map by taking the difference between the average profiles near the pair connection line and that offset from the connection line in the perpendicular direction. The band profile serves to quantify the appearance of filaments. In the band profiles of the $r_\perp=4$--$6$ and $6$--$15\,\hinvMpc$ bins, there appears to be a coherent excess between the two galaxies, signaling the filament, while in the $15$--$25\,\hinvMpc$ bin the observed excess is concentrated near the galaxy positions. The amplitude of the excess broadly agrees with the simulation model. When the jackknife covariance is accounted for, the bridge excess is $2.4\sigma$ in the $6$--$15\,\hinvMpc$ bin and consistent with zero in the other two. If we reduce the smoothing from 8 arcmin (FWHM) to 4 arcmin, the detection of the excess for $r_\perp=4$--$6$ pairs increases to 2.6$\sigma$.
 
-%\textbf{Prospects.} 
 The CMB lensing noise appears to dominate the error budget in our analysis.
 Increasing the number of pairs
 should reduce the statistical error until correlations in the convergence
