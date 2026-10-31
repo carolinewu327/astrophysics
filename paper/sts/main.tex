@@ -1,7 +1,7 @@
 %\documentclass[linenumbers,trackchanges]{aastex701}
 %\documentclass[preprint]{aastex701}
-%\documentclass[twocolumn,anonymous]{aastex701}
-\documentclass[twocolumn]{aastex701}
+%\documentclass[twocolumn]{aastex701}
+\documentclass[twocolumn,anonymous,linenumbers]{aastex701}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx} % Required for inserting images
 \usepackage{amssymb}
@@ -13,8 +13,6 @@
 
 \newcommand{\hinvMpc}{h^{-1}{\rm Mpc}}
 \newcommand{\hinvMsun}{h^{-1}M_\odot}
-
-\newcommand{\ZZ}[1]{{\color{red} [ZZ: #1]}}
 
 \begin{document}
 
@@ -332,7 +330,7 @@ which has the solution and error bar
 
 \begin{figure*}
   \centering
-  \includegraphics[width=0.8\linewidth]{Figure/sim_pair_vs_control_maps_sep10.pdf}
+  \includegraphics[width=0.8\linewidth]{sim_pair_vs_control_maps_sep10.pdf}
   \caption{Stacked convergence map around mock galaxy pairs with separation $6\leq r_{\perp}<15\,\hinvMpc$ (left) and the corresponding control map constructed by superposition of maps around single mock galaxies (right). Crosses mark the galaxy positions at the nominal separation $d=10\,\hinvMpc$.
   }
   \label{fig:sim_pair_vs_control}
@@ -340,7 +338,7 @@ which has the solution and error bar
 
 \begin{figure*}
   \centering
-  \includegraphics[width=0.99\linewidth]{Figure/sim_quadrupole_diff_maps.pdf}
+  \includegraphics[width=0.99\linewidth]{sim_quadrupole_diff_maps.pdf}
   \caption{
   Residual map from the galaxy mock (i.e., difference between the stacked map of galaxy pairs and the control map) for pairs with transverse separation in the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins (left to right; with each panel having its own color scale and extent). Crosses mark the galaxy positions at the nominal separations $d=5$, $10$, and $20\,\hinvMpc$. A quadrupole pattern is seen, with the ridge along the pair axis and the deficit perpendicular to it. 
   }
@@ -358,7 +356,7 @@ Figure~\ref{fig:sim_band_profiles} shows the corresponding band profiles. For pa
 
 \begin{figure*}
   \centering
-  \includegraphics[width=0.99\linewidth]{Figure/sim_band_profiles_all_seps.pdf}
+  \includegraphics[width=0.99\linewidth]{sim_band_profiles_all_seps.pdf}
   \caption{Central-band mean profile (red), off-center-band mean profile (blue), and their difference $B(X)$ (black) from the mock residual maps for the three $r_{\perp}$ bins. The shaded window denotes $|X|\leq0.35\,d$ for measuring the bridge excess, and the dotted lines mark the positions of the pair of galaxies
   at the nominal separation $d$. See text for details.
   }
@@ -381,7 +379,7 @@ These tests show no evidence that the control generates a spurious bridge excess
 
 \begin{figure*}
   \centering
-  \includegraphics[width=0.99\linewidth]{Figure/boss_single_and_pair_maps.pdf}
+  \includegraphics[width=0.99\linewidth]{boss_single_and_pair_maps.pdf}
   \caption{Convergence maps from BOSS CMASS single-galaxy stack (left) and pair
   stacks for the $4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins of transverse pair separation, on a
   common color scale. Crosses mark the galaxy positions at the nominal pair separations.
@@ -403,7 +401,7 @@ At distances $\gtrsim 15\,\hinvMpc$ from the pair center, the observed maps tend
 
 \begin{figure*}
   \centering
-  \includegraphics[width=0.99\linewidth]{Figure/obs_vs_sim_quadrupole_maps.pdf}
+  \includegraphics[width=0.99\linewidth]{obs_vs_sim_quadrupole_maps.pdf}
   \caption{Observed (top) and simulated (bottom) residual maps for pairs in the
   $r_\perp=4$--$6$, $6$--$15$, and $15$--$25\,\hinvMpc$ bins (left to right), on a common
   color scale per column. Crosses mark the galaxy positions at the nominal pair separations.}
@@ -412,7 +410,7 @@ At distances $\gtrsim 15\,\hinvMpc$ from the pair center, the observed maps tend
 
 \begin{figure*}
   \centering
-  \includegraphics[width=0.9\linewidth]{Figure/band_profiles_obs_vs_sim.pdf}
+  \includegraphics[width=0.9\linewidth]{band_profiles_obs_vs_sim.pdf}
   \caption{Observed band profiles $B(X)$ with jackknife errors (points with error bars) and mock profiles (solid curves) for pairs in the three $r_{\perp}$ bins.
   The gray region marks the bridge
   window, $|X| \leq 0.35\,d$, with $d$ the nominal pair separation, and the green bands mark the range of galaxy
@@ -423,7 +421,7 @@ At distances $\gtrsim 15\,\hinvMpc$ from the pair center, the observed maps tend
 
 \begin{figure*}
   \centering
-  \includegraphics[width=0.9\linewidth]{Figure/band_cen_vs_off_obs_vs_sim.pdf}
+  \includegraphics[width=0.9\linewidth]{band_cen_vs_off_obs_vs_sim.pdf}
   \caption{Central and off-center band profiles for pairs in the three $r_{\perp}$ bins. In each column, points in the top (bottom) panel are observational measurements of the central (off-center) band profile for CMASS galaxy pairs, with jackknife error bars. In each panel, the dashed curve is the prediction from the mock. The solid curve is the scaled mock profile from jointly fitting the measurements of central and off-center profiles, with the bestfit scaling factor and the bestfit $\chi^2$ per degree of freedom (dof) listed at the top. 
   The gray and green bands are the same as in Fig.~\ref{fig:band_profiles_obs_sim}. }
   \label{fig:band_cen_vs_off_obs_sim}
@@ -487,10 +485,9 @@ $15$--$25\,\hinvMpc$ bin. For $r_\perp\sim 5\,\hinvMpc$, the 4-arcmin smoothing 
 
 \begin{figure*}
   \centering
-  \includegraphics[width=\linewidth]{Figure/filament_snr_vs_smoothing.pdf}
+  \includegraphics[width=\linewidth]{filament_snr_vs_smoothing.pdf}
   \caption{Observed band profiles $B(X)$ for pairs in the three $r_{\perp}$ bins and the signal-to-noise ratios of the bridge excess (lower right) with three smoothing FWHM values.
   In each profile panel, shaded bands show the jackknife errors, the gray region marks the bridge window, and the dashed lines mark the galaxy positions at the nominal pair separation.
-  %\ZZ{in each profile panel, change the order of plotting, 4-arcmin first, then 6-arcmin, and finally 8-arcmin so that the 8-arcmin profile is on top of the other two; change legend labels to `FWHM = 8 arcmin' etc -- if it is too long, use `FWHM = 8$^\prime$'. }
   }
   \label{fig:smoothing_scan}
 \end{figure*}
