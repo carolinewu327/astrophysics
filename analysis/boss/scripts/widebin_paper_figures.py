@@ -94,8 +94,8 @@ PAPER_STEMS = {2: "sim_pair_vs_control_maps_sep10", 3: "sim_quadrupole_diff_maps
                6: "obs_vs_sim_quadrupole_maps", 7: "band_profiles_obs_vs_sim"}
 ZOOM_FIG5 = 26.0
 # Under --paper each figure is drawn at the width it prints, so font sizes and line widths below are
-# printed sizes: AASTeX text width 7.1 in, Figures 2-5 and 7 included at 0.9\linewidth, Figure 6 at
-# 0.7\linewidth.  (The STS report's 6.5 in text width prints them 8 per cent smaller.)
+# printed sizes: AASTeX text width 7.1 in, Figures 2-7 included at 0.9\linewidth.  (The STS report's
+# 6.5 in text width prints them 8 per cent smaller.)
 PRINT_WIDTH = 0.9 * 7.1
 PAPER_RC = {"font.size": 8.5, "axes.labelsize": 9, "axes.titlesize": 9,
             "xtick.labelsize": 8, "ytick.labelsize": 8, "legend.fontsize": 8}
@@ -333,23 +333,30 @@ def fig5(single, S, out):
 
 
 def fig6(S, out):
-    """Observed and mock residual maps; each row (separation) shares one scale."""
-    size = (0.7 * 7.1, 6.9) if PAPER else (4.75 * 2 * len(SHOW), 13.2)
-    fig, axes = plt.subplots(3, 2 * len(SHOW), figsize=size, constrained_layout=True)
-    for r, (key, *_rest) in enumerate(ROWS):
+    """Observed and mock residual maps; each separation shares one scale.
+
+    One row per separation, or under --paper one column, with the colour bar on top.
+    """
+    size = (PRINT_WIDTH, 4.5) if PAPER else (4.75 * 2 * len(SHOW), 13.2)
+    fig, axes = plt.subplots(*((2, 3) if PAPER else (3, 2 * len(SHOW))), figsize=size, constrained_layout=True)
+    for i, (key, *_rest) in enumerate(ROWS):
         half = zoom(S["archived"][key]["sep"])
         lim = max(float(np.nanpercentile(np.abs(crop(S[v][key]["res"], S[v][key]["axis"], half)[0]), 99.0))
                   for v in SHOW) * 1e4
-        for c, (v, which) in enumerate([(v, w) for v in SHOW for w in ("observed", "mock")]):
+        for j, (v, which) in enumerate([(v, w) for v in SHOW for w in ("observed", "mock")]):
             s = S[v][key]
             arr, axis = (s["res"], s["axis"]) if which == "observed" else (s["sim_res"], s["sim_axis"])
             a, ext = crop(arr, axis, half)
+            r, c = (j, i) if PAPER else (i, j)
             im = axes[r, c].imshow(a * 1e4, origin="lower", extent=ext, cmap="RdBu_r", vmin=-lim, vmax=lim,
                                    interpolation="nearest")
             mark(axes[r, c], s["sep"])
-            label_axes(axes[r, c], x=r == len(ROWS) - 1, y=c == 0)
+            label_axes(axes[r, c], x=r == axes.shape[0] - 1, y=c == 0)
             title(axes[r, c], f"{which}, {row_label(v, s)}" if PAPER else f"{row_label(v, s)}, {which}")
-        fig.colorbar(im, ax=axes[r], label=r"$\kappa$  [$10^{-4}$]", shrink=0.88)
+        if PAPER:
+            fig.colorbar(im, ax=axes[:, i], location="top", label=r"$\kappa$  [$10^{-4}$]", shrink=0.9)
+        else:
+            fig.colorbar(im, ax=axes[i], label=r"$\kappa$  [$10^{-4}$]", shrink=0.88)
     save(fig, out / stem(6))
 
 
