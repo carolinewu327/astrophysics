@@ -858,17 +858,6 @@ $15$--$25\,\hinvMpc$ bin, is $0.5$ times the error.
 $5\times10^{-4}$, comparable to the measured signal. I therefore use the
 full random catalog. % CHECK: combine_filament_jackknife.py docstring.
 
-\paragraph{Fitted control.}
-% UNVERIFIED: align this description with band_core_tail_control.py and add checked-in results.
-As an alternative to the unit-amplitude control, I split the single-galaxy
-profile into core and tail components and fit their amplitudes outside the
-pair. In the mock, for the narrower bins, this procedure drives the bridge excess to zero at all
-three separations, whereas the unfitted control recovers the bridge present
-in the simulation. The fitted control therefore absorbs axis-aligned signal,
-so I do not use it for the fiducial measurement.
-% TODO: quote mock and observed bridge excess under the fitted control beside the unfitted values.
-% TODO (wide bins): the fitted control was tested with the narrower bins only.
-
 \paragraph{Bridge window.} The bridge window ends close to the galaxies, and
 in the $6$--$15\,\hinvMpc$ bin it reaches the innermost galaxy positions at
 $|X|=3\,\hinvMpc$. To test for halo signal inside the window, I recompute
@@ -1092,11 +1081,7 @@ showing that the covariance between pixels must be retained.
 \textbf{The unit-amplitude control prevents the halo model from absorbing
 axis-aligned signal.}
 I use a control with no fitted parameters. In the mock, the unit-amplitude
-control recovers a clear bridge with the expected decline with separation. A
-preliminary test with the narrower bins of Section~\ref{sec:robust}, in which
-the core and tail amplitudes are fitted outside the
-pair, drives the bridge excess toward zero at every separation.
-% UNVERIFIED: fitted-control outputs are not in the repo
+control recovers a clear bridge with the expected decline with separation.
 Regions along the pair axis contain pair-aligned large-scale structure on both
 sides of the galaxies. Fitting the control in these regions can therefore
 absorb part of the bridge signal. Nonphysical mock pairs, with
