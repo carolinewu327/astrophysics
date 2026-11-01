@@ -27,6 +27,12 @@
 % the bibliography style writes \doi or \href, print them as plain text.
 \providecommand{\doi}[1]{\url{https://doi.org/#1}}
 \providecommand{\href}[2]{#2}
+% Journal macros used in ref.bib; AASTeX defines them, the article class does not.
+\providecommand{\aap}{Astronomy and Astrophysics}
+\providecommand{\aj}{The Astronomical Journal}
+\providecommand{\apj}{The Astrophysical Journal}
+\providecommand{\araa}{Annual Review of Astronomy and Astrophysics}
+\providecommand{\mnras}{Monthly Notices of the Royal Astronomical Society}
 
 \graphicspath{{Figure/}}
 
@@ -214,7 +220,7 @@ optimize clustering measurements rather than the stacking estimator in this work
 I transform right ascension and declination into Galactic longitude and
 latitude $(l,b)$, the native frame of the Planck maps, and turn redshifts
 into comoving distances under the Planck 2018 cosmology
-\citep{Planck2018lensing}, quoted in $\hinvMpc$ with $h=0.6766$. 
+\citep{Planck2020}, quoted in $\hinvMpc$ with $h=0.6766$.
 %: every galaxyenters with its own weight, so the relative contribution of the two caps is set by their galaxy content rather than by a separate average (Section~\ref{sec:method}).
 
 \begin{figure}
